@@ -6,4 +6,3 @@ include_directories(".")
 
 add_subdirectory(mtrxCore)
 add_subdirectory(mtrxCublas)
-add_subdirectory(mtrxBlas)
