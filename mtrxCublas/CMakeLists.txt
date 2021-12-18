@@ -38,6 +38,11 @@ endif()
 
 if(${CUBLAS_BUILD_HOST_PART})
   project(mtrxCublasHostTests CXX)
+  # find cublas headers
+  find_path(
+    CUBLAS_INCLUDE
+    NAMES "vector_types.h" "cuComplex.h"
+  )
   # host tests
   set (TEST_HOST_TARGET "mtrxHostCublasTests")
   include(GoogleTest)
