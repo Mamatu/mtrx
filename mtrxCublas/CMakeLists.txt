@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 
+project(mtrxCublas CXX CUDA)
+
 set_target_properties(PROPERTIES LINKER_LANGUAGE CXX) 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -17,9 +19,9 @@ option(CUBLAS_BUILD_HOST_PART "Compile host part of module" ON)
 
 if(${CUBLAS_BUILD_CUDA_PART})
 # cubin mtrxCublas
-set (CUBIN_TARGET "mtrxCuda.o")
+set (CUBIN_TARGET "libmtrxCuda.cubin")
 add_custom_command(OUTPUT ${CUBIN_TARGET} COMMAND ${CMAKE_CUDA_COMPILER} ${NVCC_COMPILATION_OPTIONS} ${CUDA_DEFINITIONS} ${CUDA_INCLUDE_DIRS} --compile ${CU_SRC} -o ${CUBIN_TARGET} DEPENDS ${CU_SRC})
-add_custom_target(CU_${TARGET} ALL DEPENDS ${CUBIN_TARGET})
+add_custom_target(CU_MTRX_CUDA ALL DEPENDS ${CUBIN_TARGET})
 
 # executable mtrxCublas
 add_library(mtrxCublas STATIC ${SRC})
