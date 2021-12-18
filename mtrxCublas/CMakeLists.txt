@@ -38,18 +38,13 @@ endif()
 
 if(${CUBLAS_BUILD_HOST_PART})
   project(mtrxCublasHostTests CXX)
-  # find cublas headers
-  find_path(
-    CUBLAS_INCLUDE
-    NAMES "vector_types.h" "cuComplex.h"
-  )
   # host tests
   set (TEST_HOST_TARGET "mtrxHostCublasTests")
   include(GoogleTest)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
   add_executable(${TEST_HOST_TARGET} ${HOST_TESTS_SRC} ${HOST_SRC} "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp")
   set_target_properties(${TEST_HOST_TARGET} PROPERTIES COMPILE_FLAGS -DMTRX_HOST_CUDA_BUILD)
-  target_link_libraries(${TEST_HOST_TARGET} mtrxCore cublas gtest_main gtest gmock pthread spdlog)
-  target_include_directories(${TEST_HOST_TARGET} PUBLIC include /usr/local/cuda/include /usr/local/include ${CUBLAS_INCLUDE})
+  target_link_libraries(${TEST_HOST_TARGET} mtrxCore gtest_main gtest gmock pthread spdlog)
+  target_include_directories(${TEST_HOST_TARGET} PUBLIC include /usr/local/cuda/targets/x86_64-linux/include /usr/local/include)
   gtest_add_tests(TARGET ${TEST_HOST_TARGET})
 endif()
