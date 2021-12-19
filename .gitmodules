@@ -1,9 +1,0 @@
-[submodule "mtrxCore"]
-	path = mtrxCore
-	url = https://github.com/Mamatu/mtrxCore.git
-[submodule "mtrxCublas"]
-	path = mtrxCublas
-	url = https://github.com/Mamatu/mtrxCublas
-[submodule "mtrxBlas"]
-	path = mtrxBlas
-	url = https://github.com/Mamatu/mtrxBlas.git
