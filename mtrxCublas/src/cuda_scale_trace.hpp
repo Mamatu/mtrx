@@ -46,8 +46,8 @@ void logMulResultComplex(const std::string &file, const std::string &func,
 }
 #endif
 
-__device__ __inline__ void cuda_SF_scaleTrace(int m, int n, float *matrix,
-                                              int lda, float factor) {
+__device__ __inline__ void
+cuda_SF_scaleTrace(int /*m*/, int /*n*/, float *matrix, int lda, float factor) {
   HOST_CODE(spdlog::set_level(spdlog::level::debug);)
   HOST_INIT();
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
@@ -58,8 +58,9 @@ __device__ __inline__ void cuda_SF_scaleTrace(int m, int n, float *matrix,
                          host_matrixValue, factor, x, lda);)
 }
 
-__device__ __inline__ void cuda_SD_scaleTrace(int m, int n, double *matrix,
-                                              int lda, double factor) {
+__device__ __inline__ void cuda_SD_scaleTrace(int /*m*/, int /*n*/,
+                                              double *matrix, int lda,
+                                              double factor) {
   HOST_INIT();
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int idx = x * lda + x;
@@ -69,8 +70,9 @@ __device__ __inline__ void cuda_SD_scaleTrace(int m, int n, double *matrix,
                          host_matrixValue, factor, x, lda);)
 }
 
-__device__ __inline__ void cuda_CF_scaleTrace(int m, int n, cuComplex *matrix,
-                                              int lda, cuComplex factor) {
+__device__ __inline__ void cuda_CF_scaleTrace(int /*m*/, int /*n*/,
+                                              cuComplex *matrix, int lda,
+                                              cuComplex factor) {
   HOST_INIT();
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int idx = x * lda + x;
@@ -80,7 +82,7 @@ __device__ __inline__ void cuda_CF_scaleTrace(int m, int n, cuComplex *matrix,
                                 host_matrixValue, factor, x, lda);)
 }
 
-__device__ __inline__ void cuda_CD_scaleTrace(int m, int n,
+__device__ __inline__ void cuda_CD_scaleTrace(int /*m*/, int /*n*/,
                                               cuDoubleComplex *matrix, int lda,
                                               cuDoubleComplex factor) {
   HOST_INIT();

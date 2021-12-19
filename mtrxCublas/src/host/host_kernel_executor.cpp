@@ -46,7 +46,7 @@ public:
       : HostKernel(ctx, false), m_function(function), m_params(params) {}
 
 protected:
-  void execute(const dim3 &threadIdx, const dim3 &blockIdx) {
+  void execute(const dim3 & /*threadIdx*/, const dim3 & /*blockIdx*/) {
     m_function(m_params);
   }
 };

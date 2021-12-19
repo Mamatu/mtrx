@@ -46,7 +46,7 @@ public:
 
   static ThreadIdx &GetThreadIdx(std::thread::id id) {
     auto getter = [id](auto &threadIdxs) -> ThreadIdx & {
-      return ThreadIdx::m_threadIdxs[id];
+      return threadIdxs[id];
     };
     return GetThreadIdxsSafe<ThreadIdx &>(std::move(getter));
   }

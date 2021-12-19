@@ -55,12 +55,12 @@ protected:
 
   enum ContextChange { CUDA_THREAD, CUDA_BLOCK };
 
-  virtual void onChange(ContextChange contextChnage, const dim3 &threadIdx,
-                        const dim3 &blockIdx) {
+  virtual void onChange(ContextChange /*contextChnage*/,
+                        const dim3 & /*threadIdx*/, const dim3 & /*blockIdx*/) {
     // empty
   }
 
-  virtual void onSetDims(const dim3 &gridDim, const dim3 &blockDim) {
+  virtual void onSetDims(const dim3 & /*gridDim*/, const dim3 & /*blockDim*/) {
     // empty
   }
 

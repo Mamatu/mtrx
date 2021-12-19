@@ -107,7 +107,7 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_amax_amin_destroy) {
     std::vector<float> array;
     array.reserve(count);
 
-    for (int idx = 0; idx < count; ++idx) {
+    for (size_t idx = 0; idx < count; ++idx) {
       array.push_back(idx + 2);
     }
 
@@ -155,7 +155,7 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_rot_destroy) {
     std::vector<float> expectedx({2.f, 2.f});
     std::vector<float> expectedy({0.f, 0.f});
 
-    for (int idx = 0; idx < array.size(); ++idx) {
+    for (size_t idx = 0; idx < array.size(); ++idx) {
       EXPECT_EQ(expectedx[idx], hostx[idx])
           << "Mismatch in hostx at index: " << idx;
       EXPECT_EQ(expectedy[idx], hosty[idx])

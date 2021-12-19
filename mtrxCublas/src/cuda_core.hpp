@@ -46,12 +46,17 @@
 //#define __shared__
 //#define __inline__ inline
 
+// setting sequence is for suppress warning
 #define HOST_INIT()                                                            \
   mtrx::ThreadIdx &ti = mtrx::ThreadIdx::GetThreadIdx();                       \
   uint3 threadIdx = ti.getThreadIdx();                                         \
   dim3 blockIdx = ti.getBlockIdx();                                            \
   dim3 blockDim = ti.getBlockDim();                                            \
-  dim3 gridDim = ti.getGridDim();
+  dim3 gridDim = ti.getGridDim();                                              \
+  threadIdx = threadIdx;                                                       \
+  blockIdx = blockIdx;                                                         \
+  blockDim = blockDim;                                                         \
+  gridDim = gridDim;
 
 #define HOST_INIT_SHARED(type, buffer)                                         \
   buffer = static_cast<type *>(mtrx::ThreadIdx::GetThreadIdx());

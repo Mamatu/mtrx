@@ -31,6 +31,8 @@
 #include <mtrxCublas/to_string.hpp>
 #include <type_traits>
 
+#include "kernels.hpp"
+
 namespace mtrx {
 struct Mem {
   void *ptr = nullptr;
@@ -171,7 +173,7 @@ void cublas_setVec(Vec &&vec, size_t rows, size_t columns) {
       }
     }
   }
-};
+}
 
 template <typename T>
 Mem *cublas_createIdentity(Cublas *cublas, size_t rows, size_t columns,
@@ -1006,7 +1008,39 @@ void Cublas::_subtract(Mem *output, Mem *a, Mem *b) {
 
 template <typename T>
 cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
-                                 ValueType factorType) {}
+                                 ValueType factorType) {
+
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  switch (factorType) {
+  case ValueType::FLOAT:
+    Kernel_SF_scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
+                         *reinterpret_cast<float *>(factor));
+    break;
+  case ValueType::DOUBLE:
+    Kernel_SD_scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
+                         *reinterpret_cast<double *>(factor));
+    break;
+  case ValueType::FLOAT_COMPLEX:
+    Kernel_CF_scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
+                         *reinterpret_cast<cuComplex *>(factor));
+    break;
+  case ValueType::DOUBLE_COMPLEX:
+    Kernel_CD_scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+                         rows, *reinterpret_cast<cuDoubleComplex *>(factor));
+    break;
+  case ValueType::NOT_DEFINED:
+    throw std::runtime_error("Not defined value type");
+  };
+  return CUBLAS_STATUS_SUCCESS;
+}
 
 void Cublas::_scaleTrace(Mem *matrix, Mem *factor) {
   _scaleTrace(matrix, factor->ptr, factor->valueType);
@@ -1017,7 +1051,7 @@ void Cublas::_scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
     throw std::runtime_error("None identical types");
   }
 
-  cublasStatus_t status;
+  cublasStatus_t status = CUBLAS_STATUS_NOT_SUPPORTED;
 
   switch (factorType) {
   case ValueType::FLOAT:
@@ -1036,6 +1070,7 @@ void Cublas::_scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");
   };
+  handleStatus(status);
 }
 
 template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
@@ -1046,7 +1081,7 @@ template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
   std::stringstream sstream;
 
   sstream << "[";
-  for (size_t idx = 0; idx < mem->count; ++idx) {
+  for (int idx = 0; idx < mem->count; ++idx) {
     sstream << vec[idx];
     if (idx < mem->count - 1) {
       sstream << ", ";
