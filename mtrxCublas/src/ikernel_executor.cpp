@@ -19,18 +19,19 @@
 
 #include "ikernel_executor.hpp"
 
-#include <sstream>
 #include <spdlog/spdlog.h>
+#include <sstream>
 
 namespace mtrx {
 
-std::string toString(const RunParams& runParams)
-{
+std::string toString(const RunParams &runParams) {
   std::stringstream sstream;
-  const uint* tc = runParams.threadsCount;
-  sstream << "threadsCount " << tc[0] << ", " << tc[1] << ", " << tc[2] << std::endl;
-  const uint* bc = runParams.blocksCount;
-  sstream << "blocksCount " << bc[0] << ", " << bc[1] << ", " << bc[2] << std::endl;
+  const uint *tc = runParams.threadsCount;
+  sstream << "threadsCount " << tc[0] << ", " << tc[1] << ", " << tc[2]
+          << std::endl;
+  const uint *bc = runParams.blocksCount;
+  sstream << "blocksCount " << bc[0] << ", " << bc[1] << ", " << bc[2]
+          << std::endl;
   sstream << "sharedMemory " << runParams.sharedMemSize << std::endl;
 
   return sstream.str();

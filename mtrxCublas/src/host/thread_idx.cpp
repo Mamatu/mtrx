@@ -32,13 +32,9 @@ void ResetCudaCtx() {
 ThreadIdx::ThreadIdxs ThreadIdx::m_threadIdxs;
 std::mutex ThreadIdx::m_threadIdxsMutex;
 
-void ThreadIdx::CleanupThreads()
-{
-  ThreadIdx::m_threadIdxs.clear();
-}
+void ThreadIdx::CleanupThreads() { ThreadIdx::m_threadIdxs.clear(); }
 
-ThreadIdx::ThreadIdx()
-{
+ThreadIdx::ThreadIdx() {
   set(m_threadIdx, 0, 0, 0);
   set(m_blockIdx, 0, 0, 0);
   set(m_blockDim, 0, 0, 1);

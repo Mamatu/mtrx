@@ -25,8 +25,8 @@
 #include <thread>
 #include <vector>
 
-#include <vector_types.h>
 #include "barrier.hpp"
+#include <vector_types.h>
 
 namespace mtrx {
 
@@ -38,24 +38,20 @@ public:
   static void CleanupThreads();
 
   using ThreadIdxs = std::map<std::thread::id, ThreadIdx>;
-  template<typename T, typename Callback>
-  static T GetThreadIdxsSafe(Callback&& callback)
-  {
+  template <typename T, typename Callback>
+  static T GetThreadIdxsSafe(Callback &&callback) {
     std::lock_guard<std::mutex> lg(ThreadIdx::m_threadIdxsMutex);
     return callback(ThreadIdx::m_threadIdxs);
   }
 
-  static ThreadIdx& GetThreadIdx(std::thread::id id)
-  {
-    auto getter = [id](auto& threadIdxs) -> ThreadIdx&
-    {
+  static ThreadIdx &GetThreadIdx(std::thread::id id) {
+    auto getter = [id](auto &threadIdxs) -> ThreadIdx & {
       return ThreadIdx::m_threadIdxs[id];
     };
-    return GetThreadIdxsSafe<ThreadIdx&>(std::move(getter));
+    return GetThreadIdxsSafe<ThreadIdx &>(std::move(getter));
   }
 
-  static ThreadIdx& GetThreadIdx()
-  {
+  static ThreadIdx &GetThreadIdx() {
     return GetThreadIdx(std::this_thread::get_id());
   }
 

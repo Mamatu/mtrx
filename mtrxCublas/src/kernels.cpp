@@ -19,9 +19,9 @@
 
 #include "kernels.hpp"
 
+#include "ikernel_executor.hpp"
 #include <memory>
 #include <sstream>
-#include "ikernel_executor.hpp"
 
 #ifndef MTRX_HOST_CUDA_BUILD
 #include "kernel_executor.hpp"
@@ -31,8 +31,7 @@
 
 std::shared_ptr<mtrx::IKernelExecutor> g_kernelExecutor;
 
-std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor()
-{
+std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor() {
 #ifndef MTRX_HOST_CUDA_BUILD
   g_kernelExecutor = std::make_shared<mtrx::KernelExecutor>();
 #else
@@ -41,37 +40,35 @@ std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor()
   return g_kernelExecutor;
 }
 
-template<typename T>
-void Kernel_scaleTrace(const std::string& kernelName, int dim, T* matrix, int lda, T factor)
-{
+template <typename T>
+void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
+                       int lda, T factor) {
   auto ke = GetKernelExecutor();
   ke->setThreadsCount(dim, 1, 1);
   ke->setBlocksCount(1, 1, 1);
 
-  void* params[] = {&dim, &dim, &matrix, &lda, &factor};
-  ke->setParams(const_cast<const void**>(params));
-  
+  void *params[] = {&dim, &dim, &matrix, &lda, &factor};
+  ke->setParams(const_cast<const void **>(params));
+
   std::stringstream cukernelName;
   cukernelName << "CUDA" << kernelName;
   ke->run(cukernelName.str());
 }
 
-void Kernel_SF_scaleTrace(int dim, float* matrix, int lda, float factor)
-{
+void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor) {
   Kernel_scaleTrace(__func__, dim, matrix, lda, factor);
 }
 
-void Kernel_SD_scaleTrace(int dim, double* matrix, int lda, double factor)
-{
+void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor) {
   Kernel_scaleTrace(__func__, dim, matrix, lda, factor);
 }
 
-void Kernel_CF_scaleTrace(int dim, cuComplex* matrix, int lda, cuComplex factor)
-{
+void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda,
+                          cuComplex factor) {
   Kernel_scaleTrace(__func__, dim, matrix, lda, factor);
 }
 
-void Kernel_CD_scaleTrace(int dim, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
-{
+void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
+                          cuDoubleComplex factor) {
   Kernel_scaleTrace(__func__, dim, matrix, lda, factor);
 }

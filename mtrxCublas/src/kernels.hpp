@@ -22,9 +22,11 @@
 
 #include <cuComplex.h>
 
-void Kernel_SF_scaleTrace(int dim, float* matrix, int lda, float factor);
-void Kernel_SD_scaleTrace(int dim, double* matrix, int lda, double factor);
-void Kernel_CF_scaleTrace(int dim, cuComplex* matrix, int lda, cuComplex factor);
-void Kernel_CD_scaleTrace(int dim, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor);
+void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor);
+void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor);
+void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda,
+                          cuComplex factor);
+void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
+                          cuDoubleComplex factor);
 
 #endif

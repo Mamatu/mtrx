@@ -29,7 +29,7 @@ struct RunParams {
   uint sharedMemSize;
 };
 
-std::string toString(const RunParams& runParams);
+std::string toString(const RunParams &runParams);
 
 class IKernelExecutor {
 public:

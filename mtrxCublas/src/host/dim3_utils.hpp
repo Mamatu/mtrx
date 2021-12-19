@@ -22,28 +22,20 @@
 
 #include <vector_types.h>
 
-inline void set(dim3& vec, int x, int y, int z)
-{
+inline void set(dim3 &vec, int x, int y, int z) {
   vec.x = x;
   vec.y = y;
   vec.z = z;
 }
 
-inline void clear(dim3& vec)
-{
-  set(vec, 0, 0, 0);
-}
+inline void clear(dim3 &vec) { set(vec, 0, 0, 0); }
 
-inline void set(uint3& vec, int x, int y, int z)
-{
+inline void set(uint3 &vec, int x, int y, int z) {
   vec.x = x;
   vec.y = y;
   vec.z = z;
 }
 
-inline void clear(uint3& vec)
-{
-  set(vec, 0, 0, 0);
-}
+inline void clear(uint3 &vec) { set(vec, 0, 0, 0); }
 
 #endif

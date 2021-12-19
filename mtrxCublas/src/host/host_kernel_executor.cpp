@@ -69,14 +69,16 @@ bool HostKernelExecutor::_run(const std::string &functionName) {
   }
 
   const mtrx::RunParams &params = this->getRunParams();
- 
+
   auto params_str = toString(params);
   SPDLOG_INFO("{} {}\n{}", __FILE__, __func__, params_str);
 
   HostKernelImpl hki(it->second, getParams(), this);
 
-  dim3 blockDim(params.threadsCount[0], params.threadsCount[1], params.threadsCount[2]);
-  dim3 gridDim(params.blocksCount[0], params.blocksCount[1], params.blocksCount[2]);
+  dim3 blockDim(params.threadsCount[0], params.threadsCount[1],
+                params.threadsCount[2]);
+  dim3 gridDim(params.blocksCount[0], params.blocksCount[1],
+               params.blocksCount[2]);
 
   hki.setDims(gridDim, blockDim);
   hki.setSharedMemory(params.sharedMemSize);

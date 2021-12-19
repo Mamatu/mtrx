@@ -47,14 +47,14 @@
 //#define __inline__ inline
 
 #define HOST_INIT()                                                            \
-  mtrx::ThreadIdx &ti = mtrx::ThreadIdx::GetThreadIdx();               \
+  mtrx::ThreadIdx &ti = mtrx::ThreadIdx::GetThreadIdx();                       \
   uint3 threadIdx = ti.getThreadIdx();                                         \
   dim3 blockIdx = ti.getBlockIdx();                                            \
   dim3 blockDim = ti.getBlockDim();                                            \
   dim3 gridDim = ti.getGridDim();
 
 #define HOST_INIT_SHARED(type, buffer)                                         \
-  buffer = static_cast<type*>(mtrx::ThreadIdx::GetThreadIdx());                     \
+  buffer = static_cast<type *>(mtrx::ThreadIdx::GetThreadIdx());
 
 #define HOST_CODE(code) code
 

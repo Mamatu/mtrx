@@ -20,8 +20,8 @@
 #ifndef MTRX_CUBLAS_HOST_KERNEL_THREAD_H
 #define MTRX_CUBLAS_HOST_KERNEL_THREAD_H
 
-#include <vector_types.h>
 #include "barrier.hpp"
+#include <vector_types.h>
 //#include "dim3.hpp"
 
 #include <condition_variable>
@@ -38,8 +38,8 @@ public:
 
   HostKernelThread();
 
-  void setThreadFunc(ThreadFunc&& threadFunc);
-  void setThreadFunc(const ThreadFunc& threadFunc);
+  void setThreadFunc(ThreadFunc &&threadFunc);
+  void setThreadFunc(const ThreadFunc &threadFunc);
 
   void setBlockDim(const dim3 &blockDim);
 

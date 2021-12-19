@@ -28,16 +28,21 @@
 
 #include <string>
 
-template<typename T>
-void logMulResult(const std::string& file, const std::string& func, int line, T* matrix, int idx, T a, T b, int x, int lda)
-{
-  spdlog::debug("{} {} : {}\n {} = {} * {} ({}, {}) (x: {}, lda: {})", file, func, line, matrix[idx], a, b, idx, idx, x, lda);
+template <typename T>
+void logMulResult(const std::string &file, const std::string &func, int line,
+                  T *matrix, int idx, T a, T b, int x, int lda) {
+  spdlog::debug("{} {} : {}\n {} = {} * {} ({}, {}) (x: {}, lda: {})", file,
+                func, line, matrix[idx], a, b, idx, idx, x, lda);
 }
 
-template<typename T>
-void logMulResultComplex(const std::string& file, const std::string& func, int line, T* matrix, int idx, T a, T b, int x, int lda)
-{
-  spdlog::debug("{} {} : {}\n {}+{}i = {}+{}i * {}+{}i ({}, {}) (x: {}, lda: {})", file, func, line, matrix[idx].x, matrix[idx].y, a.x, a.y, b.x, b.y, idx, idx, x, lda);
+template <typename T>
+void logMulResultComplex(const std::string &file, const std::string &func,
+                         int line, T *matrix, int idx, T a, T b, int x,
+                         int lda) {
+  spdlog::debug(
+      "{} {} : {}\n {}+{}i = {}+{}i * {}+{}i ({}, {}) (x: {}, lda: {})", file,
+      func, line, matrix[idx].x, matrix[idx].y, a.x, a.y, b.x, b.y, idx, idx, x,
+      lda);
 }
 #endif
 
@@ -49,7 +54,8 @@ __device__ __inline__ void cuda_SF_scaleTrace(int m, int n, float *matrix,
   const int idx = x * lda + x;
   HOST_CODE(float host_matrixValue = matrix[idx];);
   matrix[idx] = matrix[idx] * factor;
-  HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx, host_matrixValue, factor, x, lda);)
+  HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx,
+                         host_matrixValue, factor, x, lda);)
 }
 
 __device__ __inline__ void cuda_SD_scaleTrace(int m, int n, double *matrix,
@@ -59,7 +65,8 @@ __device__ __inline__ void cuda_SD_scaleTrace(int m, int n, double *matrix,
   const int idx = x * lda + x;
   HOST_CODE(double host_matrixValue = matrix[idx];);
   matrix[idx] = matrix[idx] * factor;
-  HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx, host_matrixValue, factor, x, lda);)
+  HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx,
+                         host_matrixValue, factor, x, lda);)
 }
 
 __device__ __inline__ void cuda_CF_scaleTrace(int m, int n, cuComplex *matrix,
@@ -69,7 +76,8 @@ __device__ __inline__ void cuda_CF_scaleTrace(int m, int n, cuComplex *matrix,
   const int idx = x * lda + x;
   HOST_CODE(cuComplex host_matrixValue = matrix[idx];);
   matrix[idx] = cuCmulf(matrix[idx], factor);
-  HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx, host_matrixValue, factor, x, lda);)
+  HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx,
+                                host_matrixValue, factor, x, lda);)
 }
 
 __device__ __inline__ void cuda_CD_scaleTrace(int m, int n,
@@ -80,7 +88,8 @@ __device__ __inline__ void cuda_CD_scaleTrace(int m, int n,
   const int idx = x * lda + x;
   HOST_CODE(cuDoubleComplex host_matrixValue = matrix[idx];);
   matrix[idx] = cuCmul(matrix[idx], factor);
-  HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx, host_matrixValue, factor, x, lda);)
+  HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx,
+                                host_matrixValue, factor, x, lda);)
 }
 
 #endif

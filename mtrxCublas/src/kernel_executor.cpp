@@ -187,7 +187,7 @@ bool KernelExecutor::load(const KernelExecutor::Pathes &pathes) {
 void KernelExecutor::releaseImage() {
   if (m_image != nullptr) {
     printf("~image = %p", m_image);
-    std::byte *data = static_cast<std::byte*>(m_image);
+    std::byte *data = static_cast<std::byte *>(m_image);
     delete[] data;
     m_image = nullptr;
   }

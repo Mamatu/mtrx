@@ -23,16 +23,15 @@
 
 namespace mtrx {
 
-HostKernelThread::HostKernelThread()
-    : m_pthreads(nullptr), m_barrier(nullptr) {
+HostKernelThread::HostKernelThread() : m_pthreads(nullptr), m_barrier(nullptr) {
   m_cancontinue = false;
 }
 
-void HostKernelThread::setThreadFunc(ThreadFunc&& threadFunc) {
+void HostKernelThread::setThreadFunc(ThreadFunc &&threadFunc) {
   m_threadFunc = std::move(threadFunc);
 }
 
-void HostKernelThread::setThreadFunc(const ThreadFunc& threadFunc) {
+void HostKernelThread::setThreadFunc(const ThreadFunc &threadFunc) {
   m_threadFunc = threadFunc;
 }
 void HostKernelThread::setBlockDim(const dim3 &blockDim) {
@@ -65,10 +64,8 @@ void HostKernelThread::setSharedBuffer(void *buffer) {
   m_sharedBuffer = buffer;
 }
 
-HostKernelThread::~HostKernelThread()
-{
-  if (m_thread && m_thread->joinable())
-  {
+HostKernelThread::~HostKernelThread() {
+  if (m_thread && m_thread->joinable()) {
     m_thread->join();
   }
 }
@@ -86,7 +83,9 @@ void HostKernelThread::run() {
   m_thread = std::make_shared<std::thread>(HostKernelThread::Execute, this);
 }
 
-std::thread::id HostKernelThread::get_id() const { return std::this_thread::get_id(); }
+std::thread::id HostKernelThread::get_id() const {
+  return std::this_thread::get_id();
+}
 
 void HostKernelThread::Execute(HostKernelThread *threadImpl) {
   const int gridSize = threadImpl->m_gridDim.x * threadImpl->m_gridDim.y;
