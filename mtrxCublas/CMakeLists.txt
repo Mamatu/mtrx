@@ -12,10 +12,10 @@ file(GLOB HOST_SRC "src/host/*.cpp")
 file(GLOB HOST_TESTS_SRC "tests/host/*.cpp")
 file(GLOB CU_SRC "src/*.cu")
 
-option(CUBLAS_BUILD_CUDA_PART "Compile cuda part of module" ON)
+option(CUBLAS_BUILD_DEVICE_PART "Compile device part of module" ON)
 option(CUBLAS_BUILD_HOST_PART "Compile host part of module" ON)
 
-if(${CUBLAS_BUILD_CUDA_PART})
+if(${CUBLAS_BUILD_DEVICE_PART})
   project(mtrxCublas CXX CUDA)
   # cubin mtrxCublas
   set (CUBIN_TARGET "libmtrxCuda.cubin")
