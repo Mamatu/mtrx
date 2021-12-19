@@ -13,8 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev libcublas10 nvidia-cuda-dev libcudart10.1
-      run: sudo apt-get update && sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev libcublas10 nvidia-cuda-dev libcudart10.1
+    - name: sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev cuda libcublas10 nvidia-cuda-dev libcudart10.1
+      run: sudo apt-get update && sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev cuda libcublas10 nvidia-cuda-dev libcudart10.1
     - name: make and run tests host part in sanitizer mode
       run: mkdir build_host_debug && cd build_host_debug && cmake -DCMAKE_BUILD_TYPE=Debug -DCUBLAS_BUILD_CUDA_PART:BOOL=OFF .. && make -j && cd .. && ./build_host_debug/mtrxCublas/mtrxHostCublasTests --gtest_shuffle
     - name: make and run tests host part in release mode
