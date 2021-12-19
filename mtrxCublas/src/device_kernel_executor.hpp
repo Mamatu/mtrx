@@ -28,12 +28,12 @@
 
 namespace mtrx {
 namespace fs = std::filesystem;
-class KernelExecutor : public IKernelExecutor {
+class DeviceKernelExecutor : public IKernelExecutor {
 public:
   using Strings = std::vector<std::string>;
   using Pathes = std::vector<fs::path>;
-  KernelExecutor();
-  virtual ~KernelExecutor();
+  DeviceKernelExecutor();
+  virtual ~DeviceKernelExecutor();
 
   static void Init();
 

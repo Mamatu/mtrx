@@ -29,10 +29,10 @@
 #include <stdio.h>
 #include <vector>
 
-#include "kernel_executor.hpp"
+#include "device_kernel_executor.hpp"
 
 namespace mtrx {
-void KernelExecutor::Init() {
+void DeviceKernelExecutor::Init() {
   static bool wasInit = false;
   if (wasInit == false) {
     wasInit = true;
@@ -40,31 +40,32 @@ void KernelExecutor::Init() {
   }
 }
 
-KernelExecutor::KernelExecutor() : m_image(nullptr), m_cuModule(nullptr) {}
+DeviceKernelExecutor::DeviceKernelExecutor()
+    : m_image(nullptr), m_cuModule(nullptr) {}
 
-void KernelExecutor::loadCuModule() {
+void DeviceKernelExecutor::loadCuModule() {
   if (nullptr != m_image && nullptr == m_cuModule) {
     printf("Load module from image = %p", m_image);
     handleStatus(cuModuleLoadData(&m_cuModule, m_image));
   }
 }
 
-void KernelExecutor::unloadCuModule() {
+void DeviceKernelExecutor::unloadCuModule() {
   if (m_cuModule != nullptr) {
     handleStatus(cuModuleUnload(m_cuModule));
     m_cuModule = nullptr;
   }
 }
 
-void KernelExecutor::unload() { unloadCuModule(); }
+void DeviceKernelExecutor::unload() { unloadCuModule(); }
 
-void KernelExecutor::setImage(void *image) {
+void DeviceKernelExecutor::setImage(void *image) {
   this->m_image = image;
   printf("image = %p", m_image);
   loadCuModule();
 }
 
-bool KernelExecutor::_run(const std::string &functionName) {
+bool DeviceKernelExecutor::_run(const std::string &functionName) {
   CUresult status = CUDA_SUCCESS;
 
   if (nullptr == m_image && m_path.length() == 0) {
@@ -104,12 +105,12 @@ bool KernelExecutor::_run(const std::string &functionName) {
   return status == 0;
 }
 
-KernelExecutor::~KernelExecutor() {
+DeviceKernelExecutor::~DeviceKernelExecutor() {
   unloadCuModule();
   releaseImage();
 }
 
-std::byte *KernelExecutor::Load(FILE *f) {
+std::byte *DeviceKernelExecutor::Load(FILE *f) {
   if (f) {
     fseek(f, 0, SEEK_END);
     long int size = ftell(f);
@@ -128,7 +129,7 @@ std::byte *KernelExecutor::Load(FILE *f) {
   return nullptr;
 }
 
-std::byte *KernelExecutor::Load(const fs::path &path) {
+std::byte *DeviceKernelExecutor::Load(const fs::path &path) {
   FILE *f = fopen(path.c_str(), "rb");
   if (f != nullptr) {
     auto *data = Load(f);
@@ -137,8 +138,9 @@ std::byte *KernelExecutor::Load(const fs::path &path) {
   return nullptr;
 }
 
-std::byte *KernelExecutor::Load(const fs::path &path,
-                                const KernelExecutor::Pathes &sysPathes) {
+std::byte *
+DeviceKernelExecutor::Load(const fs::path &path,
+                           const DeviceKernelExecutor::Pathes &sysPathes) {
   for (size_t idx = 0; idx < sysPathes.size(); ++idx) {
     auto p = sysPathes[idx] / path;
     printf("%s", p.c_str());
@@ -153,7 +155,7 @@ std::byte *KernelExecutor::Load(const fs::path &path,
   return nullptr;
 }
 
-KernelExecutor::Pathes KernelExecutor::GetSysPathes() {
+DeviceKernelExecutor::Pathes DeviceKernelExecutor::GetSysPathes() {
   Pathes pathes;
   auto split = [&pathes](const std::string &env, char c) {
     size_t pindex = 0;
@@ -171,7 +173,7 @@ KernelExecutor::Pathes KernelExecutor::GetSysPathes() {
   return pathes;
 }
 
-bool KernelExecutor::load(const fs::path &path) {
+bool DeviceKernelExecutor::load(const fs::path &path) {
   const auto &pathes = GetSysPathes();
   setImage(Load(path, pathes));
   if (m_image == nullptr) {
@@ -182,7 +184,7 @@ bool KernelExecutor::load(const fs::path &path) {
   return m_image != nullptr;
 }
 
-bool KernelExecutor::load(const KernelExecutor::Pathes &pathes) {
+bool DeviceKernelExecutor::load(const DeviceKernelExecutor::Pathes &pathes) {
   for (const auto &path : pathes) {
     if (load(path)) {
       return true;
@@ -191,7 +193,7 @@ bool KernelExecutor::load(const KernelExecutor::Pathes &pathes) {
   return false;
 }
 
-void KernelExecutor::releaseImage() {
+void DeviceKernelExecutor::releaseImage() {
   if (m_image != nullptr) {
     printf("~image = %p", m_image);
     std::byte *data = static_cast<std::byte *>(m_image);
