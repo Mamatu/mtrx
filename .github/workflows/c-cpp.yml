@@ -16,9 +16,9 @@ jobs:
     - name: sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev nvidia-cuda-toolkit libcublas10 nvidia-cuda-dev libcudart10.1
       run: sudo apt-get update && sudo apt-get install libgtest-dev libgmock-dev google-mock libspdlog-dev nvidia-cuda-toolkit libcublas10 nvidia-cuda-dev libcudart10.1
     - name: make and run tests host part in sanitizer mode
-      run: mkdir build_host_debug && cd build_host_debug && cmake -DCMAKE_BUILD_TYPE=Debug -DCUBLAS_BUILD_CUDA_PART:BOOL=OFF .. && make -j && cd .. && ./build_host_debug/mtrxCublas/mtrxHostCublasTests --gtest_shuffle
+      run: mkdir build_host_debug && cd build_host_debug && cmake -DCMAKE_BUILD_TYPE=Debug -DCUBLAS_BUILD_DEVICE_PART:BOOL=OFF .. && make -j && cd .. && ./build_host_debug/mtrxCublas/mtrxHostCublasTests --gtest_shuffle
     - name: make and run tests host part in release mode
-      run: mkdir build_host_release && cd build_host_release && cmake -DCMAKE_BUILD_TYPE=Release -DCUBLAS_BUILD_CUDA_PART:BOOL=OFF .. && make -j && cd .. && ./build_host_release/mtrxCublas/mtrxHostCublasTests --gtest_shuffle
+      run: mkdir build_host_release && cd build_host_release && cmake -DCMAKE_BUILD_TYPE=Release -DCUBLAS_BUILD_DEVICE_PART:BOOL=OFF .. && make -j && cd .. && ./build_host_release/mtrxCublas/mtrxHostCublasTests --gtest_shuffle
     - name: make debug device part
       run: mkdir build_device_debug && cd build_device_debug && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j
     - name: make release device part
