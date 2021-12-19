@@ -22,7 +22,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <limits.h>
+#include <memory>
 #include <sstream>
 #include <stdio.h>
 #include <vector>
@@ -113,9 +115,14 @@ std::byte *KernelExecutor::Load(FILE *f) {
     long int size = ftell(f);
     fseek(f, 0, SEEK_SET);
     std::byte *data = new std::byte[size];
+    std::unique_ptr<std::byte, std::function<void(std::byte *)>> dataUnique(
+        data, [](std::byte *buffer) { delete[] buffer; });
     memset(data, 0, size);
-    fread(data, size, 1, f);
+    ssize_t returnedSize = fread(data, size, 1, f);
     fclose(f);
+    if (returnedSize != size) {
+      return nullptr;
+    }
     return data;
   }
   return nullptr;
