@@ -21,6 +21,8 @@
 
 #include "ikernel_executor.hpp"
 #include <memory>
+#include <spdlog/details/os.h>
+#include <spdlog/spdlog.h>
 #include <sstream>
 
 #ifndef MTRX_HOST_CUDA_BUILD
@@ -52,6 +54,7 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
 
   std::stringstream cukernelName;
   cukernelName << "CUDA" << kernelName;
+  spdlog::info("Run kernel '{}'", cukernelName.str());
   ke->run(cukernelName.str());
 }
 

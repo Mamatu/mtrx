@@ -17,6 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "device_kernel_executor.hpp"
+#include "sys_pathes_parser.hpp"
 #include <filesystem>
 #include <mtrxCublas/status_handler.hpp>
 
@@ -25,11 +27,10 @@
 #include <functional>
 #include <limits.h>
 #include <memory>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <stdio.h>
 #include <vector>
-
-#include "device_kernel_executor.hpp"
 
 namespace mtrx {
 void DeviceKernelExecutor::Init() {
@@ -41,12 +42,18 @@ void DeviceKernelExecutor::Init() {
 }
 
 DeviceKernelExecutor::DeviceKernelExecutor()
-    : m_image(nullptr), m_cuModule(nullptr) {}
+    : m_image(nullptr), m_cuModule(nullptr) {
+  Init();
+  load(CUBIN_FILE_NAME);
+}
 
 void DeviceKernelExecutor::loadCuModule() {
   if (nullptr != m_image && nullptr == m_cuModule) {
-    printf("Load module from image = %p", m_image);
+    spdlog::info("Load module from image {}", m_image);
     handleStatus(cuModuleLoadData(&m_cuModule, m_image));
+  } else if (!m_path.empty() && nullptr == m_cuModule) {
+    spdlog::info("Load module from path {}", m_path);
+    handleStatus(cuModuleLoad(&m_cuModule, m_path.c_str()));
   }
 }
 
@@ -61,18 +68,18 @@ void DeviceKernelExecutor::unload() { unloadCuModule(); }
 
 void DeviceKernelExecutor::setImage(void *image) {
   this->m_image = image;
-  printf("image = %p", m_image);
   loadCuModule();
+}
+
+bool DeviceKernelExecutor::setImageFromPathes(const Pathes &pathes) {
+  const auto &path = pathes[0];
+  spdlog::info("Load module from path {}", path);
+  m_path = path;
+  return true;
 }
 
 bool DeviceKernelExecutor::_run(const std::string &functionName) {
   CUresult status = CUDA_SUCCESS;
-
-  if (nullptr == m_image && m_path.length() == 0) {
-    printf("Error: image and path not defined. Function name: %s. Probalby was "
-           "not executed load() method. \n",
-           functionName.c_str());
-  }
 
   loadCuModule();
 
@@ -110,18 +117,20 @@ DeviceKernelExecutor::~DeviceKernelExecutor() {
   releaseImage();
 }
 
-std::byte *DeviceKernelExecutor::Load(FILE *f) {
+char *DeviceKernelExecutor::Load(FileUnique &&f) {
   if (f) {
-    fseek(f, 0, SEEK_END);
-    long int size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    std::byte *data = new std::byte[size];
-    std::unique_ptr<std::byte, std::function<void(std::byte *)>> dataUnique(
-        data, [](std::byte *buffer) { delete[] buffer; });
-    memset(data, 0, size);
-    ssize_t returnedSize = fread(data, size, 1, f);
-    fclose(f);
-    if (returnedSize != size) {
+    fseek(f.get(), 0, SEEK_END);
+    size_t size = ftell(f.get());
+    fseek(f.get(), 0, SEEK_SET);
+    char *data = static_cast<char *>(malloc(size * sizeof(char)));
+    memset(data, 0, size * sizeof(char));
+    spdlog::info("Reading file with size {}", size);
+    constexpr size_t count = 1;
+    size_t returnedCount = fread(data, size * sizeof(char), count, f.get());
+    if (returnedCount != count) {
+      spdlog::error("Returned elements count {0} is not equal to expected {1} "
+                    "Error: {2} Eof: {3}",
+                    returnedCount, count, ferror(f.get()), feof(f.get()));
       return nullptr;
     }
     return data;
@@ -129,62 +138,57 @@ std::byte *DeviceKernelExecutor::Load(FILE *f) {
   return nullptr;
 }
 
-std::byte *DeviceKernelExecutor::Load(const fs::path &path) {
-  FILE *f = fopen(path.c_str(), "rb");
-  if (f != nullptr) {
-    auto *data = Load(f);
-    return data;
-  }
-  return nullptr;
+char *DeviceKernelExecutor::Load(const fs::path &path) {
+  std::unique_ptr<FILE, std::function<void(FILE *)>> f(
+      fopen(path.c_str(), "rb"), [](FILE *f) { fclose(f); });
+  return Load(std::move(f));
 }
 
-std::byte *
-DeviceKernelExecutor::Load(const fs::path &path,
-                           const DeviceKernelExecutor::Pathes &sysPathes) {
+char *DeviceKernelExecutor::Load(const fs::path &path,
+                                 const mtrx::Pathes &sysPathes) {
+  spdlog::info("Sys pathes to find cubin {}", sysPathes);
   for (size_t idx = 0; idx < sysPathes.size(); ++idx) {
-    auto p = sysPathes[idx] / path;
-    printf("%s", p.c_str());
-    if (!fs::exists(p)) {
-      return nullptr;
-    }
-    auto *data = Load(p);
-    if (data != nullptr) {
-      return data;
+    auto sysPath = sysPathes[idx];
+    fs::path p = fs::path(sysPathes[idx]) / path;
+    spdlog::info("Trying to load {}", p.u8string());
+    if (fs::exists(p)) {
+      auto *data = Load(p);
+      if (data != nullptr) {
+        spdlog::info("Loaded {}", p.u8string());
+        return data;
+      } else {
+        spdlog::warn("None data loaded from {}", p.u8string());
+      }
+    } else {
+      spdlog::warn("Path {} doesn't exist", p.u8string());
     }
   }
   return nullptr;
 }
 
-DeviceKernelExecutor::Pathes DeviceKernelExecutor::GetSysPathes() {
+Pathes DeviceKernelExecutor::FindExist(const fs::path &path,
+                                       const Pathes &sysPathes) {
   Pathes pathes;
-  auto split = [&pathes](const std::string &env, char c) {
-    size_t pindex = 0;
-    size_t index = 0;
-    while ((index = env.find(c, pindex)) != std::string::npos) {
-      pathes.push_back(env.substr(pindex, index - pindex));
+  for (size_t idx = 0; idx < sysPathes.size(); ++idx) {
+    auto sysPath = sysPathes[idx];
+    fs::path p = fs::path(sysPathes[idx]) / path;
+    if (fs::exists(p)) {
+      pathes.push_back(p);
     }
-    pathes.push_back(env.substr(pindex, env.length() - pindex));
-  };
-  char *cenvs = ::getenv(ENVIRONMENT_VARIABLE);
-  if (cenvs != nullptr) {
-    std::string env = cenvs;
-    split(env, ':');
   }
   return pathes;
 }
 
-bool DeviceKernelExecutor::load(const fs::path &path) {
-  const auto &pathes = GetSysPathes();
-  setImage(Load(path, pathes));
-  if (m_image == nullptr) {
-    printf("Cannot load %s.", path.c_str());
-  } else {
-    printf("Loaded %s.", path.c_str());
-  }
-  return m_image != nullptr;
+Pathes DeviceKernelExecutor::GetSysPathes() {
+  return mtrx::loadSysPathes(ENVIRONMENT_VARIABLE);
 }
 
-bool DeviceKernelExecutor::load(const DeviceKernelExecutor::Pathes &pathes) {
+bool DeviceKernelExecutor::load(const fs::path &path) {
+  const auto &pathes = FindExist(path, GetSysPathes());
+  return setImageFromPathes(pathes);
+}
+
+bool DeviceKernelExecutor::load(const mtrx::Pathes &pathes) {
   for (const auto &path : pathes) {
     if (load(path)) {
       return true;
@@ -195,9 +199,7 @@ bool DeviceKernelExecutor::load(const DeviceKernelExecutor::Pathes &pathes) {
 
 void DeviceKernelExecutor::releaseImage() {
   if (m_image != nullptr) {
-    printf("~image = %p", m_image);
-    std::byte *data = static_cast<std::byte *>(m_image);
-    delete[] data;
+    free(m_image);
     m_image = nullptr;
   }
 }

@@ -70,7 +70,7 @@ int IKernelExecutor::getParamsCount() const { return m_paramsCount; }
 bool IKernelExecutor::run(const std::string &function) {
 
   auto params_str = toString(getRunParams());
-  SPDLOG_INFO("{} {}\n{}", __FILE__, __func__, params_str);
+  spdlog::info("{} {} '{}'\n{}", __FILE__, __func__, function, params_str);
 
   bool status = _run(function);
   reset();

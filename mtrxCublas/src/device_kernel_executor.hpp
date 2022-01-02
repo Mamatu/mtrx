@@ -21,8 +21,11 @@
 #define MTRX_CUBLAS_KERNEL_EXECUTOR_H
 
 #include "ikernel_executor.hpp"
+#include "sys_pathes_parser.hpp"
+
 #include <cuda.h>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,13 +34,12 @@ namespace fs = std::filesystem;
 class DeviceKernelExecutor : public IKernelExecutor {
 public:
   using Strings = std::vector<std::string>;
-  using Pathes = std::vector<fs::path>;
   DeviceKernelExecutor();
   virtual ~DeviceKernelExecutor();
 
   static void Init();
 
-  bool load(const fs::path &path);
+  bool load(const fs::path &path = "");
   bool load(const Pathes &pathes);
 
   void unload();
@@ -46,7 +48,11 @@ protected:
   bool _run(const std::string &functionName) override;
 
 private:
-  void *m_image;
+  constexpr static auto ENVIRONMENT_VARIABLE = "MTRX_CUBIN_PATHES";
+  constexpr static auto CUBIN_FILE_NAME = "libmtrxCuda.cubin";
+  using FileUnique = std::unique_ptr<FILE, std::function<void(FILE *)>>;
+
+  void *m_image = nullptr;
   std::string m_path;
   CUmodule m_cuModule;
 
@@ -54,12 +60,13 @@ private:
   void unloadCuModule();
   void loadCuModule();
   void setImage(void *image);
+  bool setImageFromPathes(const Pathes &pathes);
 
-  static std::byte *Load(FILE *f);
-  static std::byte *Load(const fs::path &path);
-  static std::byte *Load(const fs::path &path, const Pathes &sysPathes);
+  static char *Load(FileUnique &&f);
+  static char *Load(const fs::path &path);
+  static char *Load(const fs::path &path, const Pathes &sysPathes);
+  static Pathes FindExist(const fs::path &path, const Pathes &sysPathes);
 
-  constexpr static auto ENVIRONMENT_VARIABLE = "MTRX_CUBIN_PATHES";
   static Pathes GetSysPathes();
 };
 } // namespace mtrx

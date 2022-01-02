@@ -19,24 +19,22 @@
 
 #include "cuda_scale_trace.hpp"
 
-__global__ void CUDAKernel_SF_scaleTrace(int m, int n, float* matrix, int lda, float factor)
+extern "C" __global__ void CUDAKernel_SF_scaleTrace(int m, int n, float* matrix, int lda, float factor)
 {
   cuda_SF_scaleTrace(m, n, matrix, lda, factor);
 }
 
-__global__ void CUDAKernel_SD_scaleTrace(int m, int n, double* matrix, int lda, double factor)
+extern "C" __global__ void CUDAKernel_SD_scaleTrace(int m, int n, double* matrix, int lda, double factor)
 {
   cuda_SD_scaleTrace(m, n, matrix, lda, factor);
 }
 
-__global__ void CUDAKernel_CF_scaleTrace(int m, int n, cuComplex* matrix, int lda, cuComplex factor)
+extern "C" __global__ void CUDAKernel_CF_scaleTrace(int m, int n, cuComplex* matrix, int lda, cuComplex factor)
 {
   cuda_CF_scaleTrace(m, n, matrix, lda, factor);
 }
 
-__global__ void CUDAKernel_CD_scaleTrace(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
+extern "C" __global__ void CUDAKernel_CD_scaleTrace(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
 {
   cuda_CD_scaleTrace(m, n, matrix, lda, factor);
 }
-
-

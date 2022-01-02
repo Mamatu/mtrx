@@ -319,7 +319,11 @@ TEST_F(DeviceCublasTests,
 
     cublas.syr(FillMode::UPPER, outputUpper, &alpha, ValueType::FLOAT, v);
     cublas.syr(FillMode::LOWER, outputLower, &alpha, ValueType::FLOAT, v);
+
     cublas.syr(FillMode::FULL, outputFull, &alpha, ValueType::FLOAT, v);
+    float scaleFactor = 0.5f;
+    cublas.scaleTrace(outputFull, static_cast<void *>(&scaleFactor),
+                      ValueType::FLOAT);
 
     cublas.copyKernelToHost(h_outputUpper.data(), outputUpper);
     cublas.copyKernelToHost(h_outputLower.data(), outputLower);
@@ -341,7 +345,7 @@ TEST_F(DeviceCublasTests,
   }
 }
 
-TEST_F(DeviceCublasTests, qrDecomposition) {
+TEST_F(DeviceCublasTests, DISABLED_qrDecomposition) {
   std::array<float, 9> h_a = {12, 6, -4, -51, 167, 24, 4, -68, -41};
   std::array<float, 9> expected_r = {14, 0, 0, 21, 175, 0, -14, -17, 35};
   std::array<float, 9> h_r = {0, 0, 0, 0, 0, 0, 0, 0, 0};
