@@ -21,6 +21,7 @@
 #define MTRX_CORE_STATUS_HANDLER_HPP
 
 #include <functional>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
@@ -35,6 +36,7 @@ void handleStatus(
     std::stringstream sstream;
     sstream << "Error: " << toString(status);
     callback(status);
+    spdlog::error(sstream.str());
     throw std::runtime_error(sstream.str());
   };
 
