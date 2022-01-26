@@ -26,14 +26,14 @@ if(${CUBLAS_BUILD_DEVICE_PART})
   # mtrxCublas library
   add_library(mtrxCublas STATIC ${SRC})
   target_link_libraries(mtrxCublas mtrxCore stdc++fs cuda cudart cublas cublasLt spdlog)
-  target_include_directories(mtrxCublas PUBLIC include /opt/nvidia/hpc_sdk/Linux_x86_64/20.7/cuda/10.1/include)
+  target_include_directories(mtrxCublas PUBLIC include /opt/nvidi/hpc_sdk/Linux_x86_64/20.7/cuda/10.1/include)
 
   # device tests
   set (TEST_DEVICE_TARGET "mtrxDeviceCublasTests")
   include(GoogleTest)
   add_executable(${TEST_DEVICE_TARGET} ${SRC} ${DEVICE_TESTS_SRC})
   target_link_libraries(${TEST_DEVICE_TARGET} mtrxCore stdc++fs cuda cudart cublas cublasLt gtest_main gtest gmock pthread spdlog)
-  target_include_directories(${TEST_DEVICE_TARGET} PUBLIC include src)
+  target_include_directories(${TEST_DEVICE_TARGET} PUBLIC include tests/include src)
   gtest_add_tests(TARGET ${TEST_DEVICE_TARGET})
 endif()
 

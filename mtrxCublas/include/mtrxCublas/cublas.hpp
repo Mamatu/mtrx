@@ -89,6 +89,9 @@ protected:
   void _scaleTrace(Mem *matrix, Mem *factor) override;
   void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) override;
 
+  void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) override;
+  void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) override;
+
   std::string _toStr(Mem *mem) override;
 
 private:

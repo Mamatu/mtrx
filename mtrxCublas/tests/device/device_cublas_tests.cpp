@@ -1,6 +1,9 @@
+#include "mtrxCublas/mem_is_equal_to.hpp"
 #include <gtest/gtest.h>
+#include <math.h>
 #include <mtrxCore/types.hpp>
 #include <mtrxCublas/cublas.hpp>
+#include <mtrxCublas/matchers.hpp>
 
 #include <array>
 
@@ -16,6 +19,29 @@ TEST_F(DeviceCublasTests, create_destroy) {
   try {
     mtrx::Cublas cublas;
     auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+    cublas.destroy(mem);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
+  }
+}
+
+TEST_F(DeviceCublasTests, create_checkvalues_destroy) {
+  try {
+    mtrx::Cublas cublas;
+    std::vector<float> h_mem(4 * 5, -1.f);
+
+    auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+
+    for (size_t idx = 0; idx < h_mem.size(); ++idx) {
+      EXPECT_EQ(-1.f, h_mem[idx]);
+    }
+
+    cublas.copyKernelToHost(h_mem.data(), mem);
+
+    for (size_t idx = 0; idx < h_mem.size(); ++idx) {
+      EXPECT_EQ(0.f, h_mem[idx]);
+    }
+
     cublas.destroy(mem);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
@@ -321,9 +347,6 @@ TEST_F(DeviceCublasTests,
     cublas.syr(FillMode::LOWER, outputLower, &alpha, ValueType::FLOAT, v);
 
     cublas.syr(FillMode::FULL, outputFull, &alpha, ValueType::FLOAT, v);
-    float scaleFactor = 0.5f;
-    cublas.scaleTrace(outputFull, static_cast<void *>(&scaleFactor),
-                      ValueType::FLOAT);
 
     cublas.copyKernelToHost(h_outputUpper.data(), outputUpper);
     cublas.copyKernelToHost(h_outputLower.data(), outputLower);
@@ -345,30 +368,143 @@ TEST_F(DeviceCublasTests,
   }
 }
 
-TEST_F(DeviceCublasTests, DISABLED_qrDecomposition) {
+TEST_F(DeviceCublasTests, qrDecomposition2x2) {
+  std::array<float, 4> h_a = {-1, 1, 3, 5};
+  std::array<float, 4> h_a_1 = {0, 0, 0, 0};
+  const float sqrt2 = sqrt(2.);
+  std::array<float, 4> expected_r = {sqrt2, 0, sqrt2, 4 * sqrt2};
+  std::array<float, 4> h_r = {0, 0, 0, 0};
+  std::array<float, 4> expected_q = {-1.f / sqrt2, 1.f / sqrt2, 1.f / sqrt2,
+                                     1.f / sqrt2};
+  std::array<float, 4> h_q = {0, 0, 0, 0};
+  std::array<float, 4> h_I = {-1, -1, -1, -1};
+  std::array<float, 4> expected_h_I = {1, 0, 0, 1};
+  try {
+    mtrx::Cublas cublas;
+
+    Mem *a = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    Mem *a1 = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    Mem *q = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    Mem *r = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    Mem *I = cublas.createMatrix(2, 2, ValueType::FLOAT);
+
+    cublas.copyHostToKernel(a, h_a.data());
+    cublas.copyHostToKernel(r, h_r.data());
+    cublas.copyHostToKernel(q, h_q.data());
+    cublas.qrDecomposition(q, r, a);
+    cublas.copyKernelToHost(h_q.data(), q);
+    cublas.copyKernelToHost(h_r.data(), r);
+
+    float alpha = 1.f;
+    float beta = 0.f;
+    cublas.gemm(I, &alpha, ValueType::FLOAT, Operation::OP_T, q,
+                Operation::OP_N, q, &beta, ValueType::FLOAT);
+
+    cublas.matrixMul(a1, q, r);
+    cublas.copyKernelToHost(h_a_1.data(), a1);
+    cublas.copyKernelToHost(h_I.data(), I);
+
+    EXPECT_THAT(a, MemIsEqual<float>(a1, &cublas));
+
+    cublas.destroy(a);
+    cublas.destroy(a1);
+    cublas.destroy(q);
+    cublas.destroy(r);
+    cublas.destroy(I);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
+  }
+  for (size_t idx = 0; idx < expected_r.size(); ++idx) {
+    EXPECT_FLOAT_EQ(expected_r[idx], h_r[idx]) << "idx: " << idx;
+  }
+  for (size_t idx = 0; idx < expected_q.size(); ++idx) {
+    EXPECT_FLOAT_EQ(expected_q[idx], h_q[idx]) << "idx: " << idx;
+  }
+  EXPECT_EQ(h_a, h_a_1);
+  for (size_t c = 0; c < 2; ++c) {
+    for (size_t r = 0; r < 2; ++r) {
+      EXPECT_FLOAT_EQ(expected_h_I[r * 2 + c], h_I[r * 2 + c]) << c << ","
+                                                               << "r";
+    }
+  }
+}
+
+TEST_F(DeviceCublasTests, qrDecomposition3x3) {
   std::array<float, 9> h_a = {12, 6, -4, -51, 167, 24, 4, -68, -41};
   std::array<float, 9> expected_r = {14, 0, 0, 21, 175, 0, -14, -17, 35};
   std::array<float, 9> h_r = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<float, 9> expected_q = {
+      6.f / 7.f,  3.f / 7.f,     -2.f / 7.f,  -69.f / 175.f, 158.f / 175.f,
+      6.f / 35.f, -58.f / 175.f, 6.f / 175.f, -33.f / 35.f};
+  std::array<float, 9> h_q = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<float, 9> h_a_1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   try {
     mtrx::Cublas cublas;
 
     Mem *a = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    Mem *a1 = cublas.createMatrix(3, 3, ValueType::FLOAT);
     Mem *q = cublas.createMatrix(3, 3, ValueType::FLOAT);
     Mem *r = cublas.createMatrix(3, 3, ValueType::FLOAT);
 
     cublas.copyHostToKernel(a, h_a.data());
     cublas.copyHostToKernel(r, h_r.data());
+    cublas.copyHostToKernel(q, h_q.data());
     cublas.qrDecomposition(q, r, a);
+    cublas.matrixMul(a1, q, r);
+    cublas.copyKernelToHost(h_q.data(), q);
     cublas.copyKernelToHost(h_r.data(), r);
+    cublas.copyKernelToHost(h_a_1.data(), a1);
 
     cublas.destroy(a);
+    cublas.destroy(a1);
     cublas.destroy(q);
     cublas.destroy(r);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
   }
+
+  EXPECT_EQ(h_a, h_a_1);
+
   for (size_t idx = 0; idx < expected_r.size(); ++idx) {
     EXPECT_EQ(expected_r[idx], h_r[idx]) << "idx: " << idx;
+  }
+
+  for (size_t idx = 0; idx < expected_q.size(); ++idx) {
+    EXPECT_EQ(expected_q[idx], h_q[idx]) << "idx: " << idx;
+  }
+}
+
+TEST_F(DeviceCublasTests, copyKernelToKernel) {
+  try {
+    std::array<float, 9> h_a = {12, 6, -4, -51, 167, 24, 4, -68, -41};
+    std::array<float, 9> h_b = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::array<float, 9> h_c = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    mtrx::Cublas cublas;
+
+    Mem *a = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    Mem *b = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    Mem *c = cublas.createMatrix(3, 3, ValueType::FLOAT);
+
+    auto *I = cublas.createIdentityMatrix(3, 3, ValueType::FLOAT);
+
+    cublas.copyHostToKernel(a, h_a.data());
+
+    cublas.matrixMul(b, a, I);
+    cublas.matrixMul(c, I, a);
+
+    cublas.copyKernelToHost(h_b.data(), b);
+    cublas.copyKernelToHost(h_c.data(), c);
+    for (size_t idx = 0; idx < h_a.size(); ++idx) {
+      EXPECT_EQ(h_a[idx], h_b[idx]) << "idx: " << idx;
+      EXPECT_EQ(h_a[idx], h_c[idx]) << "idx: " << idx;
+    }
+
+    cublas.destroy(a);
+    cublas.destroy(b);
+    cublas.destroy(c);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
   }
 }
 } // namespace mtrx

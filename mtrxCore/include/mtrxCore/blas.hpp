@@ -52,6 +52,7 @@ public:
 
   size_t getRows(const Mem *mem) const;
   size_t getColumns(const Mem *mem) const;
+  ValueType getValueType(const Mem *mem) const;
 
   void copyHostToKernel(Mem *mem, void *array);
   void copyKernelToHost(void *array, Mem *mem);
@@ -105,6 +106,9 @@ public:
 
   void scaleTrace(Mem *matrix, Mem *factor);
   void scaleTrace(Mem *matrix, void *factor, ValueType factorType);
+
+  void tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda);
+  void trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP);
 
   std::string toStr(Mem *mem);
 
@@ -167,11 +171,14 @@ protected:
   virtual void _scaleTrace(Mem *matrix, Mem *factor) = 0;
   virtual void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) = 0;
 
+  virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
+  virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;
+
   virtual std::string _toStr(Mem *mem) = 0;
 
 private:
   std::vector<Mem *> m_mems;
-  std::map<const Mem *, std::pair<size_t, size_t>> m_matrices;
+  std::map<const Mem *, std::tuple<size_t, size_t, ValueType>> m_matrices;
 
   void checkMem(const Mem *mem) const;
   void checkMems(const Mems &mems) const;

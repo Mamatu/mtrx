@@ -44,13 +44,14 @@ Mem *Blas::createMatrix(size_t rows, size_t columns, ValueType valueType) {
   }
 
   auto *mem = create(rows * columns, valueType);
-  m_matrices[mem] = std::make_pair(rows, columns);
+  m_matrices[mem] = std::make_tuple(rows, columns, valueType);
 
   return mem;
 }
 
 Mem *Blas::createMatrix(size_t rows, size_t columns, Mem *mem) {
   const size_t count = getCount(mem);
+  auto valueType = getValueType(mem);
   if (count != rows * columns) {
     std::stringstream sstream;
     sstream << "Matrix dim is not equal to count. Dim:(";
@@ -59,7 +60,7 @@ Mem *Blas::createMatrix(size_t rows, size_t columns, Mem *mem) {
     throw std::runtime_error(sstream.str());
   }
 
-  m_matrices[mem] = std::make_pair(rows, columns);
+  m_matrices[mem] = std::make_tuple(rows, columns, valueType);
   return mem;
 }
 
@@ -93,7 +94,7 @@ size_t Blas::getRows(const Mem *mem) const {
   if (it == m_matrices.end()) {
     return getCount(mem);
   }
-  return it->second.first;
+  return std::get<0>(it->second);
 }
 
 size_t Blas::getColumns(const Mem *mem) const {
@@ -101,7 +102,15 @@ size_t Blas::getColumns(const Mem *mem) const {
   if (it == m_matrices.end()) {
     return 1;
   }
-  return it->second.second;
+  return std::get<1>(it->second);
+}
+
+ValueType Blas::getValueType(const Mem *mem) const {
+  const auto it = m_matrices.find(mem);
+  if (it == m_matrices.end()) {
+    return ValueType::NOT_DEFINED;
+  }
+  return std::get<2>(it->second);
 }
 
 void Blas::copyHostToKernel(Mem *mem, void *array) {
@@ -295,6 +304,18 @@ void Blas::scaleTrace(Mem *matrix, Mem *factor) {
 void Blas::scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
   checkMem(matrix);
   _scaleTrace(matrix, factor, factorType);
+}
+
+void Blas::tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+  checkMem(AP);
+  checkMem(A);
+  _tpttr(uplo, n, AP, A, lda);
+}
+
+void Blas::trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+  checkMem(AP);
+  checkMem(A);
+  _trttp(uplo, n, A, lda, AP);
 }
 
 std::string Blas::toStr(Mem *mem) {
