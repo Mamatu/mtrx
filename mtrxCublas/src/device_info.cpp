@@ -18,6 +18,7 @@
  */
 
 #include "device_info.hpp"
+#include "mtrxCublas/status_handler.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <limits.h>
@@ -76,9 +77,9 @@ void DeviceInfo::setDevice(CUdevice cuDevice) {
 void DeviceInfo::initDeviceProperties() {
   if (!m_initialized) {
     for (size_t idx = 0; idx < 9; ++idx) {
-      int result;
-      /*printCuError */ (
-          cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice));
+      int result = -1;
+      CUresult curesult = cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice);
+      handleStatus(curesult);
       m_values[idx] = result;
     }
 
