@@ -1,5 +1,5 @@
-#ifndef MTRX_MEM_VALUES_ARE_EQUAL_TO_HPP
-#define MTRX_MEM_VALUES_ARE_EQUAL_TO_HPP
+#ifndef MTRX_MEM_VALUES_ARE_EQUAL_TO_VALUE_HPP
+#define MTRX_MEM_VALUES_ARE_EQUAL_TO_VALUE_HPP
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -11,13 +11,13 @@ using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 
 template <typename T, typename Blas>
-class MemValuesAreEqualToMatcher : public MatcherInterface<mtrx::Mem *> {
+class MemValuesAreEqualToValueMatcher : public MatcherInterface<mtrx::Mem *> {
   T m_value;
   Blas *m_blas;
   T m_delta;
 
 public:
-  MemValuesAreEqualToMatcher(T value, Blas *blas, T delta)
+  MemValuesAreEqualToValueMatcher(T value, Blas *blas, T delta)
       : m_value(value), m_blas(blas), m_delta(delta) {}
 
   virtual bool MatchAndExplain(mtrx::Mem *mem,

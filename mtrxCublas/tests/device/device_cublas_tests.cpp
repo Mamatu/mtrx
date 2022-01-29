@@ -1,4 +1,3 @@
-#include "mtrxCublas/mem_is_equal_to.hpp"
 #include <gtest/gtest.h>
 #include <math.h>
 #include <mtrxCore/types.hpp>
@@ -378,8 +377,8 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
                                      1.f / sqrt2};
   std::array<float, 4> h_q = {0, 0, 0, 0};
   std::array<float, 4> h_I = {-1, -1, -1, -1};
-  std::array<float, 4> expected_h_I = {1, 0, 0, 1};
   try {
+    constexpr auto delta = 0.000001f;
     mtrx::Cublas cublas;
 
     Mem *a = cublas.createMatrix(2, 2, ValueType::FLOAT);
@@ -404,7 +403,9 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
     cublas.copyKernelToHost(h_a_1.data(), a1);
     cublas.copyKernelToHost(h_I.data(), I);
 
-    EXPECT_THAT(a, MemIsEqual<float>(a1, &cublas));
+    EXPECT_THAT(a, MemIsEqualTo(a1, &cublas, delta));
+    EXPECT_THAT(r, MemIsEqualTo(expected_r, &cublas, delta));
+    EXPECT_THAT(q, MemIsEqualTo(expected_q, &cublas, delta));
 
     cublas.destroy(a);
     cublas.destroy(a1);
@@ -413,19 +414,6 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
     cublas.destroy(I);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
-  }
-  for (size_t idx = 0; idx < expected_r.size(); ++idx) {
-    EXPECT_FLOAT_EQ(expected_r[idx], h_r[idx]) << "idx: " << idx;
-  }
-  for (size_t idx = 0; idx < expected_q.size(); ++idx) {
-    EXPECT_FLOAT_EQ(expected_q[idx], h_q[idx]) << "idx: " << idx;
-  }
-  EXPECT_EQ(h_a, h_a_1);
-  for (size_t c = 0; c < 2; ++c) {
-    for (size_t r = 0; r < 2; ++r) {
-      EXPECT_FLOAT_EQ(expected_h_I[r * 2 + c], h_I[r * 2 + c]) << c << ","
-                                                               << "r";
-    }
   }
 }
 
