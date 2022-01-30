@@ -419,14 +419,18 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
 
 TEST_F(DeviceCublasTests, qrDecomposition3x3) {
   std::array<float, 9> h_a = {12, 6, -4, -51, 167, 24, 4, -68, -41};
-  std::array<float, 9> expected_r = {14, 0, 0, 21, 175, 0, -14, -17, 35};
-  std::array<float, 9> h_r = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-  std::array<float, 9> expected_q = {
-      6.f / 7.f,  3.f / 7.f,     -2.f / 7.f,  -69.f / 175.f, 158.f / 175.f,
+
+  std::array<float, 9> h_r __attribute__((unused)) = {14, 0, 0, 21, 175, 0, -14, -70, 35};
+  std::array<float, 9> h_q __attribute__((unused)) = {
+      6.f / 7.f,  3.f / 7.f, -2.f / 7.f,  -69.f / 175.f, 158.f / 175.f,
       6.f / 35.f, -58.f / 175.f, 6.f / 175.f, -33.f / 35.f};
-  std::array<float, 9> h_q = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-  std::array<float, 9> h_a_1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+  std::array<float, 9> he_r = {-14, 0, 0, -21, -175, 0, 14, 70, -35};
+  std::array<float, 9> he_q = {
+      -6.f / 7.f,  -3.f / 7.f, 2.f / 7.f,  69.f / 175.f, -158.f / 175.f,
+      -6.f / 35.f, 58.f / 175.f, -6.f / 175.f, 33.f / 35.f};
   try {
+    constexpr auto delta = 0.0001f;
     mtrx::Cublas cublas;
 
     Mem *a = cublas.createMatrix(3, 3, ValueType::FLOAT);
@@ -435,13 +439,12 @@ TEST_F(DeviceCublasTests, qrDecomposition3x3) {
     Mem *r = cublas.createMatrix(3, 3, ValueType::FLOAT);
 
     cublas.copyHostToKernel(a, h_a.data());
-    cublas.copyHostToKernel(r, h_r.data());
-    cublas.copyHostToKernel(q, h_q.data());
     cublas.qrDecomposition(q, r, a);
     cublas.matrixMul(a1, q, r);
-    cublas.copyKernelToHost(h_q.data(), q);
-    cublas.copyKernelToHost(h_r.data(), r);
-    cublas.copyKernelToHost(h_a_1.data(), a1);
+
+    EXPECT_THAT(r, MemIsEqualTo(he_r, &cublas, delta));
+    EXPECT_THAT(q, MemIsEqualTo(he_q, &cublas, delta));
+    EXPECT_THAT(a1, MemIsEqualTo(a, &cublas, delta));
 
     cublas.destroy(a);
     cublas.destroy(a1);
@@ -449,16 +452,6 @@ TEST_F(DeviceCublasTests, qrDecomposition3x3) {
     cublas.destroy(r);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
-  }
-
-  EXPECT_EQ(h_a, h_a_1);
-
-  for (size_t idx = 0; idx < expected_r.size(); ++idx) {
-    EXPECT_EQ(expected_r[idx], h_r[idx]) << "idx: " << idx;
-  }
-
-  for (size_t idx = 0; idx < expected_q.size(); ++idx) {
-    EXPECT_EQ(expected_q[idx], h_q[idx]) << "idx: " << idx;
   }
 }
 
