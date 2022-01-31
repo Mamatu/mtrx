@@ -31,15 +31,13 @@
 #include "host/host_kernel_executor.hpp"
 #endif
 
-std::shared_ptr<mtrx::IKernelExecutor> g_kernelExecutor;
-
 std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor() {
 #ifndef MTRX_HOST_CUDA_BUILD
-  g_kernelExecutor = std::make_shared<mtrx::DeviceKernelExecutor>();
+  auto kernelExecutor = std::make_shared<mtrx::DeviceKernelExecutor>();
 #else
-  g_kernelExecutor = std::make_shared<mtrx::HostKernelExecutor>();
+  auto kernelExecutor = std::make_shared<mtrx::HostKernelExecutor>();
 #endif
-  return g_kernelExecutor;
+  return kernelExecutor;
 }
 
 template <typename T>
