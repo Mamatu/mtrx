@@ -29,7 +29,7 @@
 
 namespace mtrx {
 void handleStatus(cublasStatus_t status);
-void handleStatus(CUresult curesult);
+void handleStatus(CUresult curesult, bool noException = false);
 void handleStatus(cudaError_t error);
 } // namespace mtrx
 

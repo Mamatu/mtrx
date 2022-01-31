@@ -33,7 +33,7 @@
 
 namespace mtrx {
 std::string toString(cudaError_t error);
-std::string toString(CUresult curesult);
+std::string toString(CUresult curesult, bool noException = false);
 std::string toString(cublasStatus_t status);
 
 template<typename T>

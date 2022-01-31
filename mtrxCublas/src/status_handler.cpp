@@ -29,7 +29,12 @@ void handleStatus(cublasStatus_t status) {
   handleStatus(status, CUBLAS_STATUS_SUCCESS);
 }
 
-void handleStatus(CUresult curesult) { handleStatus(curesult, CUDA_SUCCESS); }
+void handleStatus(CUresult curesult, bool noException) {
+  auto _toString = [noException](CUresult result) {
+    return toString(result, noException);
+  };
+  handleStatus(curesult, CUDA_SUCCESS, std::move(_toString));
+}
 
 void handleStatus(cudaError_t error) { handleStatus(error, cudaSuccess); }
 } // namespace mtrx

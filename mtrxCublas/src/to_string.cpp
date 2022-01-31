@@ -28,10 +28,13 @@ namespace mtrx {
 
 std::string toString(cudaError_t error) { return cudaGetErrorName(error); }
 
-std::string toString(CUresult curesult) {
+std::string toString(CUresult curesult, bool noException) {
   const char *pStr = nullptr;
   auto getResult = cuGetErrorString(curesult, &pStr);
-  handleStatus(getResult);
+  if (!noException)
+  {
+    handleStatus(getResult, true);
+  }
   std::string errorName;
   if (pStr) {
     errorName = pStr;
