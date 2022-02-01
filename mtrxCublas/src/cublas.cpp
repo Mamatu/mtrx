@@ -161,7 +161,7 @@ Cublas::~Cublas() {
   try {
     handleStatus(cublasDestroy(m_handle));
   } catch (const std::exception &ex) {
-    fprintf(stderr, "%s\n", ex.what());
+    spdlog::error("%s", ex.what());
     abort();
   }
 }
@@ -906,18 +906,11 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
       cublas->syr(FillMode::FULL, Aux1, &tau, valueType, v);
 
       cublas->subtract(Aux2, I, Aux1);
-      spdlog::info("Aux2 {}", cublas->toStr(Aux2));
-      spdlog::info("I {}", cublas->toStr(I));
-      spdlog::info("Aux1 {}", cublas->toStr(Aux1));
-      spdlog::info("tau {}", tau);
-      spdlog::info("v {}", cublas->toStr(v));
       if (i > 0) {
         cublas->matrixMul(Aux1, I, H);
         cublas->matrixMul(H, Aux1, Aux2);
-        spdlog::info("H {}", cublas->toStr(H));
       } else {
         cublas->matrixMul(H, I, Aux2);
-        spdlog::info("H {}", cublas->toStr(H));
       }
     }
 
@@ -932,11 +925,6 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
     T beta = static_cast<T>(0);
     cublas->gemm(r[j], &alpha, valueType, Operation::OP_T, q[j],
                  Operation::OP_N, a[j], &beta, valueType);
-    spdlog::info("r[j] {}", cublas->toStr(r[j]));
-    spdlog::info("alpha {}", alpha);
-    spdlog::info("q[j] {}", cublas->toStr(q[j]));
-    spdlog::info("a[j] {}", cublas->toStr(a[j]));
-    spdlog::info("beta {}", beta);
   }
 
   for (const auto *tau : taus) {
