@@ -31,8 +31,7 @@ std::string toString(cudaError_t error) { return cudaGetErrorName(error); }
 std::string toString(CUresult curesult, bool noException) {
   const char *pStr = nullptr;
   auto getResult = cuGetErrorString(curesult, &pStr);
-  if (!noException)
-  {
+  if (!noException) {
     handleStatus(getResult, true);
   }
   std::string errorName;

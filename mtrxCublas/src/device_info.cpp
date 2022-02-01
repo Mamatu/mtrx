@@ -78,7 +78,8 @@ void DeviceInfo::initDeviceProperties() {
   if (!m_initialized) {
     for (size_t idx = 0; idx < 9; ++idx) {
       int result = -1;
-      CUresult curesult = cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice);
+      CUresult curesult =
+          cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice);
       handleStatus(curesult);
       m_values[idx] = result;
     }

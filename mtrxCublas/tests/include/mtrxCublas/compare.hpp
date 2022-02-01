@@ -2,52 +2,48 @@
 #define MTRX_COMPARE_HPP
 
 #include "cuComplex.h"
-#include <sstream>
-#include <type_traits>
 #include <mtrxCore/blas.hpp>
 #include <mtrxCublas/to_string.hpp>
+#include <sstream>
+#include <type_traits>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace mtrx {
 
-template<typename T>
-void check(ValueType valueType)
-{
-  auto throw_exception = [valueType]()
-  {
+template <typename T> void check(ValueType valueType) {
+  auto throw_exception = [valueType]() {
     std::stringstream sstream;
-    sstream << "ValueType is " << toString(valueType) << " but T is not " << toString<T>();
+    sstream << "ValueType is " << toString(valueType) << " but T is not "
+            << toString<T>();
     throw std::runtime_error(sstream.str());
   };
 
-  if (ValueType::FLOAT == valueType && !std::is_same<T, float>::value)
-  {
+  if (ValueType::FLOAT == valueType && !std::is_same<T, float>::value) {
     throw_exception();
   }
 
-  if (ValueType::DOUBLE == valueType && !std::is_same<T, double>::value)
-  {
+  if (ValueType::DOUBLE == valueType && !std::is_same<T, double>::value) {
     throw_exception();
   }
 
-  if (ValueType::FLOAT_COMPLEX == valueType && !std::is_same<T, cuComplex>::value)
-  {
+  if (ValueType::FLOAT_COMPLEX == valueType &&
+      !std::is_same<T, cuComplex>::value) {
     throw_exception();
   }
 
-  if (ValueType::DOUBLE_COMPLEX == valueType && !std::is_same<T, cuDoubleComplex>::value)
-  {
+  if (ValueType::DOUBLE_COMPLEX == valueType &&
+      !std::is_same<T, cuDoubleComplex>::value) {
     throw_exception();
   }
 }
 
-template<typename Container, typename Blas>
-bool compare(Container&& container, Mem* mem, Blas* blas, typename Container::value_type delta)
-{
+template <typename Container, typename Blas>
+bool compare(Container &&container, Mem *mem, Blas *blas,
+             typename Container::value_type delta) {
   auto type = blas->getValueType(mem);
-  check<typename Container::value_type> (type);
+  check<typename Container::value_type>(type);
 
   size_t count = blas->getCount(mem);
 
@@ -69,14 +65,12 @@ bool compare(Container&& container, Mem* mem, Blas* blas, typename Container::va
   return true;
 }
 
-template<typename Blas, typename T>
-bool compare(Mem* mem1, Mem* mem2, Blas* blas, T delta)
-{
+template <typename Blas, typename T>
+bool compare(Mem *mem1, Mem *mem2, Blas *blas, T delta) {
   auto type1 = blas->getValueType(mem1);
   auto type2 = blas->getValueType(mem2);
 
-  if (type1 != type2)
-  {
+  if (type1 != type2) {
     std::stringstream sstream;
     sstream << toString(type1) << " != " << toString(type2);
     throw std::runtime_error(sstream.str());

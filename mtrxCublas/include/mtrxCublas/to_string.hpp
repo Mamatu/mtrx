@@ -36,23 +36,17 @@ std::string toString(cudaError_t error);
 std::string toString(CUresult curesult, bool noException = false);
 std::string toString(cublasStatus_t status);
 
-template<typename T>
-std::string toString()
-{
-  if (std::is_same<T, float>::value)
-  {
+template <typename T> std::string toString() {
+  if (std::is_same<T, float>::value) {
     return "float";
   }
-  if (std::is_same<T, double>::value)
-  {
+  if (std::is_same<T, double>::value) {
     return "double";
   }
-  if (std::is_same<T, cuComplex>::value)
-  {
+  if (std::is_same<T, cuComplex>::value) {
     return "cuComplex";
   }
-  if (std::is_same<T, cuDoubleComplex>::value)
-  {
+  if (std::is_same<T, cuDoubleComplex>::value) {
     return "cuDoubleComplex";
   }
   return "";

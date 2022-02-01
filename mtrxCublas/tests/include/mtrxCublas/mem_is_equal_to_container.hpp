@@ -1,10 +1,10 @@
 #ifndef MTRX_MEM_IS_EQUAL_TO_CONTAINER_HPP
 #define MTRX_MEM_IS_EQUAL_TO_CONTAINER_HPP
 
-#include <mtrxCore/blas.hpp>
+#include "compare.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "compare.hpp"
+#include <mtrxCore/blas.hpp>
 
 namespace mtrx {
 
@@ -20,10 +20,11 @@ protected:
   T m_delta = 0;
 
 public:
-  MemIsEqualToContainerMatcher(Container&& container, Blas *blas, T delta)
-      : m_container(std::forward<Container>(container)), m_blas(blas), m_delta(delta) {}
+  MemIsEqualToContainerMatcher(Container &&container, Blas *blas, T delta)
+      : m_container(std::forward<Container>(container)), m_blas(blas),
+        m_delta(delta) {}
 
-  virtual bool MatchAndExplain(Mem* mem, MatchResultListener *listener) const {
+  virtual bool MatchAndExplain(Mem *mem, MatchResultListener *listener) const {
 
     std::string container_str = toString(std::forward<Container>(m_container));
     std::string mem_str = m_blas->toStr(mem);

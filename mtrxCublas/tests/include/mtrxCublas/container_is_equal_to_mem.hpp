@@ -1,10 +1,10 @@
 #ifndef MTRX_CONTAINER_IS_EQUAL_TO_MEM_HPP
 #define MTRX_CONTAINER_IS_EQUAL_TO_MEM_HPP
 
-#include <mtrxCore/blas.hpp>
+#include "compare.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "compare.hpp"
+#include <mtrxCore/blas.hpp>
 
 namespace mtrx {
 
@@ -23,7 +23,8 @@ public:
   ContainerIsEqualToMemMatcher(Mem *mem, Blas *blas, T delta)
       : m_mem(mem), m_blas(blas), m_delta(delta) {}
 
-  virtual bool MatchAndExplain(Container&& container, MatchResultListener *listener) const {
+  virtual bool MatchAndExplain(Container &&container,
+                               MatchResultListener *listener) const {
 
     std::string container_str = toString(std::forward<Container>(container));
     std::string mem_str = m_blas->toStr(m_mem);

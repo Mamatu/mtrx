@@ -29,10 +29,15 @@
 #include <mtrxCore/to_string.hpp>
 
 namespace mtrx {
-template <typename Status, typename ToStringT = std::function<std::string(Status)>>
+template <typename Status,
+          typename ToStringT = std::function<std::string(Status)>>
 void handleStatus(
-    Status status, const Status success, ToStringT &&toStringT = [](Status status) -> std::string { return toString(status); }) {
-  auto exception = [toStringT = std::forward<ToStringT>(toStringT)](auto status) {
+    Status status, const Status success,
+    ToStringT &&toStringT = [](Status status) -> std::string {
+      return toString(status);
+    }) {
+  auto exception = [toStringT =
+                        std::forward<ToStringT>(toStringT)](auto status) {
     std::stringstream sstream;
     sstream << "Error: " << toStringT(status);
     spdlog::error(sstream.str());

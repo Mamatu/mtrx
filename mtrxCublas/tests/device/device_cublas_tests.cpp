@@ -420,15 +420,16 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
 TEST_F(DeviceCublasTests, qrDecomposition3x3) {
   std::array<float, 9> h_a = {12, 6, -4, -51, 167, 24, 4, -68, -41};
 
-  std::array<float, 9> h_r __attribute__((unused)) = {14, 0, 0, 21, 175, 0, -14, -70, 35};
+  std::array<float, 9> h_r
+      __attribute__((unused)) = {14, 0, 0, 21, 175, 0, -14, -70, 35};
   std::array<float, 9> h_q __attribute__((unused)) = {
-      6.f / 7.f,  3.f / 7.f, -2.f / 7.f,  -69.f / 175.f, 158.f / 175.f,
+      6.f / 7.f,  3.f / 7.f,     -2.f / 7.f,  -69.f / 175.f, 158.f / 175.f,
       6.f / 35.f, -58.f / 175.f, 6.f / 175.f, -33.f / 35.f};
 
   std::array<float, 9> he_r = {-14, 0, 0, -21, -175, 0, 14, 70, -35};
-  std::array<float, 9> he_q = {
-      -6.f / 7.f,  -3.f / 7.f, 2.f / 7.f,  69.f / 175.f, -158.f / 175.f,
-      -6.f / 35.f, 58.f / 175.f, -6.f / 175.f, 33.f / 35.f};
+  std::array<float, 9> he_q = {-6.f / 7.f,   -3.f / 7.f,     2.f / 7.f,
+                               69.f / 175.f, -158.f / 175.f, -6.f / 35.f,
+                               58.f / 175.f, -6.f / 175.f,   33.f / 35.f};
   try {
     constexpr auto delta = 0.0001f;
     mtrx::Cublas cublas;

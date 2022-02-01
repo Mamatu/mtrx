@@ -21,8 +21,8 @@
 #define MTRX_CORE_TO_STRING_HPP
 
 #include "types.hpp"
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace mtrx {
 inline std::string toString(ValueType valueType) {
@@ -75,16 +75,12 @@ inline std::string toString(SideMode sideMode) {
   return "NOT_DEFINED";
 }
 
-template<typename Container>
-std::string toString(Container&& container)
-{
+template <typename Container> std::string toString(Container &&container) {
   std::stringstream sstream;
   sstream << "[";
-  for (size_t idx = 0; idx < container.size(); ++idx)
-  {
+  for (size_t idx = 0; idx < container.size(); ++idx) {
     sstream << container[idx];
-    if (idx < container.size() - 1)
-    {
+    if (idx < container.size() - 1) {
       sstream << ", ";
     }
   }
