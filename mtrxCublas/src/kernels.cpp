@@ -19,7 +19,9 @@
 
 #include "kernels.hpp"
 
+#include "driver_types.h"
 #include "ikernel_executor.hpp"
+#include "mtrxCublas/status_handler.hpp"
 #include <memory>
 #include <spdlog/details/os.h>
 #include <spdlog/spdlog.h>
@@ -30,6 +32,8 @@
 #else
 #include "host/host_kernel_executor.hpp"
 #endif
+
+namespace mtrx {
 
 std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor() {
 #ifndef MTRX_HOST_CUDA_BUILD
@@ -73,3 +77,83 @@ void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
                           cuDoubleComplex factor) {
   Kernel_scaleTrace(__func__, dim, matrix, lda, factor);
 }
+
+template <typename T>
+void Kernel_isULTriangular(bool &is, const std::string &kernelName, int rows,
+                           int columns, T *matrix, int lda, T delta) {
+  auto ke = GetKernelExecutor();
+  ke->setThreadsCount(rows, columns, 1);
+  ke->setBlocksCount(1, 1, 1);
+
+  // ToDo: d_is should be optimized
+  bool *d_is = nullptr;
+  handleStatus(cudaMalloc(&d_is, sizeof(bool)));
+
+  void *params[] = {&d_is, &rows, &columns, &matrix, &lda, &delta};
+  ke->setParams(const_cast<const void **>(params));
+
+  std::stringstream cukernelName;
+  cukernelName << "CUDA" << kernelName;
+  spdlog::info("Run kernel '{}'", cukernelName.str());
+  ke->run(cukernelName.str());
+
+  handleStatus(cudaMemcpy(&is, &d_is, sizeof(bool), cudaMemcpyDeviceToHost));
+  handleStatus(cudaFree(d_is));
+}
+
+bool Kernel_SF_isUpperTriangular(int rows, int columns, float *matrix, int lda,
+                                 float delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_SD_isUpperTriangular(int rows, int columns, double *matrix, int lda,
+                                 double delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_CF_isUpperTriangular(int rows, int columns, cuComplex *matrix,
+                                 int lda, cuComplex delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_CD_isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                 int lda, cuDoubleComplex delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_SF_isLowerTriangular(int rows, int columns, float *matrix, int lda,
+                                 float delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_SD_isLowerTriangular(int rows, int columns, double *matrix, int lda,
+                                 double delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_CF_isLowerTriangular(int rows, int columns, cuComplex *matrix,
+                                 int lda, cuComplex delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+
+bool Kernel_CD_isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                 int lda, cuDoubleComplex delta) {
+  bool is = false;
+  Kernel_isULTriangular(is, __func__, rows, columns, matrix, lda, delta);
+  return is;
+}
+} // namespace mtrx

@@ -17,7 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cuda_scale_trace.hpp"
+#include "kernels/cuda_scale_trace.hpp"
+#include "kernels/cuda_is_ul_triangular.hpp"
 
 extern "C" __global__ void CUDAKernel_SF_scaleTrace(int m, int n, float* matrix, int lda, float factor)
 {

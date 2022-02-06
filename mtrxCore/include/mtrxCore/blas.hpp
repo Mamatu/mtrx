@@ -54,6 +54,8 @@ public:
   size_t getColumns(const Mem *mem) const;
   ValueType getValueType(const Mem *mem) const;
 
+  std::pair<size_t, size_t> getDims(const Mem *mem) const;
+
   void copyHostToKernel(Mem *mem, void *array);
   void copyKernelToHost(void *array, Mem *mem);
 
@@ -91,6 +93,11 @@ public:
 
   void qrDecomposition(Mem *q, Mem *r, Mem *a);
   void qrDecomposition(Mems &q, Mems &r, Mems &a);
+
+  void shiftQRIteration(Mem *H, Mem *Q);
+
+  bool isUpperTriangular(Mem *m);
+  bool isLowerTriangular(Mem *m);
 
   /**
    * @brief matrix-matrix addition/transposition
@@ -152,6 +159,11 @@ protected:
 
   virtual void _qrDecomposition(Mem *q, Mem *r, Mem *a) = 0;
   virtual void _qrDecomposition(Mems &q, Mems &r, Mems &a) = 0;
+
+  virtual void _shiftQRIteration(Mem *H, Mem *Q);
+
+  virtual bool _isUpperTriangular(Mem *m);
+  virtual bool _isLowerTriangular(Mem *m);
 
   virtual void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a,
                      Mem *beta, Operation transb, Mem *b) = 0;

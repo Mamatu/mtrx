@@ -113,6 +113,12 @@ ValueType Blas::getValueType(const Mem *mem) const {
   return std::get<2>(it->second);
 }
 
+std::pair<size_t, size_t> Blas::getDims(const Mem *mem) const {
+  auto rows = getRows(mem);
+  auto columns = getColumns(mem);
+  return std::make_pair(rows, columns);
+}
+
 void Blas::copyHostToKernel(Mem *mem, void *array) {
   checkMem(mem);
   _copyHostToKernel(mem, array);
@@ -263,6 +269,23 @@ void Blas::qrDecomposition(Mems &q, Mems &r, Mems &a) {
   checkMems(a);
 
   _qrDecomposition(q, r, a);
+}
+
+void Blas::shiftQRIteration(Mem *H, Mem *Q) {
+  checkMem(H);
+  checkMem(Q);
+
+  _shiftQRIteration(H, Q);
+}
+
+bool Blas::isUpperTriangular(Mem *m) {
+  checkMem(m);
+  return _isUpperTriangular(m);
+}
+
+bool Blas::isLowerTriangular(Mem *m) {
+  checkMem(m);
+  return _isLowerTriangular(m);
 }
 
 void Blas::geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,

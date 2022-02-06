@@ -25,6 +25,7 @@
 #include <exception>
 
 #include <cuda_runtime.h>
+#include <mtrxCore/checkers.hpp>
 #include <mtrxCublas/cublas.hpp>
 
 #include <map>
@@ -954,6 +955,47 @@ void Cublas::_qrDecomposition(Mems &q, Mems &r, Mems &a) {
     cublas_qrDecomposition<double>(this, q, r, a, valueType);
   }
 }
+
+void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
+  bool status = false;
+
+  const auto dims = getDims(H);
+  const auto _dims = getDims(H);
+
+  auto rows = dims.first;
+  auto columns = dims.second;
+
+  const auto valueType = H->valueType;
+  const auto _valueType = Q->valueType;
+
+  check(valueType, _valueType, "H", "Q");
+  check(dims, _dims, "H", "Q");
+
+  Mem *aux_Q = createIdentityMatrix(rows, columns, valueType);
+  Mem *aux_Q1 = createMatrix(rows, columns, valueType);
+
+  Mem *aux_R = createMatrix(rows, columns, valueType);
+
+  Mem *ioQ = Q;
+
+  status = isUpperTriangular(io.H);
+
+  for (uint idx = 0; idx < iargs.count && status == false; ++idx) {
+    _qr(ioQ, aux_R, io.H, iargs.thInfo, iargs.context, iargs.memType, capi,
+        iargs.qrtype);
+
+    capi.dotProduct(io.H, aux_R, ioQ);
+    capi.dotProduct(aux_Q1, ioQ, aux_Q);
+    aux_swapPointers(&aux_Q1, &aux_Q);
+    status = capi.isUpperTriangular(io.H);
+  }
+
+  copyKernelMatrixToKernelMatrix(io.Q, aux_Q);
+}
+
+bool Cublas::_isUpperTriangular(Mem *m) {}
+
+bool Cublas::_isLowerTriangular(Mem *m) {}
 
 void Cublas::_geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
                    Operation transb, Mem *b) {

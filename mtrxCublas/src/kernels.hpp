@@ -22,11 +22,32 @@
 
 #include <cuComplex.h>
 
+namespace mtrx {
+
 void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor);
 void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor);
 void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda,
                           cuComplex factor);
 void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
                           cuDoubleComplex factor);
+
+bool Kernel_SF_isUpperTriangular(int rows, int columns, float *matrix, int lda,
+                                 float delta);
+bool Kernel_SD_isUpperTriangular(int rows, int columns, double *matrix, int lda,
+                                 double delta);
+bool Kernel_CF_isUpperTriangular(int rows, int columns, cuComplex *matrix,
+                                 int lda, cuComplex delta);
+bool Kernel_CD_isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                 int lda, cuDoubleComplex delta);
+
+bool Kernel_SF_isLowerTriangular(int rows, int columns, float *matrix, int lda,
+                                 float delta);
+bool Kernel_SD_isLowerTriangular(int rows, int columns, double *matrix, int lda,
+                                 double delta);
+bool Kernel_CF_isLowerTriangular(int rows, int columns, cuComplex *matrix,
+                                 int lda, cuComplex delta);
+bool Kernel_CD_isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                 int lda, cuDoubleComplex delta);
+} // namespace mtrx
 
 #endif

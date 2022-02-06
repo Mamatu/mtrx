@@ -77,6 +77,11 @@ protected:
   void _qrDecomposition(Mem *q, Mem *r, Mem *a) override;
   void _qrDecomposition(Mems &q, Mems &r, Mems &a) override;
 
+  void _shiftQRIteration(Mem *H, Mem *Q) override;
+
+  bool _isUpperTriangular(Mem *m) override;
+  bool _isLowerTriangular(Mem *m) override;
+
   void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
              Operation transb, Mem *b) override;
   void _geam(Mem *output, void *alpha, ValueType alphaType, Operation transa,
