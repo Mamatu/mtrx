@@ -17,8 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "kernels/cuda_scale_trace.hpp"
-#include "kernels/cuda_is_ul_triangular.hpp"
+#include "cuda_scale_trace.hpp"
+#include "cuda_is_ul_triangular.hpp"
 
 extern "C" __global__ void CUDAKernel_SF_scaleTrace(int m, int n, float* matrix, int lda, float factor)
 {
@@ -38,4 +38,44 @@ extern "C" __global__ void CUDAKernel_CF_scaleTrace(int m, int n, cuComplex* mat
 extern "C" __global__ void CUDAKernel_CD_scaleTrace(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
 {
   cuda_CD_scaleTrace(m, n, matrix, lda, factor);
+}
+
+extern "C" __global__ void CUDAKernel_SF_isUpperTriangular(int m, int n, float* matrix, int lda, float delta)
+{
+  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_SD_isUpperTriangular(int m, int n, double* matrix, int lda, double delta)
+{
+  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_CF_isUpperTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta)
+{
+  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_CD_isUpperTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta)
+{
+  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_SF_isLowerTriangular(int m, int n, float* matrix, int lda, float delta)
+{
+  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_SD_isLowerTriangular(int m, int n, double* matrix, int lda, double delta)
+{
+  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_CF_isLowerTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta)
+{
+  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+}
+
+extern "C" __global__ void CUDAKernel_CD_isLowerTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta)
+{
+  cuda_isLowerTriangular(m, n, matrix, lda, delta);
 }

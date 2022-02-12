@@ -160,10 +160,10 @@ protected:
   virtual void _qrDecomposition(Mem *q, Mem *r, Mem *a) = 0;
   virtual void _qrDecomposition(Mems &q, Mems &r, Mems &a) = 0;
 
-  virtual void _shiftQRIteration(Mem *H, Mem *Q);
+  virtual void _shiftQRIteration(Mem *H, Mem *Q) = 0;
 
-  virtual bool _isUpperTriangular(Mem *m);
-  virtual bool _isLowerTriangular(Mem *m);
+  virtual bool _isUpperTriangular(Mem *m) = 0;
+  virtual bool _isLowerTriangular(Mem *m) = 0;
 
   virtual void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a,
                      Mem *beta, Operation transb, Mem *b) = 0;

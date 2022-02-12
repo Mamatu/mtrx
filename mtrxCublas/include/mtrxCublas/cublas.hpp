@@ -28,7 +28,7 @@ namespace mtrx {
 class Cublas : public Blas {
 public:
   Cublas();
-  virtual ~Cublas() override;
+  ~Cublas() override;
 
 protected:
   std::vector<int> _getDevices() const override;
@@ -101,6 +101,7 @@ protected:
 
 private:
   cublasHandle_t m_handle;
+  void swap(Mem **a, Mem **b);
 };
 } // namespace mtrx
 

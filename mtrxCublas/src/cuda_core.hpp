@@ -27,7 +27,7 @@
 
 #define HOST_INIT()
 
-#define HOST_INIT_SHARED(type, buffer)                                         \
+#define GENERIC_INIT_SHARED(type, buffer)                                      \
   extern __shared__ type mtrx_shared_buffer[];                                 \
   buffer = mtrx_shared_buffer;
 
@@ -51,7 +51,7 @@
   blockDim = blockDim;   /*for suppress warning*/                              \
   gridDim = gridDim;     /*for suppress warning*/
 
-#define HOST_INIT_SHARED(type, buffer)                                         \
+#define GENERIC_INIT_SHARED(type, buffer)                                      \
   buffer = static_cast<type *>(mtrx::ThreadIdx::GetThreadIdx());
 
 #define HOST_CODE(code) code

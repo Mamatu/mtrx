@@ -19,6 +19,7 @@
 
 #include "cuComplex.h"
 #include "driver_types.h"
+#include "mtrxCore/status_handler.hpp"
 #include "mtrxCore/types.hpp"
 #include <cassert>
 #include <cstdio>
@@ -32,6 +33,7 @@
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCublas/status_handler.hpp>
 #include <mtrxCublas/to_string.hpp>
+#include <spdlog/fmt/bundled/format-inl.h>
 #include <spdlog/spdlog.h>
 #include <type_traits>
 
@@ -978,24 +980,161 @@ void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
 
   Mem *ioQ = Q;
 
-  status = isUpperTriangular(io.H);
+  status = isUpperTriangular(H);
 
-  for (uint idx = 0; idx < iargs.count && status == false; ++idx) {
-    _qr(ioQ, aux_R, io.H, iargs.thInfo, iargs.context, iargs.memType, capi,
-        iargs.qrtype);
+  while (status == false) {
+    qrDecomposition(ioQ, aux_R, H);
 
-    capi.dotProduct(io.H, aux_R, ioQ);
-    capi.dotProduct(aux_Q1, ioQ, aux_Q);
-    aux_swapPointers(&aux_Q1, &aux_Q);
-    status = capi.isUpperTriangular(io.H);
+    matrixMul(H, aux_R, ioQ);
+    matrixMul(aux_Q1, ioQ, aux_Q);
+    swap(&aux_Q1, &aux_Q);
+    status = isUpperTriangular(H);
   }
-
-  copyKernelMatrixToKernelMatrix(io.Q, aux_Q);
 }
 
-bool Cublas::_isUpperTriangular(Mem *m) {}
+void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
+                              size_t lda) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
 
-bool Cublas::_isLowerTriangular(Mem *m) {}
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto factorType = matrix->valueType;
+
+  auto malloc = [](void **devPtr, size_t size) {
+    handleStatus(cudaMalloc(devPtr, size));
+  };
+
+  auto free = [](void *devPtr) { handleStatus(cudaFree(devPtr)); };
+
+  auto memcpyKernelToHost = [](void *dst, const void *src, size_t count) {
+    handleStatus(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
+  };
+
+  Alloc alloc = {std::move(malloc), std::move(free),
+                 std::move(memcpyKernelToHost)};
+
+  switch (factorType) {
+  case ValueType::FLOAT:
+    result = Kernel_SF_isUpperTriangular(
+        alloc, rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    break;
+  case ValueType::DOUBLE:
+    result = Kernel_SD_isUpperTriangular(
+        alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+    break;
+  case ValueType::FLOAT_COMPLEX:
+    result = Kernel_CF_isUpperTriangular(
+        alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        cuComplex());
+    break;
+  case ValueType::DOUBLE_COMPLEX:
+    result = Kernel_CD_isUpperTriangular(
+        alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+        lda, cuDoubleComplex());
+    break;
+  case ValueType::NOT_DEFINED:
+    throw std::runtime_error("Not defined value type");
+  };
+}
+
+void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix) {
+
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto lda = rows;
+  cublas_isUpperTriangular(result, cublas, matrix, lda);
+}
+
+bool Cublas::_isUpperTriangular(Mem *m) {
+  bool result = false;
+  cublas_isUpperTriangular(result, this, m);
+  return result;
+}
+
+void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
+                              size_t lda) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto factorType = matrix->valueType;
+
+  auto malloc = [](void **devPtr, size_t size) {
+    handleStatus(cudaMalloc(devPtr, size));
+  };
+
+  auto free = [](void *devPtr) { handleStatus(cudaFree(devPtr)); };
+
+  auto memcpyKernelToHost = [](void *dst, const void *src, size_t count) {
+    handleStatus(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
+  };
+
+  Alloc alloc = {std::move(malloc), std::move(free),
+                 std::move(memcpyKernelToHost)};
+
+  switch (factorType) {
+  case ValueType::FLOAT:
+    result = Kernel_SF_isLowerTriangular(
+        alloc, rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    break;
+  case ValueType::DOUBLE:
+    result = Kernel_SD_isLowerTriangular(
+        alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+    break;
+  case ValueType::FLOAT_COMPLEX:
+    result = Kernel_CF_isLowerTriangular(
+        alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        cuComplex());
+    break;
+  case ValueType::DOUBLE_COMPLEX:
+    result = Kernel_CD_isLowerTriangular(
+        alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+        lda, cuDoubleComplex());
+    break;
+  case ValueType::NOT_DEFINED:
+    throw std::runtime_error("Not defined value type");
+  };
+}
+
+void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto lda = rows;
+  cublas_isLowerTriangular(result, cublas, matrix, lda);
+}
+
+bool Cublas::_isLowerTriangular(Mem *m) {
+  bool result = false;
+  cublas_isLowerTriangular(result, this, m);
+  return result;
+}
 
 void Cublas::_geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
                    Operation transb, Mem *b) {
@@ -1321,4 +1460,11 @@ std::string Cublas::_toStr(Mem *mem) {
   throw std::runtime_error("Not supported type");
   return "";
 }
+
+void Cublas::swap(Mem **a, Mem **b) {
+  Mem *temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
 } // namespace mtrx
