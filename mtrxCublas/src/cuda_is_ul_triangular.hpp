@@ -32,8 +32,9 @@ __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
                                        int lda, T delta) {
   HOST_CODE(spdlog::set_level(spdlog::level::debug);)
   HOST_INIT();
-  extern __shared__ int reduceBuffer[];
-  // GENERIC_INIT_SHARED(int, reduceBuffer);
+
+  int* reduceBuffer = nullptr;
+  GENERIC_INIT_SHARED(int, reduceBuffer);
 
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -54,8 +55,9 @@ __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
                                        int lda, T delta) {
   HOST_CODE(spdlog::set_level(spdlog::level::debug);)
   HOST_INIT();
-  extern __shared__ int reduceBuffer[];
-  // GENERIC_INIT_SHARED(int, reduceBuffer);
+
+  int* reduceBuffer = nullptr;
+  GENERIC_INIT_SHARED(int, reduceBuffer);
 
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
