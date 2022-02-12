@@ -24,9 +24,6 @@
 #include "cuda_math_utils.hpp"
 #include "cuda_reduce.hpp"
 
-/**
- * @tparam IsHigher = function which takes args (a, b) and checks if a > b
- */
 template <typename T>
 __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
                                        int lda, T delta) {
@@ -47,9 +44,6 @@ __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
   cuda_reduce<int>(rows, columns, reduceBuffer);
 }
 
-/**
- * @tparam IsLower = function which takes args (a, b) and checks if a < b
- */
 template <typename T>
 __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
                                        int lda, T delta) {
