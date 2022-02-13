@@ -37,6 +37,7 @@
 #include <spdlog/spdlog.h>
 #include <type_traits>
 
+#include "cuda_alloc.hpp"
 #include "kernels.hpp"
 
 namespace mtrx {
@@ -1005,37 +1006,27 @@ void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
   }
 
   auto factorType = matrix->valueType;
-
-  auto malloc = [](void **devPtr, size_t size) {
-    handleStatus(cudaMalloc(devPtr, size));
-  };
-
-  auto free = [](void *devPtr) { handleStatus(cudaFree(devPtr)); };
-
-  auto memcpyKernelToHost = [](void *dst, const void *src, size_t count) {
-    handleStatus(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
-  };
-
-  Alloc alloc = {std::move(malloc), std::move(free),
-                 std::move(memcpyKernelToHost)};
+  CudaAlloc alloc;
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = Kernel_SF_isUpperTriangular(
-        alloc, rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    result = Kernel_SF_isUpperTriangular(&alloc, rows, columns,
+                                         reinterpret_cast<float *>(matrix->ptr),
+                                         lda, 0.f);
     break;
   case ValueType::DOUBLE:
     result = Kernel_SD_isUpperTriangular(
-        alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+        &alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda,
+        0.);
     break;
   case ValueType::FLOAT_COMPLEX:
     result = Kernel_CF_isUpperTriangular(
-        alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
     result = Kernel_CD_isUpperTriangular(
-        alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+        &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
         lda, cuDoubleComplex());
     break;
   case ValueType::NOT_DEFINED:
@@ -1077,37 +1068,27 @@ void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
   }
 
   auto factorType = matrix->valueType;
-
-  auto malloc = [](void **devPtr, size_t size) {
-    handleStatus(cudaMalloc(devPtr, size));
-  };
-
-  auto free = [](void *devPtr) { handleStatus(cudaFree(devPtr)); };
-
-  auto memcpyKernelToHost = [](void *dst, const void *src, size_t count) {
-    handleStatus(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
-  };
-
-  Alloc alloc = {std::move(malloc), std::move(free),
-                 std::move(memcpyKernelToHost)};
+  CudaAlloc alloc;
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = Kernel_SF_isLowerTriangular(
-        alloc, rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    result = Kernel_SF_isLowerTriangular(&alloc, rows, columns,
+                                         reinterpret_cast<float *>(matrix->ptr),
+                                         lda, 0.f);
     break;
   case ValueType::DOUBLE:
     result = Kernel_SD_isLowerTriangular(
-        alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+        &alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda,
+        0.);
     break;
   case ValueType::FLOAT_COMPLEX:
     result = Kernel_CF_isLowerTriangular(
-        alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
     result = Kernel_CD_isLowerTriangular(
-        alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+        &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
         lda, cuDoubleComplex());
     break;
   case ValueType::NOT_DEFINED:
