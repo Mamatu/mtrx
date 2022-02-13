@@ -14,7 +14,7 @@ file(GLOB CUBLAS_SRC "src/cublas/*.cpp")
 option(CUBLAS_BUILD_DEVICE_PART "Compile device part of module" ON)
 option(CUBLAS_BUILD_HOST_PART "Compile host part of module" ON)
 
-link_directories(/opt/nvidia/hpc_sdk/Linux_x86_64/20.7/cuda/10.1/lib64 /opt/nvidia/hpc_sdk/Linux_x86_64/20.7/math_libs/10.1/lib64)
+link_directories(/usr/local/cuda/lib64 /usr/local/math_libs/lib64)
 
 if(${CUBLAS_BUILD_DEVICE_PART})
   enable_language(CUDA)
@@ -26,7 +26,7 @@ if(${CUBLAS_BUILD_DEVICE_PART})
   # mtrxCublas library
   add_library(mtrxCublas STATIC ${SRC})
   target_link_libraries(mtrxCublas mtrxCore stdc++fs cuda cudart cublas cublasLt spdlog)
-  target_include_directories(mtrxCublas PUBLIC include /opt/nvidi/hpc_sdk/Linux_x86_64/20.7/cuda/10.1/include)
+  target_include_directories(mtrxCublas PUBLIC include /usr/local/cuda/include)
 
   # device tests
   set (TEST_DEVICE_TARGET "mtrxDeviceCublasTests")
@@ -39,9 +39,10 @@ endif()
 
 if(${CUBLAS_BUILD_HOST_PART})
   # host tests
-  set (TEST_HOST_TARGET "mtrxHostCublasTests")
+  set(NEEDED_FILES "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp")
+  set(TEST_HOST_TARGET "mtrxHostCublasTests")
   include(GoogleTest)
-  add_executable(${TEST_HOST_TARGET} ${HOST_TESTS_SRC} ${HOST_SRC} "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp")
+  add_executable(${TEST_HOST_TARGET} ${HOST_TESTS_SRC} ${HOST_SRC} ${NEEDED_FILES})
   target_compile_options (${TEST_HOST_TARGET} PRIVATE -fsanitize=address)
   set_target_properties(${TEST_HOST_TARGET} PROPERTIES COMPILE_FLAGS -DMTRX_HOST_CUDA_BUILD)
   target_link_libraries(${TEST_HOST_TARGET} asan mtrxCore gtest_main gtest gmock pthread spdlog)
