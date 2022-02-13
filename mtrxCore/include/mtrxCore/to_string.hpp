@@ -24,6 +24,8 @@
 #include <sstream>
 #include <string>
 
+#define MTRX_TO_STRING(v) #v
+
 namespace mtrx {
 inline std::string toString(ValueType valueType) {
   switch (valueType) {
