@@ -27,6 +27,16 @@
 
 namespace mtrx {
 
+template <typename T> void checkIfNotNull(T *t, const std::string_view &label) {
+  if (t == nullptr) {
+    std::stringstream sstream;
+    sstream << label << " is null pointer";
+    throw std::runtime_error(sstream.str());
+  }
+}
+
+#define MTRX_CHECK_IF_NOT_NULL(a) checkIfNotNull(a, MTRX_TO_STRING(a))
+
 template <typename T>
 void check(const std::vector<T> &data, const std::vector<std::string> &labels) {
   if (data.size() != labels.size()) {
