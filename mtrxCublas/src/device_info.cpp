@@ -74,7 +74,7 @@ void DeviceInfo::setDevice(CUdevice cuDevice) {
   initDeviceProperties();
 }
 
-void DeviceInfo::initDeviceProperties() {
+DeviceProperties DeviceInfo::initDeviceProperties() {
   if (!m_initialized) {
     for (size_t idx = 0; idx < 9; ++idx) {
       int result = -1;
@@ -87,6 +87,7 @@ void DeviceInfo::initDeviceProperties() {
     std::memcpy(&m_deviceProperties, m_values, sizeof(m_values));
     m_initialized = true;
   }
+  return m_deviceProperties;
 }
 
 std::string DeviceInfo::toStr() {

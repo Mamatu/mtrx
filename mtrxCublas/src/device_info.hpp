@@ -23,16 +23,9 @@
 #include <cuda.h>
 #include <string>
 
+#include "device_properties.hpp"
+
 namespace mtrx {
-struct DeviceProperties {
-  int maxThreadsCount[3];
-  int maxBlocksCount[3];
-
-  int maxThreadsPerBlock;
-  int maxRegistersPerBlock;
-  int sharedMemPerBlock;
-};
-
 class DeviceInfo {
 public:
   DeviceInfo();
@@ -75,7 +68,7 @@ private:
       CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK};
 
   void checkInitialization() const;
-  void initDeviceProperties();
+  DeviceProperties initDeviceProperties();
 
 protected:
   DeviceProperties m_deviceProperties;

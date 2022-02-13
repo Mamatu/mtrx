@@ -22,24 +22,19 @@
 
 #include <cuComplex.h>
 
-void HOSTKernel_SF_scaleTrace(int m, int n, float *matrix, int lda,
-                              float factor);
+void proxy_HostKernel_SF_scaleTrace(const void **params);
+void proxy_HostKernel_SD_scaleTrace(const void **params);
+void proxy_HostKernel_CF_scaleTrace(const void **params);
+void proxy_HostKernel_CD_scaleTrace(const void **params);
 
-void proxy_HOSTKernel_SF_scaleTrace(const void **params);
+void proxy_HostKernel_SF_isUpperTriangular(const void **params);
+void proxy_HostKernel_SD_isUpperTriangular(const void **params);
+void proxy_HostKernel_CF_isUpperTriangular(const void **params);
+void proxy_HostKernel_CD_isUpperTriangular(const void **params);
 
-void HOSTKernel_SD_scaleTrace(int m, int n, double *matrix, int lda,
-                              double factor);
-
-void proxy_HOSTKernel_SD_scaleTrace(const void **params);
-
-void HOSTKernel_CF_scaleTrace(int m, int n, cuComplex *matrix, int lda,
-                              cuComplex factor);
-
-void proxy_HOSTKernel_CF_scaleTrace(const void **params);
-
-void HOSTKernel_CD_scaleTrace(int m, int n, cuDoubleComplex *matrix, int lda,
-                              cuDoubleComplex factor);
-
-void proxy_HOSTKernel_CD_scaleTrace(const void **params);
+void proxy_HostKernel_SF_isLowerTriangular(const void **params);
+void proxy_HostKernel_SD_isLowerTriangular(const void **params);
+void proxy_HostKernel_CF_isLowerTriangular(const void **params);
+void proxy_HostKernel_CD_isLowerTriangular(const void **params);
 
 #endif

@@ -20,16 +20,10 @@
 #ifndef MTRX_CUBLAS_KERNELS_H
 #define MTRX_CUBLAS_KERNELS_H
 
+#include "alloc.hpp"
 #include <cuComplex.h>
-#include <functional>
 
 namespace mtrx {
-
-struct Alloc {
-  const std::function<void(void **devPtr, size_t size)> malloc;
-  const std::function<void(void *devPtr)> free;
-  const std::function<void(void *, const void *, size_t)> memcpyKernelToHost;
-};
 
 void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor);
 void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor);
@@ -38,25 +32,26 @@ void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda,
 void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
                           cuDoubleComplex factor);
 
-bool Kernel_SF_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  float *matrix, int lda, float delta);
-bool Kernel_SD_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  double *matrix, int lda, double delta);
-bool Kernel_CF_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuComplex *matrix, int lda, cuComplex delta);
-bool Kernel_CD_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuDoubleComplex *matrix, int lda,
                                  cuDoubleComplex delta);
 
-bool Kernel_SF_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SF_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  float *matrix, int lda, float delta);
-bool Kernel_SD_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SD_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  double *matrix, int lda, double delta);
-bool Kernel_CF_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CF_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  cuComplex *matrix, int lda, cuComplex delta);
-bool Kernel_CD_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  cuDoubleComplex *matrix, int lda,
                                  cuDoubleComplex delta);
+
 } // namespace mtrx
 
 #endif

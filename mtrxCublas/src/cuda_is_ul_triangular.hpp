@@ -26,42 +26,52 @@
 
 template <typename T>
 __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
-                                       int lda, T delta) {
-  HOST_CODE(spdlog::set_level(spdlog::level::debug);)
+                                       int /*lda*/, T delta,
+                                       int *reductionResults) {
   HOST_INIT();
 
-  int* reduceBuffer = nullptr;
+  int *reduceBuffer = nullptr;
   GENERIC_INIT_SHARED(int, reduceBuffer);
 
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
 
-  const T v = matrix[x * rows + y];
-  int is = (x >= y && cuda_isAbsHigher(v, delta)) ||
-           (x < y && !cuda_isAbsHigher(v, delta));
+  if (y < rows && x < columns) {
+    const T v = matrix[x * rows + y];
+    int is = (x >= y && cuda_isAbsHigher(v, delta)) ||
+             (x < y && !cuda_isAbsHigher(v, delta));
 
-  reduceBuffer[x * rows + y] = is;
-  cuda_reduce<int>(rows, columns, reduceBuffer);
+    reduceBuffer[x * rows + y] = is;
+    cuda_reduce<int>(rows, columns, reduceBuffer);
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = reduceBuffer[0];
+    }
+  }
 }
 
 template <typename T>
 __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
-                                       int lda, T delta) {
-  HOST_CODE(spdlog::set_level(spdlog::level::debug);)
+                                       int /*lda*/, T delta,
+                                       int *reductionResults) {
   HOST_INIT();
 
-  int* reduceBuffer = nullptr;
+  int *reduceBuffer = nullptr;
   GENERIC_INIT_SHARED(int, reduceBuffer);
 
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
 
-  const T v = matrix[x * rows + y];
-  int is = (x > y && !cuda_isAbsHigher(v, delta)) ||
-           (x <= y && cuda_isAbsHigher(v, delta));
+  if (y < rows && x < columns) {
+    const T v = matrix[x * rows + y];
+    int is = (x > y && !cuda_isAbsHigher(v, delta)) ||
+             (x <= y && cuda_isAbsHigher(v, delta));
 
-  reduceBuffer[x * rows + y] = is;
-  cuda_reduce<int>(rows, columns, reduceBuffer);
+    reduceBuffer[x * rows + y] = is;
+    cuda_reduce<int>(rows, columns, reduceBuffer);
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = reduceBuffer[0];
+    }
+  }
 }
 
 #endif

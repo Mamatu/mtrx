@@ -52,7 +52,8 @@
   gridDim = gridDim;     /*for suppress warning*/
 
 #define GENERIC_INIT_SHARED(type, buffer)                                      \
-  buffer = static_cast<type *>(mtrx::ThreadIdx::GetThreadIdx());
+  mtrx::ThreadIdx &_this_tidx = mtrx::ThreadIdx::GetThreadIdx();               \
+  buffer = static_cast<type *>(_this_tidx.getSharedBuffer());
 
 #define HOST_CODE(code) code
 

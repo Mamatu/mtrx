@@ -19,6 +19,9 @@
 
 #include "kernels.hpp"
 
+#include <mtrxCore/checkers.hpp>
+#include <mtrxCore/to_string.hpp>
+
 #include "driver_types.h"
 #include "ikernel_executor.hpp"
 #include "mtrxCublas/status_handler.hpp"
@@ -30,12 +33,14 @@
 #ifndef MTRX_HOST_CUDA_BUILD
 #include "device_kernel_executor.hpp"
 #else
+#include "host/device_properties_provider.hpp"
 #include "host/host_kernel_executor.hpp"
 #endif
 
 namespace mtrx {
 
 std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor() {
+// ToDo: one pointer during whole session
 #ifndef MTRX_HOST_CUDA_BUILD
   auto kernelExecutor = std::make_shared<mtrx::DeviceKernelExecutor>();
 #else
@@ -48,6 +53,8 @@ template <typename T>
 void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
                        int lda, T factor) {
   auto ke = GetKernelExecutor();
+  // const auto &deviceProperties = ke->getDeviceProperties();
+
   ke->setThreadsCount(dim, 1, 1);
   ke->setBlocksCount(1, 1, 1);
 
@@ -79,17 +86,20 @@ void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
 }
 
 template <typename T>
-void Kernel_isULTriangular(const Alloc &alloc, bool &is,
+void Kernel_isULTriangular(Alloc *alloc, bool &is,
                            const std::string &kernelName, int rows, int columns,
                            T *matrix, int lda, T delta) {
+
+  MTRX_CHECK_IF_NOT_NULL(alloc);
+
   auto ke = GetKernelExecutor();
   ke->setThreadsCount(rows, columns, 1);
   ke->setBlocksCount(1, 1, 1);
 
-  // ToDo: d_is should be optimized
+  // ToDo: these static casts to optimize
   bool *d_is = nullptr;
   void *dv_is = static_cast<void *>(d_is);
-  alloc.malloc(&dv_is, sizeof(bool));
+  alloc->malloc(&dv_is, sizeof(bool));
 
   void *params[] = {&d_is, &rows, &columns, &matrix, &lda, &delta};
   ke->setParams(const_cast<const void **>(params));
@@ -100,32 +110,32 @@ void Kernel_isULTriangular(const Alloc &alloc, bool &is,
   ke->run(cukernelName.str());
 
   void *h_is = static_cast<void *>(&is);
-  alloc.memcpyKernelToHost(h_is, dv_is, sizeof(bool));
-  alloc.free(d_is);
+  alloc->memcpyKernelToHost(h_is, dv_is, sizeof(bool));
+  alloc->free(d_is);
 }
 
-bool Kernel_SF_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  float *matrix, int lda, float delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_SD_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  double *matrix, int lda, double delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_CF_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuComplex *matrix, int lda, cuComplex delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_CD_isUpperTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuDoubleComplex *matrix, int lda,
                                  cuDoubleComplex delta) {
   bool is = false;
@@ -133,28 +143,28 @@ bool Kernel_CD_isUpperTriangular(const Alloc &alloc, int rows, int columns,
   return is;
 }
 
-bool Kernel_SF_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SF_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  float *matrix, int lda, float delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_SD_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_SD_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  double *matrix, int lda, double delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_CF_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CF_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  cuComplex *matrix, int lda, cuComplex delta) {
   bool is = false;
   Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta);
   return is;
 }
 
-bool Kernel_CD_isLowerTriangular(const Alloc &alloc, int rows, int columns,
+bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
                                  cuDoubleComplex *matrix, int lda,
                                  cuDoubleComplex delta) {
   bool is = false;

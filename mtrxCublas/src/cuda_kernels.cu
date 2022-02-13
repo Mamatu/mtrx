@@ -40,42 +40,42 @@ extern "C" __global__ void CUDAKernel_CD_scaleTrace(int m, int n, cuDoubleComple
   cuda_CD_scaleTrace(m, n, matrix, lda, factor);
 }
 
-extern "C" __global__ void CUDAKernel_SF_isUpperTriangular(int m, int n, float* matrix, int lda, float delta)
+extern "C" __global__ void CUDAKernel_SF_isUpperTriangular(int m, int n, float* matrix, int lda, float delta, int* reductionResults)
 {
-  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+  cuda_isUpperTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_SD_isUpperTriangular(int m, int n, double* matrix, int lda, double delta)
+extern "C" __global__ void CUDAKernel_SD_isUpperTriangular(int m, int n, double* matrix, int lda, double delta, int* reductionResults)
 {
-  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+  cuda_isUpperTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_CF_isUpperTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta)
+extern "C" __global__ void CUDAKernel_CF_isUpperTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta, int* reductionResults)
 {
-  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+  cuda_isUpperTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_CD_isUpperTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta)
+extern "C" __global__ void CUDAKernel_CD_isUpperTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta, int* reductionResults)
 {
-  cuda_isUpperTriangular(m, n, matrix, lda, delta);
+  cuda_isUpperTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_SF_isLowerTriangular(int m, int n, float* matrix, int lda, float delta)
+extern "C" __global__ void CUDAKernel_SF_isLowerTriangular(int m, int n, float* matrix, int lda, float delta, int* reductionResults)
 {
-  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+  cuda_isLowerTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_SD_isLowerTriangular(int m, int n, double* matrix, int lda, double delta)
+extern "C" __global__ void CUDAKernel_SD_isLowerTriangular(int m, int n, double* matrix, int lda, double delta, int* reductionResults)
 {
-  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+  cuda_isLowerTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_CF_isLowerTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta)
+extern "C" __global__ void CUDAKernel_CF_isLowerTriangular(int m, int n, cuComplex* matrix, int lda, cuComplex delta, int* reductionResults)
 {
-  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+  cuda_isLowerTriangular(m, n, matrix, lda, delta, reductionResults);
 }
 
-extern "C" __global__ void CUDAKernel_CD_isLowerTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta)
+extern "C" __global__ void CUDAKernel_CD_isLowerTriangular(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex delta, int* reductionResults)
 {
-  cuda_isLowerTriangular(m, n, matrix, lda, delta);
+  cuda_isLowerTriangular(m, n, matrix, lda, delta, reductionResults);
 }

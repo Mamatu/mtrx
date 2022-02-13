@@ -21,21 +21,21 @@
 #define MTRX_CUBLAS_HOST_KERNEL_EXECUTOR_H
 
 //#include "dim3.hpp"
+#include "../device_properties.hpp"
 #include "../ikernel_executor.hpp"
 
 namespace mtrx {
 
 class HostKernelExecutor : public IKernelExecutor {
 public:
-  HostKernelExecutor(uint maxThreadsPerBlocks = 1024);
-
+  HostKernelExecutor();
   virtual ~HostKernelExecutor();
 
 protected:
   bool _run(const std::string &functionName) override;
 
 private:
-  uint m_maxThreadsPerBlock;
+  DeviceProperties m_deviceProperties;
 };
 
 } // namespace mtrx

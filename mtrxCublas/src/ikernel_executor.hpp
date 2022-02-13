@@ -22,6 +22,8 @@
 
 #include <string>
 
+#include "device_properties.hpp"
+
 namespace mtrx {
 struct RunParams {
   uint threadsCount[3];
@@ -33,7 +35,7 @@ std::string toString(const RunParams &runParams);
 
 class IKernelExecutor {
 public:
-  IKernelExecutor();
+  IKernelExecutor(const DeviceProperties &deviceProperties);
   virtual ~IKernelExecutor();
 
   void setRunParams(const RunParams &runParams);
@@ -52,10 +54,13 @@ public:
   bool run(const std::string &function, const void **params,
            uint sharedMemorySize);
 
+  DeviceProperties getDeviceProperties() const;
+
 protected:
   virtual bool _run(const std::string &function) = 0;
 
 private:
+  DeviceProperties m_deviceProperties;
   RunParams m_runParams;
 
   const void **m_params = nullptr;

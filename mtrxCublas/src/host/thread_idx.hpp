@@ -40,8 +40,8 @@ public:
   using ThreadIdxs = std::map<std::thread::id, ThreadIdx>;
   template <typename T, typename Callback>
   static T GetThreadIdxsSafe(Callback &&callback) {
-    std::lock_guard<std::mutex> lg(ThreadIdx::m_threadIdxsMutex);
-    return callback(ThreadIdx::m_threadIdxs);
+    std::lock_guard<std::mutex> lg(ThreadIdx::s_threadIdxsMutex);
+    return callback(ThreadIdx::s_threadIdxs);
   }
 
   static ThreadIdx &GetThreadIdx(std::thread::id id) {
@@ -87,11 +87,12 @@ private:
   };
 
   using Barriers = std::map<std::thread::id, BarrierMutex *>;
-  static Barriers m_barriers;
-  static std::mutex m_barriersMutex;
 
-  static ThreadIdxs m_threadIdxs;
-  static std::mutex m_threadIdxsMutex;
+  static Barriers s_barriers;
+  static std::mutex s_barriersMutex;
+
+  static ThreadIdxs s_threadIdxs;
+  static std::mutex s_threadIdxsMutex;
 };
 } // namespace mtrx
 #endif /* MTRX_DIM3_HPP */

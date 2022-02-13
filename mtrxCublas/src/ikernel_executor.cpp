@@ -37,7 +37,10 @@ std::string toString(const RunParams &runParams) {
   return sstream.str();
 }
 
-IKernelExecutor::IKernelExecutor() { reset(); }
+IKernelExecutor::IKernelExecutor(const DeviceProperties &deviceProperties)
+    : m_deviceProperties(deviceProperties) {
+  reset();
+}
 
 IKernelExecutor::~IKernelExecutor() {}
 
@@ -104,4 +107,9 @@ void IKernelExecutor::reset() {
   m_params = nullptr;
   m_paramsCount = 0;
 }
+
+DeviceProperties IKernelExecutor::getDeviceProperties() const {
+  return m_deviceProperties;
+}
+
 } // namespace mtrx

@@ -17,7 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cuda_kernels_list.hpp"
+#include "cuda_proxies.hpp"
+#include "../cuda_is_ul_triangular.hpp"
 #include "../cuda_scale_trace.hpp"
 
 template <typename T> T *getParam(const void *param) {
@@ -109,13 +110,8 @@ template <typename T> T *getParam(void **params, size_t index) {
     arg_hostKernel(output, matrix, matrix1, ex);                               \
   }
 
-void HOSTKernel_SF_scaleTrace(int m, int n, float *matrix, int lda,
-                              float factor) {
-  cuda_SF_scaleTrace(m, n, matrix, lda, factor);
-}
-
 template <typename T, typename Callback>
-void proxy_HOSTKernel_generic_scaleTrace(const void **params,
+void proxy_HostKernel_generic_scaleTrace(const void **params,
                                          Callback &&callback) {
   int m = *static_cast<const int *>(params[0]);
   int n = *static_cast<const int *>(params[1]);
@@ -126,35 +122,129 @@ void proxy_HOSTKernel_generic_scaleTrace(const void **params,
   callback(m, n, matrix, lda, factor);
 }
 
-void proxy_HOSTKernel_SF_scaleTrace(const void **params) {
-  proxy_HOSTKernel_generic_scaleTrace<float>(params, HOSTKernel_SF_scaleTrace);
+void HostKernel_SF_scaleTrace(int m, int n, float *matrix, int lda,
+                              float factor) {
+  cuda_SF_scaleTrace(m, n, matrix, lda, factor);
 }
 
-void HOSTKernel_SD_scaleTrace(int m, int n, double *matrix, int lda,
+void proxy_HostKernel_SF_scaleTrace(const void **params) {
+  proxy_HostKernel_generic_scaleTrace<float>(params, HostKernel_SF_scaleTrace);
+}
+
+void HostKernel_SD_scaleTrace(int m, int n, double *matrix, int lda,
                               double factor) {
   cuda_SD_scaleTrace(m, n, matrix, lda, factor);
 }
 
-void proxy_HOSTKernel_SD_scaleTrace(const void **params) {
-  proxy_HOSTKernel_generic_scaleTrace<double>(params, HOSTKernel_SD_scaleTrace);
+void proxy_HostKernel_SD_scaleTrace(const void **params) {
+  proxy_HostKernel_generic_scaleTrace<double>(params, HostKernel_SD_scaleTrace);
 }
 
-void HOSTKernel_CF_scaleTrace(int m, int n, cuComplex *matrix, int lda,
+void HostKernel_CF_scaleTrace(int m, int n, cuComplex *matrix, int lda,
                               cuComplex factor) {
   cuda_CF_scaleTrace(m, n, matrix, lda, factor);
 }
 
-void proxy_HOSTKernel_CF_scaleTrace(const void **params) {
-  proxy_HOSTKernel_generic_scaleTrace<cuComplex>(params,
-                                                 HOSTKernel_CF_scaleTrace);
+void proxy_HostKernel_CF_scaleTrace(const void **params) {
+  proxy_HostKernel_generic_scaleTrace<cuComplex>(params,
+                                                 HostKernel_CF_scaleTrace);
 }
 
-void HOSTKernel_CD_scaleTrace(int m, int n, cuDoubleComplex *matrix, int lda,
+void HostKernel_CD_scaleTrace(int m, int n, cuDoubleComplex *matrix, int lda,
                               cuDoubleComplex factor) {
   cuda_CD_scaleTrace(m, n, matrix, lda, factor);
 }
 
-void proxy_HOSTKernel_CD_scaleTrace(const void **params) {
-  proxy_HOSTKernel_generic_scaleTrace<cuDoubleComplex>(
-      params, HOSTKernel_CD_scaleTrace);
+void proxy_HostKernel_CD_scaleTrace(const void **params) {
+  proxy_HostKernel_generic_scaleTrace<cuDoubleComplex>(
+      params, HostKernel_CD_scaleTrace);
+}
+
+template <typename T, typename Callback>
+void proxy_HostKernel_generic_isULTriangular(const void **params,
+                                             Callback &&callback) {
+  int m = *static_cast<const int *>(params[0]);
+  int n = *static_cast<const int *>(params[1]);
+  T *matrix = getParam<T>(params[2]);
+  int lda = *static_cast<const int *>(params[3]);
+  T delta = *static_cast<const T *>(params[4]);
+  int *reductionResults = getParam<int>(params[5]);
+
+  callback(m, n, matrix, lda, delta, reductionResults);
+}
+
+void proxy_HostKernel_SF_isUpperTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isUpperTriangular<float>(rows, columns, matrix, lda, delta,
+                                  reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<float>(params, std::move(cuda_func));
+}
+
+void proxy_HostKernel_SD_isUpperTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isUpperTriangular<double>(rows, columns, matrix, lda, delta,
+                                   reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<double>(params, std::move(cuda_func));
+}
+
+void proxy_HostKernel_CF_isUpperTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isUpperTriangular<cuComplex>(rows, columns, matrix, lda, delta,
+                                      reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<cuComplex>(params,
+                                                     std::move(cuda_func));
+}
+
+void proxy_HostKernel_CD_isUpperTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isUpperTriangular<cuDoubleComplex>(rows, columns, matrix, lda, delta,
+                                            reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<cuDoubleComplex>(
+      params, std::move(cuda_func));
+}
+
+void proxy_HostKernel_SF_isLowerTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isLowerTriangular<float>(rows, columns, matrix, lda, delta,
+                                  reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<float>(params, std::move(cuda_func));
+}
+
+void proxy_HostKernel_SD_isLowerTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isLowerTriangular<double>(rows, columns, matrix, lda, delta,
+                                   reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<double>(params, std::move(cuda_func));
+}
+
+void proxy_HostKernel_CF_isLowerTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isLowerTriangular<cuComplex>(rows, columns, matrix, lda, delta,
+                                      reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<cuComplex>(params,
+                                                     std::move(cuda_func));
+}
+
+void proxy_HostKernel_CD_isLowerTriangular(const void **params) {
+  auto cuda_func = [](int rows, int columns, auto *matrix, int lda, auto delta,
+                      int *reductionResults) {
+    cuda_isLowerTriangular<cuDoubleComplex>(rows, columns, matrix, lda, delta,
+                                            reductionResults);
+  };
+  proxy_HostKernel_generic_isULTriangular<cuDoubleComplex>(
+      params, std::move(cuda_func));
 }

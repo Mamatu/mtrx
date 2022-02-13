@@ -18,6 +18,7 @@
  */
 
 #include "device_kernel_executor.hpp"
+#include "device_properties_loader.hpp"
 #include "sys_pathes_parser.hpp"
 #include <filesystem>
 #include <mtrxCublas/status_handler.hpp>
@@ -42,7 +43,8 @@ void DeviceKernelExecutor::Init() {
 }
 
 DeviceKernelExecutor::DeviceKernelExecutor()
-    : m_image(nullptr), m_cuModule(nullptr) {
+    : IKernelExecutor(loadDeviceProperties(0)), m_image(nullptr),
+      m_cuModule(nullptr) {
   Init();
   load(CUBIN_FILE_NAME);
 }

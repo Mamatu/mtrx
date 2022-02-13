@@ -18,9 +18,10 @@
  */
 
 #include "host_kernel_executor.hpp"
+#include "device_properties_provider.hpp"
 #include "host_kernel.hpp"
 
-#include "cuda_kernels_list.hpp"
+#include "cuda_proxies.hpp"
 
 #include <functional>
 #include <map>
@@ -31,10 +32,19 @@
 namespace mtrx {
 
 std::map<std::string, std::function<void(const void **)>> g_kernelsList = {
-    {"CUDAKernel_SF_scaleTrace", proxy_HOSTKernel_SF_scaleTrace},
-    {"CUDAKernel_SD_scaleTrace", proxy_HOSTKernel_SD_scaleTrace},
-    {"CUDAKernel_CF_scaleTrace", proxy_HOSTKernel_CF_scaleTrace},
-    {"CUDAKernel_CD_scaleTrace", proxy_HOSTKernel_CD_scaleTrace}};
+    {"CUDAKernel_SF_scaleTrace", proxy_HostKernel_SF_scaleTrace},
+    {"CUDAKernel_SD_scaleTrace", proxy_HostKernel_SD_scaleTrace},
+    {"CUDAKernel_CF_scaleTrace", proxy_HostKernel_CF_scaleTrace},
+    {"CUDAKernel_CD_scaleTrace", proxy_HostKernel_CD_scaleTrace},
+    {"CUDAKernel_SF_isUpperTriangular", proxy_HostKernel_SF_isUpperTriangular},
+    {"CUDAKernel_SD_isUpperTriangular", proxy_HostKernel_SD_isUpperTriangular},
+    {"CUDAKernel_CF_isUpperTriangular", proxy_HostKernel_CF_isUpperTriangular},
+    {"CUDAKernel_CD_isUpperTriangular", proxy_HostKernel_CD_isUpperTriangular},
+    {"CUDAKernel_SF_isLowerTriangular", proxy_HostKernel_SF_isLowerTriangular},
+    {"CUDAKernel_SD_isLowerTriangular", proxy_HostKernel_SD_isLowerTriangular},
+    {"CUDAKernel_CF_isLowerTriangular", proxy_HostKernel_CF_isLowerTriangular},
+    {"CUDAKernel_CD_isLowerTriangular", proxy_HostKernel_CD_isLowerTriangular},
+};
 
 class HostKernelImpl : public HostKernel {
   std::function<void(const void **)> m_function;
@@ -51,8 +61,8 @@ protected:
   }
 };
 
-HostKernelExecutor::HostKernelExecutor(uint maxThreadsPerBlock)
-    : m_maxThreadsPerBlock(maxThreadsPerBlock) {}
+HostKernelExecutor::HostKernelExecutor()
+    : IKernelExecutor(DevicePropertiesProvider::get()) {}
 
 HostKernelExecutor::~HostKernelExecutor() { HostKernel::ReleaseThreads(this); }
 

@@ -29,10 +29,10 @@ void ResetCudaCtx() {
   // gridDim.clear();
 }
 
-ThreadIdx::ThreadIdxs ThreadIdx::m_threadIdxs;
-std::mutex ThreadIdx::m_threadIdxsMutex;
+ThreadIdx::ThreadIdxs ThreadIdx::s_threadIdxs;
+std::mutex ThreadIdx::s_threadIdxsMutex;
 
-void ThreadIdx::CleanupThreads() { ThreadIdx::m_threadIdxs.clear(); }
+void ThreadIdx::CleanupThreads() { ThreadIdx::s_threadIdxs.clear(); }
 
 ThreadIdx::ThreadIdx() {
   set(m_threadIdx, 0, 0, 0);
@@ -64,33 +64,33 @@ const dim3 &ThreadIdx::getGridDim() const { return m_gridDim; }
 void *ThreadIdx::getSharedBuffer() const { return m_sharedBuffer; }
 
 void ThreadIdx::createBarrier(const std::vector<std::thread::id> &threads) {
-  m_barriersMutex.lock();
+  s_barriersMutex.lock();
   BarrierMutex *bm = NULL;
   for (size_t fa = 0; fa < threads.size(); ++fa) {
     if (fa == 0) {
       bm = new BarrierMutex();
       bm->m_barrier.init(threads.size());
     }
-    m_barriers[threads[fa]] = bm;
+    s_barriers[threads[fa]] = bm;
   }
-  m_barriersMutex.unlock();
+  s_barriersMutex.unlock();
 }
 
 void ThreadIdx::destroyBarrier(const std::vector<std::thread::id> &threads) {
-  m_barriersMutex.lock();
+  s_barriersMutex.lock();
   for (size_t fa = 0; fa < threads.size(); ++fa) {
     if (fa == 0) {
-      delete m_barriers[threads[fa]];
+      delete s_barriers[threads[fa]];
     }
-    m_barriers.erase(threads[fa]);
+    s_barriers.erase(threads[fa]);
   }
-  m_barriersMutex.unlock();
+  s_barriersMutex.unlock();
 }
 
 void ThreadIdx::wait() {
   const auto tid = std::this_thread::get_id();
-  auto it = m_barriers.find(tid);
-  if (it == m_barriers.end()) {
+  auto it = s_barriers.find(tid);
+  if (it == s_barriers.end()) {
     std::stringstream sstream;
     sstream << "Thread " << tid << " is not in barrier";
     throw std::runtime_error(sstream.str());
@@ -98,6 +98,6 @@ void ThreadIdx::wait() {
   it->second->m_barrier.wait();
 }
 
-ThreadIdx::Barriers ThreadIdx::m_barriers;
-std::mutex ThreadIdx::m_barriersMutex;
+ThreadIdx::Barriers ThreadIdx::s_barriers;
+std::mutex ThreadIdx::s_barriersMutex;
 } // namespace mtrx
