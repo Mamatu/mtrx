@@ -61,8 +61,9 @@ protected:
   }
 };
 
-HostKernelExecutor::HostKernelExecutor()
-    : IKernelExecutor(DevicePropertiesProvider::get()) {}
+HostKernelExecutor::HostKernelExecutor(int device)
+    : IKernelExecutor(DevicePropertiesProvider::get(device)), m_device(device) {
+}
 
 HostKernelExecutor::~HostKernelExecutor() { HostKernel::ReleaseThreads(this); }
 

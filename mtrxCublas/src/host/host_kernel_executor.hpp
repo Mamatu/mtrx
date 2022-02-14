@@ -28,13 +28,14 @@ namespace mtrx {
 
 class HostKernelExecutor : public IKernelExecutor {
 public:
-  HostKernelExecutor();
+  HostKernelExecutor(int device);
   virtual ~HostKernelExecutor();
 
 protected:
   bool _run(const std::string &functionName) override;
 
 private:
+  int m_device;
   DeviceProperties m_deviceProperties;
 };
 

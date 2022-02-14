@@ -18,14 +18,24 @@
  */
 
 #include "device_properties_provider.hpp"
+#include <sstream>
 
 namespace mtrx {
-DeviceProperties DevicePropertiesProvider::m_deviceProperties;
+std::map<int, DeviceProperties> DevicePropertiesProvider::m_deviceProperties;
 
-void DevicePropertiesProvider::set(const DeviceProperties &deviceProperties) {
-  m_deviceProperties = deviceProperties;
+void DevicePropertiesProvider::set(int device,
+                                   const DeviceProperties &deviceProperties) {
+  m_deviceProperties[device] = deviceProperties;
 }
 
-DeviceProperties DevicePropertiesProvider::get() { return m_deviceProperties; }
+DeviceProperties DevicePropertiesProvider::get(int device) {
+  auto it = m_deviceProperties.find(device);
+  if (it == m_deviceProperties.end()) {
+    std::stringstream sstream;
+    sstream << "Not existed device under index " << device;
+    throw std::runtime_error(sstream.str());
+  }
+  return it->second;
+}
 
 } // namespace mtrx

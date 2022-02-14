@@ -1007,25 +1007,26 @@ void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
 
   auto factorType = matrix->valueType;
   CudaAlloc alloc;
+  Kernels kernels(0);
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = Kernel_SF_isUpperTriangular(&alloc, rows, columns,
-                                         reinterpret_cast<float *>(matrix->ptr),
-                                         lda, 0.f);
+    result = kernels.isUpperTriangular(&alloc, rows, columns,
+                                       reinterpret_cast<float *>(matrix->ptr),
+                                       lda, 0.f);
     break;
   case ValueType::DOUBLE:
-    result = Kernel_SD_isUpperTriangular(
-        &alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda,
-        0.);
+    result = kernels.isUpperTriangular(&alloc, rows, columns,
+                                       reinterpret_cast<double *>(matrix->ptr),
+                                       lda, 0.);
     break;
   case ValueType::FLOAT_COMPLEX:
-    result = Kernel_CF_isUpperTriangular(
+    result = kernels.isUpperTriangular(
         &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
-    result = Kernel_CD_isUpperTriangular(
+    result = kernels.isUpperTriangular(
         &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
         lda, cuDoubleComplex());
     break;
@@ -1068,26 +1069,27 @@ void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
   }
 
   auto factorType = matrix->valueType;
+  Kernels kernels(0);
   CudaAlloc alloc;
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = Kernel_SF_isLowerTriangular(&alloc, rows, columns,
-                                         reinterpret_cast<float *>(matrix->ptr),
-                                         lda, 0.f);
+    result = kernels.isLowerTriangular(&alloc, rows, columns,
+                                       reinterpret_cast<float *>(matrix->ptr),
+                                       lda, 0.f);
     break;
   case ValueType::DOUBLE:
-    result = Kernel_SD_isLowerTriangular(
-        &alloc, rows, columns, reinterpret_cast<double *>(matrix->ptr), lda,
-        0.);
+    result = kernels.isLowerTriangular(&alloc, rows, columns,
+                                       reinterpret_cast<double *>(matrix->ptr),
+                                       lda, 0.);
     break;
   case ValueType::FLOAT_COMPLEX:
-    result = Kernel_CF_isLowerTriangular(
+    result = kernels.isLowerTriangular(
         &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
-    result = Kernel_CD_isLowerTriangular(
+    result = kernels.isLowerTriangular(
         &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
         lda, cuDoubleComplex());
     break;
@@ -1243,22 +1245,24 @@ cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
     throw std::runtime_error(sstream.str());
   }
 
+  Kernels kernels(0);
+
   switch (factorType) {
   case ValueType::FLOAT:
-    Kernel_SF_scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
-                         *reinterpret_cast<float *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
+                       *reinterpret_cast<float *>(factor));
     break;
   case ValueType::DOUBLE:
-    Kernel_SD_scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
-                         *reinterpret_cast<double *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
+                       *reinterpret_cast<double *>(factor));
     break;
   case ValueType::FLOAT_COMPLEX:
-    Kernel_CF_scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
-                         *reinterpret_cast<cuComplex *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
+                       *reinterpret_cast<cuComplex *>(factor));
     break;
   case ValueType::DOUBLE_COMPLEX:
-    Kernel_CD_scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
-                         rows, *reinterpret_cast<cuDoubleComplex *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+                       rows, *reinterpret_cast<cuDoubleComplex *>(factor));
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");

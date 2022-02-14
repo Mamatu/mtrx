@@ -34,6 +34,7 @@
 #include <vector>
 
 namespace mtrx {
+
 void DeviceKernelExecutor::Init() {
   static bool wasInit = false;
   if (wasInit == false) {
@@ -42,8 +43,9 @@ void DeviceKernelExecutor::Init() {
   }
 }
 
-DeviceKernelExecutor::DeviceKernelExecutor()
-    : IKernelExecutor(loadDeviceProperties(0)), m_image(nullptr),
+DeviceKernelExecutor::DeviceKernelExecutor(int device)
+    : IKernelExecutor(loadDeviceProperties(static_cast<CUdevice>(device))),
+      m_device(static_cast<CUdevice>(device)), m_image(nullptr),
       m_cuModule(nullptr) {
   Init();
   load(CUBIN_FILE_NAME);

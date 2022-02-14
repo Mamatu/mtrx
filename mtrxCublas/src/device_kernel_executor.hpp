@@ -34,7 +34,7 @@ namespace fs = std::filesystem;
 class DeviceKernelExecutor : public IKernelExecutor {
 public:
   using Strings = std::vector<std::string>;
-  DeviceKernelExecutor();
+  DeviceKernelExecutor(int device);
   virtual ~DeviceKernelExecutor();
 
   static void Init();
@@ -52,8 +52,10 @@ private:
   constexpr static auto CUBIN_FILE_NAME = "libmtrxCuda.cubin";
   using FileUnique = std::unique_ptr<FILE, std::function<void(FILE *)>>;
 
+  CUdevice m_device;
   void *m_image = nullptr;
   std::string m_path;
+
   CUmodule m_cuModule;
 
   void releaseImage();

@@ -20,10 +20,12 @@
 #ifndef MTRX_CUBLAS_DEVICE_PROPERTIES_H
 #define MTRX_CUBLAS_DEVICE_PROPERTIES_H
 
+#include <array>
+
 namespace mtrx {
 struct DeviceProperties {
-  int maxThreadsCount[3];
-  int maxBlocksCount[3];
+  std::array<int, 3> blockDim;
+  std::array<int, 3> gridDim;
 
   int maxThreadsPerBlock;
   int maxRegistersPerBlock;

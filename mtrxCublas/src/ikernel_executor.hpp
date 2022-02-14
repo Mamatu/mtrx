@@ -20,6 +20,7 @@
 #ifndef MTRX_CUBLAS_IKERNEL_EXECUTOR_H
 #define MTRX_CUBLAS_IKERNEL_EXECUTOR_H
 
+#include <array>
 #include <string>
 
 #include "device_properties.hpp"
@@ -43,6 +44,21 @@ public:
 
   void setBlocksCount(uint x, uint y, uint z);
   void setThreadsCount(uint x, uint y, uint z);
+
+  template <typename Container> void setBlocksCount(const Container &xy) {
+    if (xy.size() != 2) {
+      throw std::runtime_error("Invalid number of elements");
+    }
+    setBlocksCount(xy[0], xy[1], 1);
+  }
+
+  template <typename Container> void setThreadsCount(const Container &xy) {
+    if (xy.size() != 2) {
+      throw std::runtime_error("Invalid number of elements");
+    }
+    setThreadsCount(xy[0], xy[1], 1);
+  }
+
   void setSharedMemory(uint size);
 
   void setParams(const void **params);

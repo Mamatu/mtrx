@@ -39,7 +39,7 @@ endif()
 
 if(${CUBLAS_BUILD_HOST_PART})
   # host tests
-  set(NEEDED_FILES "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp")
+  set(NEEDED_FILES "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp" "src/calc_dim.cpp")
   set(TEST_HOST_TARGET "mtrxHostCublasTests")
   include(GoogleTest)
   add_executable(${TEST_HOST_TARGET} ${HOST_TESTS_SRC} ${HOST_SRC} ${NEEDED_FILES})

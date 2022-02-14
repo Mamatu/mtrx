@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022 Marcin Matula
+ * Copyright 2016 - 2021 Marcin Matula
  *
  * This file is part of mtrx.
  *
@@ -17,19 +17,15 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_DEVICE_PROPERIES_PROVIDER_HPP
-#define MTRX_DEVICE_PROPERIES_PROVIDER_HPP
+#ifndef MTRX_DIM_COUNT_HPP
+#define MTRX_DIM_COUNT_HPP
 
-#include "../device_properties.hpp"
-#include <map>
+#include <array>
 
 namespace mtrx {
-class DevicePropertiesProvider {
-  static std::map<int, DeviceProperties> m_deviceProperties;
+void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
+                  int m, int n, const std::array<int, 3> &blockDim,
+                  const std::array<int, 3> &gridDim, int maxThreadsPerBlock);
+}
 
-public:
-  static void set(int device, const DeviceProperties &deviceProperties);
-  static DeviceProperties get(int device);
-};
-} // namespace mtrx
 #endif

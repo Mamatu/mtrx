@@ -41,22 +41,22 @@ void DeviceInfo::getDeviceProperties(DeviceProperties &devProp) {
 
 uint DeviceInfo::getMaxThreadsX() const {
   checkInitialization();
-  return m_deviceProperties.maxThreadsCount[0];
+  return m_deviceProperties.blockDim[0];
 }
 
 uint DeviceInfo::getMaxThreadsY() const {
   checkInitialization();
-  return m_deviceProperties.maxThreadsCount[1];
+  return m_deviceProperties.blockDim[1];
 }
 
 uint DeviceInfo::getMaxBlocksX() const {
   checkInitialization();
-  return m_deviceProperties.maxBlocksCount[0];
+  return m_deviceProperties.gridDim[0];
 }
 
 uint DeviceInfo::getMaxBlocksY() const {
   checkInitialization();
-  return m_deviceProperties.maxBlocksCount[1];
+  return m_deviceProperties.gridDim[1];
 }
 
 uint DeviceInfo::getSharedMemorySize() const {
@@ -95,12 +95,12 @@ std::string DeviceInfo::toStr() {
   std::stringstream sstream;
 
   sstream << "Device properties:" << std::endl;
-  sstream << "--Max grid size: " << m_deviceProperties.maxBlocksCount[0] << ", "
-          << m_deviceProperties.maxBlocksCount[1] << ", "
-          << m_deviceProperties.maxBlocksCount[2] << std::endl;
-  sstream << "--Max threads dim: " << m_deviceProperties.maxThreadsCount[0]
-          << ", " << m_deviceProperties.maxThreadsCount[1] << ", "
-          << m_deviceProperties.maxThreadsCount[2] << std::endl;
+  sstream << "--Max grid size: " << m_deviceProperties.gridDim[0] << ", "
+          << m_deviceProperties.gridDim[1] << ", "
+          << m_deviceProperties.gridDim[2] << std::endl;
+  sstream << "--Max threads dim: " << m_deviceProperties.blockDim[0] << ", "
+          << m_deviceProperties.blockDim[1] << ", "
+          << m_deviceProperties.blockDim[2] << std::endl;
   sstream << "--Max threads per block: "
           << m_deviceProperties.maxThreadsPerBlock << std::endl;
   sstream << "--Max registers per block: "
