@@ -127,11 +127,11 @@ void HostKernel::executeKernelAsync() {
   }
 
   std::unique_ptr<char[]> sharedMemory(nullptr);
-  if (m_sharedMemorySize > 0) {
-    sharedMemory.reset(new char[m_sharedMemorySize]);
-  }
   for (uintt blockIdxY = 0; blockIdxY < gridDim.y; ++blockIdxY) {
     for (uintt blockIdxX = 0; blockIdxX < gridDim.x; ++blockIdxX) {
+      if (m_sharedMemorySize > 0) {
+        sharedMemory.reset(new char[m_sharedMemorySize]);
+      }
       blockIdx.x = blockIdxX;
       blockIdx.y = blockIdxY;
 

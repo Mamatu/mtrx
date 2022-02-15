@@ -38,6 +38,7 @@ public:
   static void CleanupThreads();
 
   using ThreadIdxs = std::map<std::thread::id, ThreadIdx>;
+
   template <typename T, typename Callback>
   static T GetThreadIdxsSafe(Callback &&callback) {
     std::lock_guard<std::mutex> lg(ThreadIdx::s_threadIdxsMutex);
