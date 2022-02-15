@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "../src/host/device_properties_provider.hpp"
+#include "../src/host_alloc.hpp"
 #include "../src/kernels.hpp"
 #include <spdlog/spdlog.h>
 
@@ -45,7 +46,8 @@ TEST_F(HostCublasTests, Kernel_SF_scaleTrace) {
 
     int lda = 10;
     float factor = 0.5f;
-    Kernels kernels(0);
+    HostAlloc hostAlloc;
+    Kernels kernels(0, &hostAlloc);
 
     kernels.scaleTrace(dim, matrix, lda, factor);
 

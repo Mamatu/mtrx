@@ -50,7 +50,7 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
 
   std::map<int, std::tuple<int, int, int, int>, std::less<int>> diffs;
 
-  int m1 = (m*n <= maxThreadsPerBlock) ? m*n : maxThreadsPerBlock;
+  int m1 = (m * n <= maxThreadsPerBlock) ? m * n : maxThreadsPerBlock;
   int n1 = 1;
 
   auto calc_count = [](int a, int a1) {

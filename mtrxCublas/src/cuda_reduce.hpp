@@ -37,9 +37,11 @@ template <typename T> __device__ void cuda_reduce_shm(int m, int n, T *array) {
   int dim = m * n;
   while (dim > 1) {
     int next_dim = dim / 2;
-    array[idx] += array[idx + next_dim];
-    if (next_dim * 2 < dim && idx == next_dim - 1) {
-      array[idx] += array[idx + next_dim + 1];
+    if (idx < next_dim) {
+      array[idx] += array[idx + next_dim];
+      if (next_dim * 2 < dim && idx == next_dim - 1) {
+        array[idx] += array[idx + next_dim + 1];
+      }
     }
     dim = next_dim;
     __syncthreads();

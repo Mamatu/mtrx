@@ -27,7 +27,7 @@ namespace mtrx {
 
 class Kernels final {
 public:
-  Kernels(int device);
+  Kernels(int device, Alloc *alloc);
   ~Kernels() = default;
 
   void scaleTrace(int dim, float *matrix, int lda, float factor);
@@ -36,28 +36,27 @@ public:
   void scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
                   cuDoubleComplex factor);
 
-  bool isUpperTriangular(Alloc *alloc, int rows, int columns, float *matrix,
-                         int lda, float delta);
-  bool isUpperTriangular(Alloc *alloc, int rows, int columns, double *matrix,
-                         int lda, double delta);
-  bool isUpperTriangular(Alloc *alloc, int rows, int columns, cuComplex *matrix,
-                         int lda, cuComplex delta);
-  bool isUpperTriangular(Alloc *alloc, int rows, int columns,
-                         cuDoubleComplex *matrix, int lda,
-                         cuDoubleComplex delta);
+  bool isUpperTriangular(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isUpperTriangular(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isUpperTriangular(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
 
-  bool isLowerTriangular(Alloc *alloc, int rows, int columns, float *matrix,
-                         int lda, float delta);
-  bool isLowerTriangular(Alloc *alloc, int rows, int columns, double *matrix,
-                         int lda, double delta);
-  bool isLowerTriangular(Alloc *alloc, int rows, int columns, cuComplex *matrix,
-                         int lda, cuComplex delta);
-  bool isLowerTriangular(Alloc *alloc, int rows, int columns,
-                         cuDoubleComplex *matrix, int lda,
-                         cuDoubleComplex delta);
+  bool isLowerTriangular(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isLowerTriangular(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isLowerTriangular(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
 
 private:
   int m_device;
+  Alloc *m_alloc;
 };
 } // namespace mtrx
 

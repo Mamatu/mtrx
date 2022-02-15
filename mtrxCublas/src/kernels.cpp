@@ -27,6 +27,7 @@
 #include "ikernel_executor.hpp"
 #include "mtrxCublas/status_handler.hpp"
 #include <memory>
+#include <numeric>
 #include <spdlog/details/os.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
@@ -40,7 +41,8 @@
 
 namespace mtrx {
 
-Kernels::Kernels(CUdevice device) : m_device(device) {}
+Kernels::Kernels(CUdevice device, Alloc *alloc)
+    : m_device(device), m_alloc(alloc) {}
 
 std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor(int device) {
 // ToDo: one pointer during whole session
@@ -121,15 +123,35 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   MTRX_CHECK_IF_NOT_NULL(alloc);
 
   auto ke = GetKernelExecutor(device);
-  ke->setThreadsCount(rows, columns, 1);
-  ke->setBlocksCount(1, 1, 1);
 
-  // ToDo: these static casts to optimize
-  bool *d_is = nullptr;
-  void *dv_is = static_cast<void *>(d_is);
-  alloc->malloc(&dv_is, sizeof(bool));
+  const auto &dp = ke->getDeviceProperties();
 
-  void *params[] = {&d_is, &rows, &columns, &matrix, &lda, &delta};
+  std::array<int, 2> threads;
+  std::array<int, 2> blocks;
+  calculateDim(threads, blocks, rows, columns, dp.blockDim, dp.gridDim,
+               dp.maxThreadsPerBlock);
+
+  ke->setThreadsCount(threads);
+  ke->setBlocksCount(blocks);
+  int sharedMem = rows * columns * sizeof(int);
+
+  if (sharedMem > dp.maxThreadsPerBlock) {
+    std::stringstream sstream;
+    sstream << "Required shared memory (" << sharedMem
+            << ") is higher than max threads per block ("
+            << dp.maxThreadsPerBlock << ")";
+    throw std::runtime_error(sstream.str());
+  }
+
+  ke->setSharedMemory(sharedMem);
+  auto blocksCount = blocks[0] * blocks[1];
+
+  int *d_reductionResults = nullptr;
+  void *dv_reductionResults = static_cast<void *>(d_reductionResults);
+  alloc->malloc(&dv_reductionResults, sizeof(int) * blocksCount);
+
+  void *params[] = {&rows, &columns, &matrix,
+                    &lda,  &delta,   &dv_reductionResults};
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
@@ -137,9 +159,14 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   spdlog::info("Run kernel '{}'", cukernelName.str());
   ke->run(cukernelName.str());
 
-  void *h_is = static_cast<void *>(&is);
-  alloc->memcpyKernelToHost(h_is, dv_is, sizeof(bool));
-  alloc->free(d_is);
+  std::vector<int> h_reductionResults(blocksCount, 0);
+  alloc->memcpyKernelToHost(h_reductionResults.data(), dv_reductionResults,
+                            sizeof(int) * blocksCount);
+  alloc->free(dv_reductionResults);
+  int rr =
+      std::accumulate(h_reductionResults.begin(), h_reductionResults.end(), 0);
+
+  is = (rr == rows * columns);
 }
 
 bool Kernel_SF_isUpperTriangular(Alloc *alloc, int rows, int columns,
@@ -214,53 +241,51 @@ bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
   return is;
 }
 
-bool Kernels::isUpperTriangular(Alloc *alloc, int rows, int columns,
-                                float *matrix, int lda, float delta) {
-  return Kernel_SF_isUpperTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isUpperTriangular(int rows, int columns, float *matrix, int lda,
+                                float delta) {
+  return Kernel_SF_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(Alloc *alloc, int rows, int columns,
-                                double *matrix, int lda, double delta) {
-  return Kernel_SD_isUpperTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isUpperTriangular(int rows, int columns, double *matrix, int lda,
+                                double delta) {
+  return Kernel_SD_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(Alloc *alloc, int rows, int columns,
-                                cuComplex *matrix, int lda, cuComplex delta) {
-  return Kernel_CF_isUpperTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isUpperTriangular(int rows, int columns, cuComplex *matrix,
+                                int lda, cuComplex delta) {
+  return Kernel_CF_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(Alloc *alloc, int rows, int columns,
-                                cuDoubleComplex *matrix, int lda,
-                                cuDoubleComplex delta) {
-  return Kernel_CD_isUpperTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                int lda, cuDoubleComplex delta) {
+  return Kernel_CD_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                float *matrix, int lda, float delta) {
-  return Kernel_SF_isLowerTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isLowerTriangular(int rows, int columns, float *matrix, int lda,
+                                float delta) {
+  return Kernel_SF_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                double *matrix, int lda, double delta) {
-  return Kernel_SD_isLowerTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isLowerTriangular(int rows, int columns, double *matrix, int lda,
+                                double delta) {
+  return Kernel_SD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                cuComplex *matrix, int lda, cuComplex delta) {
-  return Kernel_CF_isLowerTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isLowerTriangular(int rows, int columns, cuComplex *matrix,
+                                int lda, cuComplex delta) {
+  return Kernel_CF_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                cuDoubleComplex *matrix, int lda,
-                                cuDoubleComplex delta) {
-  return Kernel_CD_isLowerTriangular(alloc, rows, columns, matrix, lda, delta,
+bool Kernels::isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                                int lda, cuDoubleComplex delta) {
+  return Kernel_CD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 } // namespace mtrx

@@ -1007,28 +1007,26 @@ void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
 
   auto factorType = matrix->valueType;
   CudaAlloc alloc;
-  Kernels kernels(0);
+  Kernels kernels(0, &alloc);
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = kernels.isUpperTriangular(&alloc, rows, columns,
-                                       reinterpret_cast<float *>(matrix->ptr),
-                                       lda, 0.f);
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
     break;
   case ValueType::DOUBLE:
-    result = kernels.isUpperTriangular(&alloc, rows, columns,
-                                       reinterpret_cast<double *>(matrix->ptr),
-                                       lda, 0.);
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
     break;
   case ValueType::FLOAT_COMPLEX:
     result = kernels.isUpperTriangular(
-        &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
     result = kernels.isUpperTriangular(
-        &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
-        lda, cuDoubleComplex());
+        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
+        cuDoubleComplex());
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");
@@ -1069,29 +1067,27 @@ void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
   }
 
   auto factorType = matrix->valueType;
-  Kernels kernels(0);
   CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
 
   switch (factorType) {
   case ValueType::FLOAT:
-    result = kernels.isLowerTriangular(&alloc, rows, columns,
-                                       reinterpret_cast<float *>(matrix->ptr),
-                                       lda, 0.f);
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
     break;
   case ValueType::DOUBLE:
-    result = kernels.isLowerTriangular(&alloc, rows, columns,
-                                       reinterpret_cast<double *>(matrix->ptr),
-                                       lda, 0.);
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
     break;
   case ValueType::FLOAT_COMPLEX:
     result = kernels.isLowerTriangular(
-        &alloc, rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
         cuComplex());
     break;
   case ValueType::DOUBLE_COMPLEX:
     result = kernels.isLowerTriangular(
-        &alloc, rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
-        lda, cuDoubleComplex());
+        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
+        cuDoubleComplex());
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");
@@ -1245,7 +1241,8 @@ cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
     throw std::runtime_error(sstream.str());
   }
 
-  Kernels kernels(0);
+  CudaAlloc cudaAlloc;
+  Kernels kernels(0, &cudaAlloc);
 
   switch (factorType) {
   case ValueType::FLOAT:
