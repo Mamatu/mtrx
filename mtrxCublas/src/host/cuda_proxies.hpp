@@ -37,4 +37,10 @@ void proxy_HostKernel_SD_isLowerTriangular(const void **params);
 void proxy_HostKernel_CF_isLowerTriangular(const void **params);
 void proxy_HostKernel_CD_isLowerTriangular(const void **params);
 
+void proxy_HostKernel_SI_reduceShm(const void **params);
+void proxy_HostKernel_SF_reduceShm(const void **params);
+void proxy_HostKernel_SD_reduceShm(const void **params);
+void proxy_HostKernel_CF_reduceShm(const void **params);
+void proxy_HostKernel_CD_reduceShm(const void **params);
+
 #endif

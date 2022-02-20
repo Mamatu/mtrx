@@ -9,28 +9,28 @@
 #include <spdlog/spdlog.h>
 
 namespace mtrx {
-class IsULTriangularTests : public testing::Test {
+class ReduceTests : public testing::Test {
 public:
   void SetUp() override { spdlog::set_level(spdlog::level::debug); }
 };
 
-TEST_F(IsULTriangularTests, is_upper_triangular) {
+TEST_F(ReduceTests, constant) {
   DeviceProperties dp;
-  dp.blockDim = {32, 32, 1};
+  dp.blockDim = {1, 1, 1};
   dp.gridDim = {1, 1, 1};
-  dp.maxRegistersPerBlock = 1024;
-  dp.maxThreadsPerBlock = 1024;
-  dp.sharedMemPerBlock = 16000;
+  dp.maxRegistersPerBlock = 1;
+  dp.maxThreadsPerBlock = 1;
+  dp.sharedMemPerBlock = 4;
 
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
   Kernels kernels(0, &hostAlloc);
 
-  std::array<float, 4> matrix = {1, 0, 1, 1};
+  std::array<float, 1> matrix = {1};
 
-  auto is = kernels.isUpperTriangular(2, 2, matrix.data(), 2, 0);
-  EXPECT_TRUE(is);
+  int sum = kernels.reduceShm(1, 1, matrix.data(), 1);
+  EXPECT_EQ(1, sum);
 }
 
 } // namespace mtrx

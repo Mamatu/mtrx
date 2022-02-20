@@ -23,33 +23,125 @@
 #include "cuda_core.hpp"
 #include <cuComplex.h>
 
+template <typename T>
+__device__ void oper_plus_equal(T *array, int idx, int idx1) {
+  array[idx] += array[idx1];
+}
+
+__device__ __inline__ void oper_plus_equal(cuComplex *array, int idx,
+                                           int idx1) {
+  array[idx] = cuCaddf(array[idx], array[idx1]);
+}
+
+__device__ __inline__ void oper_plus_equal(cuDoubleComplex *array, int idx,
+                                           int idx1) {
+  array[idx] = cuCadd(array[idx], array[idx1]);
+}
+
+template <typename T> __device__ void init_with_zeros(T *array) {
+  HOST_INIT();
+  const int tx = threadIdx.x;
+  const int ty = threadIdx.y;
+  const int trow = blockDim.y;
+  array[ty + trow * tx] = 0;
+}
+
+__device__ __inline__ void init_with_zeros(cuComplex *array) {
+  HOST_INIT();
+  const int tx = threadIdx.x;
+  const int ty = threadIdx.y;
+  const int trow = blockDim.y;
+  array[ty + trow * tx] = cuComplex{0, 0};
+}
+
+__device__ __inline__ void init_with_zeros(cuDoubleComplex *array) {
+  HOST_INIT();
+  const int tx = threadIdx.x;
+  const int ty = threadIdx.y;
+  const int trow = blockDim.y;
+  array[ty + trow * tx] = cuDoubleComplex{0, 0};
+}
+
 /**
- * @brief reduction function which use shared memory buffer for calculations
+ * @brief Calculates reduction of array for single threads block.
+ * @param array_shm - array of shared memory type. It means that it will be
+ * processed as array in one threads block.
+ * @param length - length of array_shm
+ * @return reduced value of one threads block.
  */
-template <typename T> __device__ void cuda_reduce_shm(int m, int n, T *array) {
+template <typename T>
+__device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
   HOST_INIT();
 
-  const int x = threadIdx.x + blockDim.x * blockIdx.x;
-  const int y = threadIdx.y + blockDim.y * blockIdx.y;
-  const int rows = blockDim.y * gridDim.y;
+  const int x = threadIdx.x;
+  const int y = threadIdx.y;
+  const int rows = blockDim.y;
 
   int idx = y + rows * x;
-  int dim = m * n;
-  while (dim > 1) {
-    int next_dim = dim / 2;
-    if (idx < next_dim) {
-      array[idx] += array[idx + next_dim];
-      if (next_dim * 2 < dim && idx == next_dim - 1) {
-        array[idx] += array[idx + next_dim + 1];
+  int dim = length;
+
+  if (idx < length) {
+    while (dim > 1) {
+      int next_dim = dim / 2;
+      if (idx < next_dim) {
+        oper_plus_equal(array_shm, idx, idx + next_dim);
+        if (next_dim * 2 < dim && idx == next_dim - 1) {
+          oper_plus_equal(array_shm, idx, idx + next_dim + 1);
+        }
       }
+      dim = next_dim;
+      __syncthreads();
     }
-    dim = next_dim;
-    __syncthreads();
+  }
+  __syncthreads();
+  return array_shm[0];
+}
+
+/**
+ * @brief Calculates reduction of array with support for all blocks.
+ * @param reductionResults result of reduction. It should be array with size of
+ * equal to number of blocks.
+ * @param array_shm - array of shared memory type. It means that it will be
+ * processed as array in one threads block
+ * @param length - length of array_shm
+ */
+template <typename T>
+__device__ void cuda_reduce_shm_multi_blocks(T *array_shm, int length,
+                                             T *reductionResults) {
+  HOST_INIT();
+
+  T v = cuda_reduce_shm_single_block(array_shm, length);
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = v;
   }
 }
 
-template <typename T> __device__ void cuda_reduce(int m, int n, T *array) {
-  cuda_reduce_shm(m, n, array);
+/**
+ * @brief Calculate reduction of array.
+ * WARNING! It requires shared memory!
+ */
+template <typename T>
+__device__ void cuda_reduce_shm(int m, int n, T *array, int lda,
+                                T *reductionResults) {
+  HOST_INIT();
+
+  const int tbx = threadIdx.x + blockDim.x * blockIdx.x;
+  const int tby = threadIdx.y + blockDim.y * blockIdx.y;
+
+  const int tx = threadIdx.x;
+  const int ty = threadIdx.y;
+  const int trow = blockDim.y;
+
+  T *reduceBuffer = nullptr;
+  GENERIC_INIT_SHARED(T, reduceBuffer);
+  init_with_zeros(reduceBuffer);
+
+  if (ty < m && tx < n) {
+    reduceBuffer[ty + trow * tx] = array[tby + lda * tbx];
+    const int reduceBufferLen = blockDim.x * blockDim.y;
+    cuda_reduce_shm_multi_blocks(reduceBuffer, reduceBufferLen,
+                                 reductionResults);
+  }
 }
 
 #endif

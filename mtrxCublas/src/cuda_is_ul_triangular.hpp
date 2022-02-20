@@ -26,7 +26,7 @@
 
 template <typename T>
 __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
-                                       int /*lda*/, T delta,
+                                       int lda, T delta,
                                        int *reductionResults) {
   HOST_INIT();
 
@@ -36,22 +36,23 @@ __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
 
+  const int shmIdx = threadIdx.x * blockDim.y + threadIdx.y;
+  reduceBuffer[shmIdx] = 0;
   if (y < rows && x < columns) {
-    const T v = matrix[x * rows + y];
+    const T v = matrix[x * lda + y];
     int is = (x >= y && cuda_isAbsHigher(v, delta)) ||
              (x < y && !cuda_isAbsHigher(v, delta));
 
-    reduceBuffer[x * rows + y] = is;
-    cuda_reduce<int>(rows, columns, reduceBuffer);
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-      reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = reduceBuffer[0];
-    }
+    reduceBuffer[x * blockDim.y + y] = is;
+    const int reduceBufferLen = blockDim.x * blockDim.y;
+    cuda_reduce_shm_multi_blocks<int>(reduceBuffer, reduceBufferLen,
+                                      reductionResults);
   }
 }
 
 template <typename T>
 __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
-                                       int /*lda*/, T delta,
+                                       int lda, T delta,
                                        int *reductionResults) {
   HOST_INIT();
 
@@ -61,16 +62,17 @@ __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
   const int x = threadIdx.x + blockDim.x * blockIdx.x;
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
 
+  const int shmIdx = threadIdx.x * blockDim.y + threadIdx.y;
+  reduceBuffer[shmIdx] = 0;
   if (y < rows && x < columns) {
-    const T v = matrix[x * rows + y];
+    const T v = matrix[x * lda + y];
     int is = (x > y && !cuda_isAbsHigher(v, delta)) ||
              (x <= y && cuda_isAbsHigher(v, delta));
 
-    reduceBuffer[x * rows + y] = is;
-    cuda_reduce<int>(rows, columns, reduceBuffer);
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-      reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = reduceBuffer[0];
-    }
+    reduceBuffer[x * blockDim.y + y] = is;
+    const int reduceBufferLen = blockDim.x * blockDim.y;
+    cuda_reduce_shm_multi_blocks<int>(reduceBuffer, reduceBufferLen,
+                                      reductionResults);
   }
 }
 

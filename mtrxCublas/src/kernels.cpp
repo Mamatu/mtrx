@@ -72,7 +72,7 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
-  cukernelName << "CUDA" << kernelName;
+  cukernelName << "Cuda" << kernelName;
   spdlog::info("Run kernel '{}'", cukernelName.str());
   ke->run(cukernelName.str());
 }
@@ -135,10 +135,10 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   ke->setBlocksCount(blocks);
   int sharedMem = rows * columns * sizeof(int);
 
-  if (sharedMem > dp.maxThreadsPerBlock) {
+  if (sharedMem > dp.sharedMemPerBlock) {
     std::stringstream sstream;
     sstream << "Required shared memory (" << sharedMem
-            << ") is higher than max threads per block ("
+            << ") is higher than shared memory per block ("
             << dp.maxThreadsPerBlock << ")";
     throw std::runtime_error(sstream.str());
   }
@@ -147,22 +147,21 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   auto blocksCount = blocks[0] * blocks[1];
 
   int *d_reductionResults = nullptr;
-  void *dv_reductionResults = static_cast<void *>(d_reductionResults);
-  alloc->malloc(&dv_reductionResults, sizeof(int) * blocksCount);
+  alloc->malloc(reinterpret_cast<void**>(&d_reductionResults), sizeof(int) * blocksCount);
 
   void *params[] = {&rows, &columns, &matrix,
-                    &lda,  &delta,   &dv_reductionResults};
+                    &lda,  &delta,   &d_reductionResults};
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
-  cukernelName << "CUDA" << kernelName;
+  cukernelName << "Cuda" << kernelName;
   spdlog::info("Run kernel '{}'", cukernelName.str());
   ke->run(cukernelName.str());
 
   std::vector<int> h_reductionResults(blocksCount, 0);
-  alloc->memcpyKernelToHost(h_reductionResults.data(), dv_reductionResults,
+  alloc->memcpyKernelToHost(h_reductionResults.data(), d_reductionResults,
                             sizeof(int) * blocksCount);
-  alloc->free(dv_reductionResults);
+  alloc->free(d_reductionResults);
   int rr =
       std::accumulate(h_reductionResults.begin(), h_reductionResults.end(), 0);
 
@@ -287,5 +286,85 @@ bool Kernels::isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
                                 int lda, cuDoubleComplex delta) {
   return Kernel_CD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
+}
+
+template <typename T,
+          typename BinaryOperation = std::function<T(const T &, const T &)>>
+T Kernel_reduceShm(
+    Alloc *alloc, const std::string &kernelName, int m, int n, T *array,
+    int lda, CUdevice device,
+    BinaryOperation &&boper = [](const T &t1, const T &t2) {
+      return t1 + t2;
+    }) {
+  auto ke = GetKernelExecutor(device);
+  const auto &dp = ke->getDeviceProperties();
+
+  std::array<int, 2> threads;
+  std::array<int, 2> blocks;
+  calculateDim(threads, blocks, m, n, dp.blockDim, dp.gridDim,
+               dp.maxThreadsPerBlock);
+
+  auto threadsCount = threads[0] * threads[1];
+  int sharedMem = threadsCount * sizeof(T);
+
+  if (sharedMem > dp.sharedMemPerBlock) {
+    std::stringstream sstream;
+    sstream << "Required shared memory (" << sharedMem
+            << ") is higher than shared memory per block ("
+            << dp.maxThreadsPerBlock << ")";
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto blocksCount = threads[0] * threads[1];
+  std::vector<T> h_reductionResults;
+  h_reductionResults.resize(blocksCount);
+
+  T *d_reductionResults = nullptr;
+  alloc->malloc(reinterpret_cast<void**>(&d_reductionResults), blocksCount * sizeof(T));
+
+  ke->setThreadsCount(threads);
+  ke->setBlocksCount(blocks);
+  ke->setSharedMemory(sharedMem);
+
+  void *params[] = {&m, &n, &array, &lda, &d_reductionResults};
+  ke->setParams(const_cast<const void **>(params));
+
+  std::stringstream cukernelName;
+  cukernelName << "Cuda" << kernelName;
+  spdlog::info("Run kernel '{}'", cukernelName.str());
+  ke->run(cukernelName.str());
+
+  alloc->memcpyKernelToHost(h_reductionResults.data(), d_reductionResults,
+                            sizeof(T) * blocksCount);
+  alloc->free(d_reductionResults);
+
+  return std::accumulate(h_reductionResults.begin(), h_reductionResults.end(),
+                         T(), std::forward<BinaryOperation>(boper));
+}
+
+int Kernels::reduceShm(int m, int n, int *array, int lda) {
+  return Kernel_reduceShm<int>(m_alloc, "Kernel_SI_reduceShm", m, n, array, lda,
+                               m_device);
+}
+
+float Kernels::reduceShm(int m, int n, float *array, int lda) {
+  return Kernel_reduceShm<float>(m_alloc, "Kernel_SF_reduceShm", m, n, array,
+                                 lda, m_device);
+}
+
+double Kernels::reduceShm(int m, int n, double *array, int lda) {
+  return Kernel_reduceShm<double>(m_alloc, "Kernel_SD_reduceShm", m, n, array,
+                                  lda, m_device);
+}
+
+cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda) {
+  return Kernel_reduceShm<cuComplex>(m_alloc, "Kernel_CF_reduceShm", m, n,
+                                     array, lda, m_device, cuCaddf);
+}
+
+cuDoubleComplex Kernels::reduceShm(int m, int n, cuDoubleComplex *array,
+                                   int lda) {
+  return Kernel_reduceShm<cuDoubleComplex>(m_alloc, "Kernel_CD_reduceShm", m, n,
+                                           array, lda, m_device, cuCadd);
 }
 } // namespace mtrx

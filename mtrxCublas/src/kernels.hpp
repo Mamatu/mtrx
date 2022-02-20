@@ -54,6 +54,31 @@ public:
   bool isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
                          int lda, cuDoubleComplex delta);
 
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  int reduceShm(int m, int n, int *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  float reduceShm(int m, int n, float *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  double reduceShm(int m, int n, double *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  cuComplex reduceShm(int m, int n, cuComplex *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda);
+
 private:
   int m_device;
   Alloc *m_alloc;
