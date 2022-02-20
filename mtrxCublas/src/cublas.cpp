@@ -40,6 +40,13 @@
 #include "cuda_alloc.hpp"
 #include "kernels.hpp"
 
+#ifdef CUBLAS_NVPROF_KERNELS
+#include "cuda_profiler.hpp"
+#define PROFILER() Profiler p;
+#else
+#define PROFILER()
+#endif
+
 namespace mtrx {
 struct Mem {
   void *ptr = nullptr;

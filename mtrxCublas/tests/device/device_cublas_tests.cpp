@@ -5,13 +5,27 @@
 #include <mtrxCublas/matchers.hpp>
 
 #include <array>
+#include <cuda.h>
+#include <cuda_profiler_api.h>
+
+#ifdef CUBLAS_NVPROF_TESTS
+#include "cuda_profiler.hpp"
+#endif
 
 namespace mtrx {
 class DeviceCublasTests : public testing::Test {
 public:
-  virtual void SetUp() {}
+  void SetUp() override {
+#ifdef CUBLAS_NVPROF_TESTS
+    startProfiler();
+#endif
+  }
 
-  virtual void TearDown() {}
+  void TearDown() override {
+#ifdef CUBLAS_NVPROF_TESTS
+    stopProfiler();
+#endif
+  }
 };
 
 TEST_F(DeviceCublasTests, create_destroy) {

@@ -39,6 +39,13 @@
 #include "host/host_kernel_executor.hpp"
 #endif
 
+#ifdef CUBLAS_NVPROF_KERNELS
+#include "cuda_profiler.hpp"
+#define PROFILER() Profiler p;
+#else
+#define PROFILER()
+#endif
+
 namespace mtrx {
 
 Kernels::Kernels(CUdevice device, Alloc *alloc)
@@ -74,7 +81,10 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
   std::stringstream cukernelName;
   cukernelName << "Cuda" << kernelName;
   spdlog::info("Run kernel '{}'", cukernelName.str());
-  ke->run(cukernelName.str());
+  {
+    PROFILER();
+    ke->run(cukernelName.str());
+  }
 }
 
 void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor,
@@ -157,8 +167,10 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   std::stringstream cukernelName;
   cukernelName << "Cuda" << kernelName;
   spdlog::info("Run kernel '{}'", cukernelName.str());
-  ke->run(cukernelName.str());
-
+  {
+    PROFILER()
+    ke->run(cukernelName.str());
+  }
   std::vector<int> h_reductionResults(blocksCount, 0);
   alloc->memcpyKernelToHost(h_reductionResults.data(), d_reductionResults,
                             sizeof(int) * blocksCount);
@@ -334,8 +346,10 @@ T Kernel_reduceShm(
   std::stringstream cukernelName;
   cukernelName << "Cuda" << kernelName;
   spdlog::info("Run kernel '{}'", cukernelName.str());
-  ke->run(cukernelName.str());
-
+  {
+    PROFILER()
+    ke->run(cukernelName.str());
+  }
   alloc->memcpyKernelToHost(h_reductionResults.data(), d_reductionResults,
                             sizeof(T) * blocksCount);
   alloc->free(d_reductionResults);
