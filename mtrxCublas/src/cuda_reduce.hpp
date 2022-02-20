@@ -64,6 +64,7 @@ __device__ __inline__ void init_with_zeros(cuDoubleComplex *array) {
 
 /**
  * @brief Calculates reduction of array for single threads block.
+ * WARNING! It doesn't sync threads before!
  * @param array_shm - array of shared memory type. It means that it will be
  * processed as array in one threads block.
  * @param length - length of array_shm
@@ -98,7 +99,23 @@ __device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
 }
 
 /**
+ * @brief Calculates reduction of array for single threads block. It syncs
+ * threads at beginning
+ * @param array_shm - array of shared memory type. It means that it will be
+ * processed as array in one threads block.
+ * @param length - length of array_shm
+ * @return reduced value of one threads block.
+ */
+template <typename T>
+__device__ T cuda_reduce_shm_single_block_sync(T *array_shm, int length) {
+  HOST_INIT();
+  __syncthreads();
+  return cuda_reduce_shm_single_block(array_shm, length);
+}
+
+/**
  * @brief Calculates reduction of array with support for all blocks.
+ * WARNING! It doesn't sync threads before!
  * @param reductionResults result of reduction. It should be array with size of
  * equal to number of blocks.
  * @param array_shm - array of shared memory type. It means that it will be
@@ -114,6 +131,24 @@ __device__ void cuda_reduce_shm_multi_blocks(T *array_shm, int length,
   if (threadIdx.x == 0 && threadIdx.y == 0) {
     reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = v;
   }
+}
+
+/**
+ * @brief Calculates reduction of array with support for all blocks. It sync
+ * threas at beginning. WARNING! It doesn't sync threads before!
+ * @param reductionResults result of reduction. It should be array with size of
+ * equal to number of blocks.
+ * @param array_shm - array of shared memory type. It means that it will be
+ * processed as array in one threads block
+ * @param length - length of array_shm
+ */
+template <typename T>
+__device__ void cuda_reduce_shm_multi_blocks_sync(T *array_shm, int length,
+                                                  T *reductionResults) {
+  HOST_INIT();
+
+  __syncthreads();
+  cuda_reduce_shm_multi_blocks(array_shm, length, reductionResults);
 }
 
 /**
