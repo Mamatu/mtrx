@@ -19,8 +19,8 @@
 
 #include "cuda_proxies.hpp"
 #include "../cuda_is_ul_triangular.hpp"
-#include "../cuda_scale_trace.hpp"
 #include "../cuda_reduce.hpp"
+#include "../cuda_scale_trace.hpp"
 
 template <typename T> T *getParam(const void *param) {
   return *static_cast<T *const *>(param);
@@ -252,7 +252,7 @@ void proxy_HostKernel_CD_isLowerTriangular(const void **params) {
 
 template <typename T, typename Callback>
 void proxy_HostKernel_generic_reduceShm(const void **params,
-                                             Callback &&callback) {
+                                        Callback &&callback) {
   int m = *static_cast<const int *>(params[0]);
   int n = *static_cast<const int *>(params[1]);
   T *array = getParam<T>(params[2]);
@@ -298,7 +298,7 @@ void proxy_HostKernel_CD_reduceShm(const void **params) {
   auto cuda_func = [](int rows, int columns, auto *array, int lda,
                       auto *reductionResults) {
     cuda_reduce_shm<cuDoubleComplex>(rows, columns, array, lda,
-                                    reductionResults);
+                                     reductionResults);
   };
   proxy_HostKernel_generic_reduceShm<cuDoubleComplex>(params,
                                                       std::move(cuda_func));

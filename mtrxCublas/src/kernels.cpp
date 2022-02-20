@@ -147,7 +147,8 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   auto blocksCount = blocks[0] * blocks[1];
 
   int *d_reductionResults = nullptr;
-  alloc->malloc(reinterpret_cast<void**>(&d_reductionResults), sizeof(int) * blocksCount);
+  alloc->malloc(reinterpret_cast<void **>(&d_reductionResults),
+                sizeof(int) * blocksCount);
 
   void *params[] = {&rows, &columns, &matrix,
                     &lda,  &delta,   &d_reductionResults};
@@ -315,12 +316,13 @@ T Kernel_reduceShm(
     throw std::runtime_error(sstream.str());
   }
 
-  auto blocksCount = threads[0] * threads[1];
+  auto blocksCount = blocks[0] * blocks[1];
   std::vector<T> h_reductionResults;
   h_reductionResults.resize(blocksCount);
 
   T *d_reductionResults = nullptr;
-  alloc->malloc(reinterpret_cast<void**>(&d_reductionResults), blocksCount * sizeof(T));
+  alloc->malloc(reinterpret_cast<void **>(&d_reductionResults),
+                blocksCount * sizeof(T));
 
   ke->setThreadsCount(threads);
   ke->setBlocksCount(blocks);
