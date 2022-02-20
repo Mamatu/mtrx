@@ -33,4 +33,23 @@ TEST_F(ReduceTests, constant) {
   EXPECT_EQ(1, sum);
 }
 
+TEST_F(ReduceTests, multi_blocks) {
+  DeviceProperties dp;
+  dp.blockDim = {1, 1, 1};
+  dp.gridDim = {2, 2, 1};
+  dp.maxRegistersPerBlock = 1;
+  dp.maxThreadsPerBlock = 1;
+  dp.sharedMemPerBlock = sizeof(float);
+
+  DevicePropertiesProvider::set(0, dp);
+
+  HostAlloc hostAlloc;
+  Kernels kernels(0, &hostAlloc);
+
+  std::array<float, 4> matrix = {1, 2, 3, 4};
+
+  int sum = kernels.reduceShm(2, 2, matrix.data(), 2);
+  EXPECT_EQ(10, sum);
+}
+
 } // namespace mtrx

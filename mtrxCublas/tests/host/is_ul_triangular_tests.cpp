@@ -16,11 +16,11 @@ public:
 
 TEST_F(IsULTriangularTests, is_upper_triangular) {
   DeviceProperties dp;
-  dp.blockDim = {32, 32, 1};
+  dp.blockDim = {2, 2, 1};
   dp.gridDim = {1, 1, 1};
-  dp.maxRegistersPerBlock = 1024;
-  dp.maxThreadsPerBlock = 1024;
-  dp.sharedMemPerBlock = 16000;
+  dp.maxRegistersPerBlock = 4;
+  dp.maxThreadsPerBlock = 4;
+  dp.sharedMemPerBlock = 4 * sizeof(float);
 
   DevicePropertiesProvider::set(0, dp);
 
