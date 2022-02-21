@@ -1,6 +1,8 @@
 #include <array>
 #include <gtest/gtest.h>
 
+#include "../src/host/device_properties_provider.hpp"
+#include "../src/host_alloc.hpp"
 #include "../src/kernels.hpp"
 #include <spdlog/spdlog.h>
 
@@ -33,10 +35,21 @@ TEST_F(HostCublasTests, Kernel_SF_scaleTrace) {
 
     initDiagonalMatrix(matrix, dim, 2.f, 10.f);
 
+    DeviceProperties dp;
+    dp.blockDim = {32, 32, 1};
+    dp.gridDim = {1, 1, 1};
+    dp.maxRegistersPerBlock = 1024;
+    dp.maxThreadsPerBlock = 1024;
+    dp.sharedMemPerBlock = 0;
+
+    DevicePropertiesProvider::set(0, dp);
+
     int lda = 10;
     float factor = 0.5f;
+    HostAlloc hostAlloc;
+    Kernels kernels(0, &hostAlloc);
 
-    Kernel_SF_scaleTrace(dim, matrix, lda, factor);
+    kernels.scaleTrace(dim, matrix, lda, factor);
 
     for (int x = 0; x < dim; ++x) {
       for (int y = 0; y < dim; y++) {

@@ -21,7 +21,10 @@
 #define MTRX_CORE_TO_STRING_HPP
 
 #include "types.hpp"
+#include <sstream>
 #include <string>
+
+#define MTRX_TO_STRING(v) #v
 
 namespace mtrx {
 inline std::string toString(ValueType valueType) {
@@ -73,6 +76,20 @@ inline std::string toString(SideMode sideMode) {
   };
   return "NOT_DEFINED";
 }
+
+template <typename Container> std::string toString(Container &&container) {
+  std::stringstream sstream;
+  sstream << "[";
+  for (size_t idx = 0; idx < container.size(); ++idx) {
+    sstream << container[idx];
+    if (idx < container.size() - 1) {
+      sstream << ", ";
+    }
+  }
+  sstream << "]";
+  return sstream.str();
+}
+
 } // namespace mtrx
 
 #endif

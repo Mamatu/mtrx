@@ -27,7 +27,7 @@
 
 #define HOST_INIT()
 
-#define HOST_INIT_SHARED(type, buffer)                                         \
+#define GENERIC_INIT_SHARED(type, buffer)                                      \
   extern __shared__ type mtrx_shared_buffer[];                                 \
   buffer = mtrx_shared_buffer;
 
@@ -35,16 +35,9 @@
 
 #else
 
-#include <vector_types.h>
-//#include "host/dim3.hpp"
 #include "host/thread_idx.hpp"
 #include <pthread.h>
-
-//#define __global__ inline
-//#define __host__
-//#define __device__
-//#define __shared__
-//#define __inline__ inline
+#include <vector_types.h>
 
 // setting sequence is for suppress warning
 #define HOST_INIT()                                                            \
@@ -53,13 +46,14 @@
   dim3 blockIdx = ti.getBlockIdx();                                            \
   dim3 blockDim = ti.getBlockDim();                                            \
   dim3 gridDim = ti.getGridDim();                                              \
-  threadIdx = threadIdx;                                                       \
-  blockIdx = blockIdx;                                                         \
-  blockDim = blockDim;                                                         \
-  gridDim = gridDim;
+  threadIdx = threadIdx; /*for suppress warning*/                              \
+  blockIdx = blockIdx;   /*for suppress warning*/                              \
+  blockDim = blockDim;   /*for suppress warning*/                              \
+  gridDim = gridDim;     /*for suppress warning*/
 
-#define HOST_INIT_SHARED(type, buffer)                                         \
-  buffer = static_cast<type *>(mtrx::ThreadIdx::GetThreadIdx());
+#define GENERIC_INIT_SHARED(type, buffer)                                      \
+  mtrx::ThreadIdx &_this_tidx = mtrx::ThreadIdx::GetThreadIdx();               \
+  buffer = static_cast<type *>(_this_tidx.getSharedBuffer());
 
 #define HOST_CODE(code) code
 

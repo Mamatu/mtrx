@@ -21,6 +21,7 @@
 #define MTRX_CORE_STATUS_HANDLER_HPP
 
 #include <functional>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
@@ -28,13 +29,18 @@
 #include <mtrxCore/to_string.hpp>
 
 namespace mtrx {
-template <typename Status, typename Callback = std::function<void(Status)>>
+template <typename Status,
+          typename ToStringT = std::function<std::string(Status)>>
 void handleStatus(
-    Status status, const Status success, Callback &&callback = [](Status) {}) {
-  auto exception = [callback = std::forward<Callback>(callback)](auto status) {
+    Status status, const Status success,
+    ToStringT &&toStringT = [](Status status) -> std::string {
+      return toString(status);
+    }) {
+  auto exception = [toStringT =
+                        std::forward<ToStringT>(toStringT)](auto status) {
     std::stringstream sstream;
-    sstream << "Error: " << toString(status);
-    callback(status);
+    sstream << "Error: " << toStringT(status);
+    spdlog::error(sstream.str());
     throw std::runtime_error(sstream.str());
   };
 

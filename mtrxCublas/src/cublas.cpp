@@ -17,21 +17,35 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "cuComplex.h"
+#include "driver_types.h"
+#include "mtrxCore/status_handler.hpp"
 #include "mtrxCore/types.hpp"
 #include <cassert>
 #include <cstdio>
 #include <exception>
 
 #include <cuda_runtime.h>
+#include <mtrxCore/checkers.hpp>
 #include <mtrxCublas/cublas.hpp>
 
 #include <map>
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCublas/status_handler.hpp>
 #include <mtrxCublas/to_string.hpp>
+#include <spdlog/fmt/bundled/format-inl.h>
+#include <spdlog/spdlog.h>
 #include <type_traits>
 
+#include "cuda_alloc.hpp"
 #include "kernels.hpp"
+
+#ifdef CUBLAS_NVPROF_KERNELS
+#include "cuda_profiler.hpp"
+#define PROFILER() Profiler p;
+#else
+#define PROFILER()
+#endif
 
 namespace mtrx {
 struct Mem {
@@ -39,6 +53,24 @@ struct Mem {
   int count = 0;
   ValueType valueType = ValueType::NOT_DEFINED;
 };
+
+template <typename T> void *cublas_getOffset(Mem *mem, int idx) {
+  T *ptr = static_cast<T *>(mem->ptr);
+  return static_cast<void *>(&ptr[idx]);
+}
+
+void *cublas_getOffset(Mem *mem, int idx) {
+  if (mem->valueType == ValueType::FLOAT) {
+    return cublas_getOffset<float>(mem, idx);
+  } else if (mem->valueType == ValueType::DOUBLE) {
+    return cublas_getOffset<double>(mem, idx);
+  } else if (mem->valueType == ValueType::FLOAT_COMPLEX) {
+    return cublas_getOffset<cuComplex>(mem, idx);
+  } else if (mem->valueType == ValueType::DOUBLE_COMPLEX) {
+    return cublas_getOffset<cuDoubleComplex>(mem, idx);
+  }
+  return nullptr;
+}
 
 int SizeOf(ValueType valueType, int n = 1) {
   switch (valueType) {
@@ -140,7 +172,7 @@ Cublas::~Cublas() {
   try {
     handleStatus(cublasDestroy(m_handle));
   } catch (const std::exception &ex) {
-    fprintf(stderr, "%s\n", ex.what());
+    spdlog::error("%s", ex.what());
     abort();
   }
 }
@@ -444,6 +476,15 @@ void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
   } else {
     call(FillMode::LOWER);
     call(FillMode::UPPER);
+    if (alphaType == ValueType::FLOAT) {
+      float scaleFactor = 0.5f;
+      scaleTrace(output, static_cast<void *>(&scaleFactor), ValueType::FLOAT);
+    } else if (alphaType == ValueType::DOUBLE) {
+      double scaleFactor = 0.5;
+      scaleTrace(output, static_cast<void *>(&scaleFactor), ValueType::DOUBLE);
+    } else {
+      throw std::runtime_error("Not supported yet...");
+    }
   }
 }
 
@@ -804,17 +845,10 @@ void Cublas::_geqrf(Mems &a, Mems &tau) {
 
   if (pairStatus.second < 0) {
     std::stringstream sstream;
-    sstream << "The parameters passed at " << pairStatus.first << " is invalid";
+    sstream << "The parameters passed at " << -pairStatus.second
+            << " is invalid";
     throw std::runtime_error(sstream.str());
   }
-}
-
-void Cublas::_qrDecomposition(Mem *q, Mem *r, Mem *a) {
-  Mems qs{q};
-  Mems rs{r};
-  Mems as{a};
-
-  _qrDecomposition(qs, rs, as);
 }
 
 template <typename T>
@@ -824,53 +858,84 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
   auto n = cublas->getColumns(a[0]);
   auto k = std::min(m, n);
 
+  if (m != n) {
+    std::stringstream sstream;
+    sstream << "Matrix is not square! It is " << m << "x" << n;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto m2 = m * n;
+  std::vector<T> h_zeros(m2, static_cast<T>(0));
+
   Mem *I = cublas->createIdentityMatrix(m, m, valueType);
   Mem *H = cublas->createMatrix(m, m, valueType);
   Mem *Aux1 = cublas->createMatrix(m, m, valueType);
   Mem *Aux2 = cublas->createMatrix(m, m, valueType);
   Mem *v = cublas->create(m, valueType);
 
-  Blas::Mems taus;
-  taus.reserve(a.size());
+  Blas::Mems aux3;
+  for (auto *mema : a) {
+    Mem *Aux3 = cublas->createMatrix(m, m, valueType);
+    cublas->matrixMul(Aux3, I, mema);
+    aux3.push_back(Aux3);
+  }
 
   auto dim = std::max(static_cast<size_t>(1), std::min(m, n));
 
+  Blas::Mems taus;
+  taus.reserve(a.size());
   for (size_t idx = 0; idx < a.size(); ++idx) {
     taus.push_back(cublas->create(dim, a[0]->valueType));
   }
 
-  cublas->geqrf(a, taus);
+  cublas->geqrf(aux3, taus);
   std::vector<T> h_taus;
   h_taus.resize(dim);
 
-  auto swap = [](Mem **aux1, Mem **aux2) {
-    Mem *temp = *aux2;
-    *aux2 = *aux1;
-    *aux1 = temp;
-  };
+  for (size_t j = 0; j < aux3.size(); ++j) {
+    cublas->copyKernelToHost(h_taus.data(), taus[j]);
+    for (size_t i = 0; i < k; ++i) {
 
-  for (size_t idx = 0; idx < a.size(); ++idx) {
-    cublas->copyKernelToHost(h_taus.data(), taus[idx]);
-    for (size_t kidx = 0; kidx < k; ++kidx) {
-      T tau = h_taus[kidx];
+      auto *d_array = aux3[j];
+      auto rows = cublas->getRows(d_array);
+
+      int idx1 = (i + 1) + rows * i;
+      int idx2 = (m) + rows * i;
+      int offset = idx2 - idx1;
+      Mem mem = {cublas_getOffset(d_array, idx1), offset, valueType};
+
+      std::vector<T> h_v(m, 0);
+      h_v[i] = 1;
+      auto status = cudaMemcpy(h_v.data() + i + 1, mem.ptr,
+                               SizeOf<T>(mem.count), cudaMemcpyDeviceToHost);
+      handleStatus(status);
+
+      cublas->copyHostToKernel(v, h_v.data());
+
+      T tau = h_taus[i];
+      cublas->copyHostToKernel(Aux1, h_zeros.data());
       cublas->syr(FillMode::FULL, Aux1, &tau, valueType, v);
+
       cublas->subtract(Aux2, I, Aux1);
-      if (kidx > 0) {
+      if (i > 0) {
+        cublas->matrixMul(Aux1, I, H);
         cublas->matrixMul(H, Aux1, Aux2);
       } else {
-        cublas->matrixMul(H, Aux2, I);
+        cublas->matrixMul(H, I, Aux2);
       }
-      swap(&Aux2, &Aux1);
     }
 
-    auto status = cudaMemcpy(q[idx]->ptr, H->ptr, SizeOf<T>(H->count),
+    cublas->matrixMul(q[j], I, H);
+#if 0
+    auto status = cudaMemcpy(q[j]->ptr, H->ptr, SizeOf<T>(H->count),
                              cudaMemcpyDeviceToDevice);
     handleStatus(status);
+#endif
 
     T alpha = static_cast<T>(1);
     T beta = static_cast<T>(0);
-    cublas->gemm(r[idx], &alpha, valueType, Operation::OP_T, q[idx],
-                 Operation::OP_N, a[idx], &beta, valueType);
+    cublas->gemm(r[j], &alpha, valueType, Operation::OP_T, q[j],
+                 Operation::OP_N, a[j], &beta, valueType);
   }
 
   for (const auto *tau : taus) {
@@ -884,6 +949,14 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
   cublas->destroy(I);
 }
 
+void Cublas::_qrDecomposition(Mem *q, Mem *r, Mem *a) {
+  Mems qs{q};
+  Mems rs{r};
+  Mems as{a};
+
+  _qrDecomposition(qs, rs, as);
+}
+
 void Cublas::_qrDecomposition(Mems &q, Mems &r, Mems &a) {
   auto valueType = a[0]->valueType;
   if (valueType == ValueType::FLOAT) {
@@ -891,6 +964,162 @@ void Cublas::_qrDecomposition(Mems &q, Mems &r, Mems &a) {
   } else if (valueType == ValueType::DOUBLE) {
     cublas_qrDecomposition<double>(this, q, r, a, valueType);
   }
+}
+
+void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
+  bool status = false;
+
+  const auto dims = getDims(H);
+  const auto _dims = getDims(H);
+
+  auto rows = dims.first;
+  auto columns = dims.second;
+
+  const auto valueType = H->valueType;
+  const auto _valueType = Q->valueType;
+
+  check(valueType, _valueType, "H", "Q");
+  check(dims, _dims, "H", "Q");
+
+  Mem *aux_Q = createIdentityMatrix(rows, columns, valueType);
+  Mem *aux_Q1 = createMatrix(rows, columns, valueType);
+
+  Mem *aux_R = createMatrix(rows, columns, valueType);
+
+  Mem *ioQ = Q;
+
+  status = isUpperTriangular(H);
+
+  while (status == false) {
+    qrDecomposition(ioQ, aux_R, H);
+
+    matrixMul(H, aux_R, ioQ);
+    matrixMul(aux_Q1, ioQ, aux_Q);
+    swap(&aux_Q1, &aux_Q);
+    status = isUpperTriangular(H);
+  }
+}
+
+void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
+                              size_t lda) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto factorType = matrix->valueType;
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  switch (factorType) {
+  case ValueType::FLOAT:
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    break;
+  case ValueType::DOUBLE:
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+    break;
+  case ValueType::FLOAT_COMPLEX:
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        cuComplex());
+    break;
+  case ValueType::DOUBLE_COMPLEX:
+    result = kernels.isUpperTriangular(
+        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
+        cuDoubleComplex());
+    break;
+  case ValueType::NOT_DEFINED:
+    throw std::runtime_error("Not defined value type");
+  };
+}
+
+void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix) {
+
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto lda = rows;
+  cublas_isUpperTriangular(result, cublas, matrix, lda);
+}
+
+bool Cublas::_isUpperTriangular(Mem *m) {
+  bool result = false;
+  cublas_isUpperTriangular(result, this, m);
+  return result;
+}
+
+void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
+                              size_t lda) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto factorType = matrix->valueType;
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  switch (factorType) {
+  case ValueType::FLOAT:
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
+    break;
+  case ValueType::DOUBLE:
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
+    break;
+  case ValueType::FLOAT_COMPLEX:
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
+        cuComplex());
+    break;
+  case ValueType::DOUBLE_COMPLEX:
+    result = kernels.isLowerTriangular(
+        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
+        cuDoubleComplex());
+    break;
+  case ValueType::NOT_DEFINED:
+    throw std::runtime_error("Not defined value type");
+  };
+}
+
+void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix) {
+  auto rows = cublas->getRows(matrix);
+  auto columns = cublas->getColumns(matrix);
+
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto lda = rows;
+  cublas_isLowerTriangular(result, cublas, matrix, lda);
+}
+
+bool Cublas::_isLowerTriangular(Mem *m) {
+  bool result = false;
+  cublas_isLowerTriangular(result, this, m);
+  return result;
 }
 
 void Cublas::_geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
@@ -1019,22 +1248,25 @@ cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
     throw std::runtime_error(sstream.str());
   }
 
+  CudaAlloc cudaAlloc;
+  Kernels kernels(0, &cudaAlloc);
+
   switch (factorType) {
   case ValueType::FLOAT:
-    Kernel_SF_scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
-                         *reinterpret_cast<float *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
+                       *reinterpret_cast<float *>(factor));
     break;
   case ValueType::DOUBLE:
-    Kernel_SD_scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
-                         *reinterpret_cast<double *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
+                       *reinterpret_cast<double *>(factor));
     break;
   case ValueType::FLOAT_COMPLEX:
-    Kernel_CF_scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
-                         *reinterpret_cast<cuComplex *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
+                       *reinterpret_cast<cuComplex *>(factor));
     break;
   case ValueType::DOUBLE_COMPLEX:
-    Kernel_CD_scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
-                         rows, *reinterpret_cast<cuDoubleComplex *>(factor));
+    kernels.scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+                       rows, *reinterpret_cast<cuDoubleComplex *>(factor));
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");
@@ -1073,6 +1305,122 @@ void Cublas::_scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
   handleStatus(status);
 }
 
+void Cublas::_tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+  auto rows = getRows(A);
+  auto columns = getColumns(A);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  if (AP->valueType != A->valueType) {
+    throw std::runtime_error("Matrices don't have the same value types");
+  }
+
+  auto _cublasStpttr = [this](FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+    auto *_AP = static_cast<float *>(AP->ptr);
+    auto *_A = static_cast<float *>(A->ptr);
+    return cublasStpttr(m_handle, convert(uplo), n, _AP, _A, lda);
+  };
+
+  auto _cublasDtpttr = [this](FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+    auto *_AP = static_cast<double *>(AP->ptr);
+    auto *_A = static_cast<double *>(A->ptr);
+    return cublasDtpttr(m_handle, convert(uplo), n, _AP, _A, lda);
+  };
+
+  auto _cublasCtpttr = [this](FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+    auto *_AP = static_cast<cuComplex *>(AP->ptr);
+    auto *_A = static_cast<cuComplex *>(A->ptr);
+    return cublasCtpttr(m_handle, convert(uplo), n, _AP, _A, lda);
+  };
+
+  auto _cublasZtpttr = [this](FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+    auto *_AP = static_cast<cuDoubleComplex *>(AP->ptr);
+    auto *_A = static_cast<cuDoubleComplex *>(A->ptr);
+    return cublasZtpttr(m_handle, convert(uplo), n, _AP, _A, lda);
+  };
+
+  using Impl = std::function<cublasStatus_t(FillMode, int, Mem *, Mem *, int)>;
+  const std::map<ValueType, Impl> impls = {
+      {ValueType::FLOAT, std::move(_cublasStpttr)},
+      {ValueType::DOUBLE, std::move(_cublasDtpttr)},
+      {ValueType::FLOAT_COMPLEX, std::move(_cublasCtpttr)},
+      {ValueType::DOUBLE_COMPLEX, std::move(_cublasZtpttr)},
+  };
+
+  const auto valueType = A->valueType;
+  auto it = impls.find(valueType);
+  if (it == impls.end()) {
+    std::stringstream sstream;
+    sstream << "Cannot find implementation for " << toString(valueType);
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto status = it->second(uplo, n, AP, A, lda);
+  handleStatus(status);
+}
+
+void Cublas::_trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+  auto rows = getRows(A);
+  auto columns = getColumns(A);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  if (AP->valueType != A->valueType) {
+    throw std::runtime_error("Matrices don't have the same value types");
+  }
+
+  auto _cublasStrttp = [this](FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+    auto *_AP = static_cast<float *>(AP->ptr);
+    auto *_A = static_cast<float *>(A->ptr);
+    return cublasStrttp(m_handle, convert(uplo), n, _A, lda, _AP);
+  };
+
+  auto _cublasDtrttp = [this](FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+    auto *_AP = static_cast<double *>(AP->ptr);
+    auto *_A = static_cast<double *>(A->ptr);
+    return cublasDtrttp(m_handle, convert(uplo), n, _A, lda, _AP);
+  };
+
+  auto _cublasCtrttp = [this](FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+    auto *_AP = static_cast<cuComplex *>(AP->ptr);
+    auto *_A = static_cast<cuComplex *>(A->ptr);
+    return cublasCtrttp(m_handle, convert(uplo), n, _A, lda, _AP);
+  };
+
+  auto _cublasZtrttp = [this](FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+    auto *_AP = static_cast<cuDoubleComplex *>(AP->ptr);
+    auto *_A = static_cast<cuDoubleComplex *>(A->ptr);
+    return cublasZtrttp(m_handle, convert(uplo), n, _A, lda, _AP);
+  };
+
+  using Impl = std::function<cublasStatus_t(FillMode, int, Mem *, int, Mem *)>;
+  const std::map<ValueType, Impl> impls = {
+      {ValueType::FLOAT, std::move(_cublasStrttp)},
+      {ValueType::DOUBLE, std::move(_cublasDtrttp)},
+      {ValueType::FLOAT_COMPLEX, std::move(_cublasCtrttp)},
+      {ValueType::DOUBLE_COMPLEX, std::move(_cublasZtrttp)},
+  };
+
+  const auto valueType = A->valueType;
+  auto it = impls.find(valueType);
+  if (it == impls.end()) {
+    std::stringstream sstream;
+    sstream << "Cannot find implementation for " << toString(valueType);
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto status = it->second(uplo, n, A, lda, AP);
+  handleStatus(status);
+}
+
 template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
   std::vector<T> vec;
   vec.resize(mem->count);
@@ -1101,4 +1449,11 @@ std::string Cublas::_toStr(Mem *mem) {
   throw std::runtime_error("Not supported type");
   return "";
 }
+
+void Cublas::swap(Mem **a, Mem **b) {
+  Mem *temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
 } // namespace mtrx

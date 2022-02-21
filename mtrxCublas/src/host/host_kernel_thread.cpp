@@ -20,6 +20,7 @@
 #include "host_kernel_thread.hpp"
 #include "thread_idx.hpp"
 #include <mutex>
+#include <thread>
 
 namespace mtrx {
 
@@ -88,6 +89,7 @@ std::thread::id HostKernelThread::get_id() const {
 }
 
 void HostKernelThread::Execute(HostKernelThread *threadImpl) {
+  threadImpl->onRun(std::this_thread::get_id());
   const int gridSize = threadImpl->m_gridDim.x * threadImpl->m_gridDim.y;
   for (int gridIdx = 0; gridIdx < gridSize; ++gridIdx) {
     threadImpl->m_barrier->wait();

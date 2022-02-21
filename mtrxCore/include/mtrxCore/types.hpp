@@ -42,7 +42,6 @@ enum class FillMode { LOWER, UPPER, FULL };
 
 enum class SideMode { LEFT, RIGHT };
 
-struct Matrix;
 struct Mem;
 } // namespace mtrx
 

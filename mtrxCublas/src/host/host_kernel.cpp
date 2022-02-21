@@ -22,6 +22,7 @@
 #include "threads_mapper.hpp"
 
 #include <memory>
+#include <spdlog/spdlog.h>
 
 namespace mtrx {
 std::map<void *, HostKernel::ThreadsPool> HostKernel::s_threads;
@@ -126,19 +127,29 @@ void HostKernel::executeKernelAsync() {
     }
   }
 
+  std::map<std::pair<int, int>, std::vector<char>> sharedMemories;
   std::unique_ptr<char[]> sharedMemory(nullptr);
-  if (m_sharedMemorySize > 0) {
-    sharedMemory.reset(new char[m_sharedMemorySize]);
-  }
+  spdlog::debug("Runs kernel in gridDim {} {} {}", gridDim.x, gridDim.y,
+                gridDim.z);
   for (uintt blockIdxY = 0; blockIdxY < gridDim.y; ++blockIdxY) {
     for (uintt blockIdxX = 0; blockIdxX < gridDim.x; ++blockIdxX) {
+      if (m_sharedMemorySize > 0) {
+        std::vector<char> sharedMemory;
+        sharedMemory.resize(m_sharedMemorySize);
+        spdlog::debug("Allocates shared memory at {} with size {}",
+                      fmt::ptr(sharedMemory.data()), m_sharedMemorySize);
+        sharedMemories[std::make_pair(blockIdxX, blockIdxY)] = sharedMemory;
+      }
+
       blockIdx.x = blockIdxX;
       blockIdx.y = blockIdxY;
 
       for (size_t tidx = 0; tidx < m_threads.size(); ++tidx) {
         m_threads.at(tidx)->setBlockIdx(blockIdx);
-        m_threads.at(tidx)->setSharedBuffer(sharedMemory.get());
+        m_threads.at(tidx)->setSharedBuffer(
+            sharedMemories[std::make_pair(blockIdxX, blockIdxY)].data());
         if (blockIdx.x == 0 && blockIdx.y == 0) {
+          spdlog::debug("Runs thread with idx {}", tidx);
           m_threads.at(tidx)->run();
         }
       }

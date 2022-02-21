@@ -18,9 +18,10 @@
  */
 
 #include "host_kernel_executor.hpp"
+#include "device_properties_provider.hpp"
 #include "host_kernel.hpp"
 
-#include "cuda_kernels_list.hpp"
+#include "cuda_proxies.hpp"
 
 #include <functional>
 #include <map>
@@ -31,10 +32,24 @@
 namespace mtrx {
 
 std::map<std::string, std::function<void(const void **)>> g_kernelsList = {
-    {"CUDAKernel_SF_scaleTrace", proxy_HOSTKernel_SF_scaleTrace},
-    {"CUDAKernel_SD_scaleTrace", proxy_HOSTKernel_SD_scaleTrace},
-    {"CUDAKernel_CF_scaleTrace", proxy_HOSTKernel_CF_scaleTrace},
-    {"CUDAKernel_CD_scaleTrace", proxy_HOSTKernel_CD_scaleTrace}};
+    {"CudaKernel_SF_scaleTrace", proxy_HostKernel_SF_scaleTrace},
+    {"CudaKernel_SD_scaleTrace", proxy_HostKernel_SD_scaleTrace},
+    {"CudaKernel_CF_scaleTrace", proxy_HostKernel_CF_scaleTrace},
+    {"CudaKernel_CD_scaleTrace", proxy_HostKernel_CD_scaleTrace},
+    {"CudaKernel_SF_isUpperTriangular", proxy_HostKernel_SF_isUpperTriangular},
+    {"CudaKernel_SD_isUpperTriangular", proxy_HostKernel_SD_isUpperTriangular},
+    {"CudaKernel_CF_isUpperTriangular", proxy_HostKernel_CF_isUpperTriangular},
+    {"CudaKernel_CD_isUpperTriangular", proxy_HostKernel_CD_isUpperTriangular},
+    {"CudaKernel_SF_isLowerTriangular", proxy_HostKernel_SF_isLowerTriangular},
+    {"CudaKernel_SD_isLowerTriangular", proxy_HostKernel_SD_isLowerTriangular},
+    {"CudaKernel_CF_isLowerTriangular", proxy_HostKernel_CF_isLowerTriangular},
+    {"CudaKernel_CD_isLowerTriangular", proxy_HostKernel_CD_isLowerTriangular},
+    {"CudaKernel_SI_reduceShm", proxy_HostKernel_SI_reduceShm},
+    {"CudaKernel_SF_reduceShm", proxy_HostKernel_SF_reduceShm},
+    {"CudaKernel_SD_reduceShm", proxy_HostKernel_SD_reduceShm},
+    {"CudaKernel_CF_reduceShm", proxy_HostKernel_CF_reduceShm},
+    {"CudaKernel_CD_reduceShm", proxy_HostKernel_CD_reduceShm},
+};
 
 class HostKernelImpl : public HostKernel {
   std::function<void(const void **)> m_function;
@@ -51,8 +66,9 @@ protected:
   }
 };
 
-HostKernelExecutor::HostKernelExecutor(uint maxThreadsPerBlock)
-    : m_maxThreadsPerBlock(maxThreadsPerBlock) {}
+HostKernelExecutor::HostKernelExecutor(int device)
+    : IKernelExecutor(DevicePropertiesProvider::get(device)), m_device(device) {
+}
 
 HostKernelExecutor::~HostKernelExecutor() { HostKernel::ReleaseThreads(this); }
 

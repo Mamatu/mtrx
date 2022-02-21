@@ -28,7 +28,7 @@ namespace mtrx {
 class Cublas : public Blas {
 public:
   Cublas();
-  virtual ~Cublas() override;
+  ~Cublas() override;
 
 protected:
   std::vector<int> _getDevices() const override;
@@ -77,6 +77,11 @@ protected:
   void _qrDecomposition(Mem *q, Mem *r, Mem *a) override;
   void _qrDecomposition(Mems &q, Mems &r, Mems &a) override;
 
+  void _shiftQRIteration(Mem *H, Mem *Q) override;
+
+  bool _isUpperTriangular(Mem *m) override;
+  bool _isLowerTriangular(Mem *m) override;
+
   void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
              Operation transb, Mem *b) override;
   void _geam(Mem *output, void *alpha, ValueType alphaType, Operation transa,
@@ -89,10 +94,14 @@ protected:
   void _scaleTrace(Mem *matrix, Mem *factor) override;
   void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) override;
 
+  void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) override;
+  void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) override;
+
   std::string _toStr(Mem *mem) override;
 
 private:
   cublasHandle_t m_handle;
+  void swap(Mem **a, Mem **b);
 };
 } // namespace mtrx
 

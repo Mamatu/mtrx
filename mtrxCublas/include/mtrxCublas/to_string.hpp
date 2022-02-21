@@ -21,16 +21,35 @@
 #define MTRX_CUBLAS_TO_STRING_HPP
 
 // clang-format off
+#include <mtrxCore/to_string.hpp>
+#include "cuComplex.h"
 #include <cublas_v2.h>
 #include <cublas_api.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
+#include <type_traits>
 // clang-format on
 
 namespace mtrx {
 std::string toString(cudaError_t error);
-std::string toString(CUresult curesult);
+std::string toString(CUresult curesult, bool noException = false);
 std::string toString(cublasStatus_t status);
+
+template <typename T> std::string toString() {
+  if (std::is_same<T, float>::value) {
+    return "float";
+  }
+  if (std::is_same<T, double>::value) {
+    return "double";
+  }
+  if (std::is_same<T, cuComplex>::value) {
+    return "cuComplex";
+  }
+  if (std::is_same<T, cuDoubleComplex>::value) {
+    return "cuDoubleComplex";
+  }
+  return "";
+}
 } // namespace mtrx
 #endif

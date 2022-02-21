@@ -37,7 +37,10 @@ std::string toString(const RunParams &runParams) {
   return sstream.str();
 }
 
-IKernelExecutor::IKernelExecutor() { reset(); }
+IKernelExecutor::IKernelExecutor(const DeviceProperties &deviceProperties)
+    : m_deviceProperties(deviceProperties) {
+  reset();
+}
 
 IKernelExecutor::~IKernelExecutor() {}
 
@@ -70,7 +73,7 @@ int IKernelExecutor::getParamsCount() const { return m_paramsCount; }
 bool IKernelExecutor::run(const std::string &function) {
 
   auto params_str = toString(getRunParams());
-  SPDLOG_INFO("{} {}\n{}", __FILE__, __func__, params_str);
+  spdlog::info("{} {} '{}'\n{}", __FILE__, __func__, function, params_str);
 
   bool status = _run(function);
   reset();
@@ -104,4 +107,9 @@ void IKernelExecutor::reset() {
   m_params = nullptr;
   m_paramsCount = 0;
 }
+
+DeviceProperties IKernelExecutor::getDeviceProperties() const {
+  return m_deviceProperties;
+}
+
 } // namespace mtrx

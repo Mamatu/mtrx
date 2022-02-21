@@ -18,6 +18,7 @@
  */
 
 #include "device_info.hpp"
+#include "mtrxCublas/status_handler.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <limits.h>
@@ -40,22 +41,22 @@ void DeviceInfo::getDeviceProperties(DeviceProperties &devProp) {
 
 uint DeviceInfo::getMaxThreadsX() const {
   checkInitialization();
-  return m_deviceProperties.maxThreadsCount[0];
+  return m_deviceProperties.blockDim[0];
 }
 
 uint DeviceInfo::getMaxThreadsY() const {
   checkInitialization();
-  return m_deviceProperties.maxThreadsCount[1];
+  return m_deviceProperties.blockDim[1];
 }
 
 uint DeviceInfo::getMaxBlocksX() const {
   checkInitialization();
-  return m_deviceProperties.maxBlocksCount[0];
+  return m_deviceProperties.gridDim[0];
 }
 
 uint DeviceInfo::getMaxBlocksY() const {
   checkInitialization();
-  return m_deviceProperties.maxBlocksCount[1];
+  return m_deviceProperties.gridDim[1];
 }
 
 uint DeviceInfo::getSharedMemorySize() const {
@@ -73,18 +74,20 @@ void DeviceInfo::setDevice(CUdevice cuDevice) {
   initDeviceProperties();
 }
 
-void DeviceInfo::initDeviceProperties() {
+DeviceProperties DeviceInfo::initDeviceProperties() {
   if (!m_initialized) {
     for (size_t idx = 0; idx < 9; ++idx) {
-      int result;
-      /*printCuError */ (
-          cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice));
+      int result = -1;
+      CUresult curesult =
+          cuDeviceGetAttribute(&result, m_attributes[idx], m_cuDevice);
+      handleStatus(curesult);
       m_values[idx] = result;
     }
 
     std::memcpy(&m_deviceProperties, m_values, sizeof(m_values));
     m_initialized = true;
   }
+  return m_deviceProperties;
 }
 
 std::string DeviceInfo::toStr() {
@@ -92,12 +95,12 @@ std::string DeviceInfo::toStr() {
   std::stringstream sstream;
 
   sstream << "Device properties:" << std::endl;
-  sstream << "--Max grid size: " << m_deviceProperties.maxBlocksCount[0] << ", "
-          << m_deviceProperties.maxBlocksCount[1] << ", "
-          << m_deviceProperties.maxBlocksCount[2] << std::endl;
-  sstream << "--Max threads dim: " << m_deviceProperties.maxThreadsCount[0]
-          << ", " << m_deviceProperties.maxThreadsCount[1] << ", "
-          << m_deviceProperties.maxThreadsCount[2] << std::endl;
+  sstream << "--Max grid size: " << m_deviceProperties.gridDim[0] << ", "
+          << m_deviceProperties.gridDim[1] << ", "
+          << m_deviceProperties.gridDim[2] << std::endl;
+  sstream << "--Max threads dim: " << m_deviceProperties.blockDim[0] << ", "
+          << m_deviceProperties.blockDim[1] << ", "
+          << m_deviceProperties.blockDim[2] << std::endl;
   sstream << "--Max threads per block: "
           << m_deviceProperties.maxThreadsPerBlock << std::endl;
   sstream << "--Max registers per block: "

@@ -52,6 +52,9 @@ public:
 
   size_t getRows(const Mem *mem) const;
   size_t getColumns(const Mem *mem) const;
+  ValueType getValueType(const Mem *mem) const;
+
+  std::pair<size_t, size_t> getDims(const Mem *mem) const;
 
   void copyHostToKernel(Mem *mem, void *array);
   void copyKernelToHost(void *array, Mem *mem);
@@ -91,6 +94,11 @@ public:
   void qrDecomposition(Mem *q, Mem *r, Mem *a);
   void qrDecomposition(Mems &q, Mems &r, Mems &a);
 
+  void shiftQRIteration(Mem *H, Mem *Q);
+
+  bool isUpperTriangular(Mem *m);
+  bool isLowerTriangular(Mem *m);
+
   /**
    * @brief matrix-matrix addition/transposition
    * output = alpha * oper(a) + beta * oper(b)
@@ -105,6 +113,9 @@ public:
 
   void scaleTrace(Mem *matrix, Mem *factor);
   void scaleTrace(Mem *matrix, void *factor, ValueType factorType);
+
+  void tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda);
+  void trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP);
 
   std::string toStr(Mem *mem);
 
@@ -149,6 +160,11 @@ protected:
   virtual void _qrDecomposition(Mem *q, Mem *r, Mem *a) = 0;
   virtual void _qrDecomposition(Mems &q, Mems &r, Mems &a) = 0;
 
+  virtual void _shiftQRIteration(Mem *H, Mem *Q) = 0;
+
+  virtual bool _isUpperTriangular(Mem *m) = 0;
+  virtual bool _isLowerTriangular(Mem *m) = 0;
+
   virtual void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a,
                      Mem *beta, Operation transb, Mem *b) = 0;
   virtual void _geam(Mem *output, void *alpha, ValueType alphaType,
@@ -167,11 +183,14 @@ protected:
   virtual void _scaleTrace(Mem *matrix, Mem *factor) = 0;
   virtual void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) = 0;
 
+  virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
+  virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;
+
   virtual std::string _toStr(Mem *mem) = 0;
 
 private:
   std::vector<Mem *> m_mems;
-  std::map<const Mem *, std::pair<size_t, size_t>> m_matrices;
+  std::map<const Mem *, std::tuple<size_t, size_t, ValueType>> m_matrices;
 
   void checkMem(const Mem *mem) const;
   void checkMems(const Mems &mems) const;

@@ -20,13 +20,69 @@
 #ifndef MTRX_CUBLAS_KERNELS_H
 #define MTRX_CUBLAS_KERNELS_H
 
+#include "alloc.hpp"
 #include <cuComplex.h>
 
-void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor);
-void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor);
-void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda,
-                          cuComplex factor);
-void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
-                          cuDoubleComplex factor);
+namespace mtrx {
+
+class Kernels final {
+public:
+  Kernels(int device, Alloc *alloc);
+  ~Kernels() = default;
+
+  void scaleTrace(int dim, float *matrix, int lda, float factor);
+  void scaleTrace(int dim, double *matrix, int lda, double factor);
+  void scaleTrace(int dim, cuComplex *matrix, int lda, cuComplex factor);
+  void scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
+                  cuDoubleComplex factor);
+
+  bool isUpperTriangular(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isUpperTriangular(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isUpperTriangular(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
+
+  bool isLowerTriangular(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isLowerTriangular(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isLowerTriangular(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  int reduceShm(int m, int n, int *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  float reduceShm(int m, int n, float *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  double reduceShm(int m, int n, double *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  cuComplex reduceShm(int m, int n, cuComplex *array, int lda);
+
+  /**
+   * @brief Reduction by using shared memory.
+   */
+  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda);
+
+private:
+  int m_device;
+  Alloc *m_alloc;
+};
+} // namespace mtrx
 
 #endif
