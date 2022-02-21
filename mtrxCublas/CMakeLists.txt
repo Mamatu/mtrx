@@ -63,3 +63,19 @@ endif()
   target_include_directories(${TEST_HOST_TARGET} PUBLIC include)
   gtest_add_tests(TARGET ${TEST_HOST_TARGET})
 endif()
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
+"#!/bin/bash
+sudo env \"LD_LIBRARY_PATH=$LD_LIBRARY_PATH\" nvprof ${CMAKE_CURRENT_BINARY_DIR}/mtrxDeviceCublasTests
+")
+
+file(
+    COPY ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+)
+
+file(RENAME
+    ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
+    ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh
+)
