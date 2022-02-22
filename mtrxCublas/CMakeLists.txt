@@ -64,18 +64,18 @@ endif()
   gtest_add_tests(TARGET ${TEST_HOST_TARGET})
 endif()
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/run_device_tests_profiling.sh.in
 "#!/bin/bash
 sudo env \"LD_LIBRARY_PATH=$LD_LIBRARY_PATH\" nvprof ${CMAKE_CURRENT_BINARY_DIR}/mtrxDeviceCublasTests
 ")
 
 file(
-    COPY ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
+    COPY ${CMAKE_CURRENT_BINARY_DIR}/run_device_tests_profiling.sh.in
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 
 file(RENAME
-    ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh.in
-    ${CMAKE_CURRENT_BINARY_DIR}/run_profiler.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/run_device_tests_profiling.sh.in
+    ${CMAKE_CURRENT_BINARY_DIR}/run_device_tests_profiling.sh
 )
