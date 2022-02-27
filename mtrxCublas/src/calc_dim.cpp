@@ -20,6 +20,7 @@
 #include "calc_dim.hpp"
 #include <functional>
 #include <map>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <utility>
 
@@ -62,7 +63,6 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
   };
 
   while (m1 >= 1) {
-
     int count_m = calc_count(m, m1);
     int count_n = calc_count(n, n1);
 
@@ -77,10 +77,18 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
     n1 = n1 * 2;
   }
 
+  spdlog::debug("{} blockDim {} {} gridDim {} {} maxThreadsPerBlock {}",
+                __func__, blockDim[0], blockDim[1], gridDim[0], gridDim[1],
+                maxThreadsPerBlock);
+
   auto front = diffs.begin();
   if (front == diffs.end()) {
     std::stringstream sstream;
-    sstream << "Not found any calculated dim";
+    sstream << __func__ << "blockDim " << blockDim[0] << ", " << blockDim[1];
+    sstream << " gridDim " << gridDim[0] << ", " << gridDim[1];
+    sstream << "maxThreadsPerBlock " << maxThreadsPerBlock;
+    sstream << " - not found any calculated dim.";
+    spdlog::error(sstream.str());
     throw std::runtime_error(sstream.str());
   }
 
@@ -88,5 +96,11 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
   threads[1] = std::get<1>(front->second);
   blocks[0] = std::get<2>(front->second);
   blocks[1] = std::get<3>(front->second);
+
+  spdlog::info("{} threads {} {} blocks {} {} blockDim {} {} gridDim {} {} "
+               "maxThreadsPerBlock {}",
+               __func__, threads[0], threads[1], blocks[0], blocks[1],
+               blockDim[0], blockDim[1], gridDim[0], gridDim[1],
+               maxThreadsPerBlock);
 }
 } // namespace mtrx

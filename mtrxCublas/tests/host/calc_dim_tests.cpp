@@ -22,6 +22,18 @@ TEST_F(CalcDimTests, 1x1) {
   EXPECT_EQ(1, blocks[1]);
 }
 
+TEST_F(CalcDimTests, blockDim_1x1_gridDim_2x2) {
+  std::array<int, 2> threads = {0, 0};
+  std::array<int, 2> blocks = {0, 0};
+  std::array<int, 3> blockDim = {1, 1, 1};
+  std::array<int, 3> gridDim = {2, 2, 1};
+  calculateDim(threads, blocks, 2, 2, blockDim, gridDim, 1);
+  EXPECT_EQ(1, threads[0]);
+  EXPECT_EQ(1, threads[1]);
+  EXPECT_EQ(2, blocks[0]);
+  EXPECT_EQ(2, blocks[1]);
+}
+
 TEST_F(CalcDimTests, 32x32) {
   std::array<int, 2> threads = {0, 0};
   std::array<int, 2> blocks = {0, 0};
