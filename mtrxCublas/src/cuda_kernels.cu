@@ -85,23 +85,23 @@ extern "C" __global__ void CudaKernel_SI_reduceShm(int m, int n, int* array, int
 {
   cuda_reduce_shm<int>(m, n, array, lda, reductionResults);
 }
-//
-//extern "C" __global__ void CudaKernel_SF_reduceShm(int m, int n, float* array, int lda, float* reductionResults)
-//{
-//  cuda_reduce_shm<float>(m, n, array, lda, reductionResults);
-//}
-//
-//extern "C" __global__ void CudaKernel_SD_reduceShm(int m, int n, double* array, int lda, double* reductionResults)
-//{
-//  cuda_reduce_shm<double>(m, n, array, lda, reductionResults);
-//}
-//
-//extern "C" __global__ void CudaKernel_CF_reduceShm(int m, int n, cuComplex* array, int lda, cuComplex* reductionResults)
-//{
-//  cuda_reduce_shm<cuComplex>(m, n, array, lda, reductionResults);
-//}
-//
-//extern "C" __global__ void CudaKernel_CD_reduceShm(int m, int n, cuDoubleComplex* array, int lda, cuDoubleComplex* reductionResults)
-//{
-//  cuda_reduce_shm<cuDoubleComplex>(m, n, array, lda, reductionResults);
-//}
+
+extern "C" __global__ void CudaKernel_SF_reduceShm(int m, int n, float* array, int lda, float* reductionResults)
+{
+  cuda_reduce_shm<float>(m, n, array, lda, reductionResults);
+}
+
+extern "C" __global__ void CudaKernel_SD_reduceShm(int m, int n, double* array, int lda, double* reductionResults)
+{
+  cuda_reduce_shm<double>(m, n, array, lda, reductionResults);
+}
+
+extern "C" __global__ void CudaKernel_CF_reduceShm(int m, int n, cuComplex* array, int lda, cuComplex* reductionResults)
+{
+  cuda_reduce_shm<cuComplex>(m, n, array, lda, reductionResults);
+}
+
+extern "C" __global__ void CudaKernel_CD_reduceShm(int m, int n, cuDoubleComplex* array, int lda, cuDoubleComplex* reductionResults)
+{
+  cuda_reduce_shm<cuDoubleComplex>(m, n, array, lda, reductionResults);
+}

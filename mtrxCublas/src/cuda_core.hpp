@@ -20,6 +20,10 @@
 #ifndef MTRX_CUBLAS_CUDA_CORE_HPP
 #define MTRX_CUBLAS_CUDA_CORE_HPP
 
+#define CONCAT_INNER(a, b) a##b
+#define CONCAT(a, b) CONCAT_INNER(a, b)
+#define UNIQUE_NAME(base) CONCAT(base, __COUNTER__)
+
 #ifndef MTRX_HOST_CUDA_BUILD
 
 #include <cuda.h>
@@ -27,9 +31,8 @@
 
 #define HOST_INIT()
 
-#define GENERIC_INIT_SHARED(type, buffer)                                      \
-  extern __shared__ type mtrx_shared_buffer[];                                 \
-  buffer = mtrx_shared_buffer;
+#define SHARED_BUFFER_INIT_SET(type, buffer, mtrx_shared_buffer) extern __shared__ char mtrx_shared_buffer[]; buffer = reinterpret_cast<type*>(mtrx_shared_buffer);
+#define GENERIC_INIT_SHARED(type, buffer) SHARED_BUFFER_INIT_SET(type, buffer, UNIQUE_NAME(mtrx_device_shared_buffer))
 
 #define HOST_CODE(code)
 
@@ -51,9 +54,8 @@
   blockDim = blockDim;   /*for suppress warning*/                              \
   gridDim = gridDim;     /*for suppress warning*/
 
-#define GENERIC_INIT_SHARED(type, buffer)                                      \
-  mtrx::ThreadIdx &_this_tidx = mtrx::ThreadIdx::GetThreadIdx();               \
-  buffer = static_cast<type *>(_this_tidx.getSharedBuffer());
+#define SHARED_BUFFER_INIT_SET(type, buffer, mtrx_shared_buffer) mtrx::ThreadIdx &mtrx_shared_buffer = mtrx::ThreadIdx::GetThreadIdx(); buffer = static_cast<type *>(mtrx_shared_buffer.getSharedBuffer());
+#define GENERIC_INIT_SHARED(type, buffer) SHARED_BUFFER_INIT_SET(type, buffer, UNIQUE_NAME(mtrx_host_shared_buffer))
 
 #define HOST_CODE(code) code
 
