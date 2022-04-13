@@ -25,6 +25,8 @@
 
 #include "device_properties.hpp"
 
+#include <cuComplex.h>
+
 namespace mtrx {
 struct RunParams {
   uint threadsCount[3];
@@ -45,18 +47,12 @@ public:
   void setBlocksCount(uint x, uint y, uint z);
   void setThreadsCount(uint x, uint y, uint z);
 
-  template <typename Container> void setBlocksCount(const Container &xy) {
-    if (xy.size() != 2) {
-      throw std::runtime_error("Invalid number of elements");
-    }
-    setBlocksCount(xy[0], xy[1], 1);
+  void setBlocksCount(const dim3 &xy) {
+    setBlocksCount(xy.x, xy.y, xy.z);
   }
 
-  template <typename Container> void setThreadsCount(const Container &xy) {
-    if (xy.size() != 2) {
-      throw std::runtime_error("Invalid number of elements");
-    }
-    setThreadsCount(xy[0], xy[1], 1);
+  void setThreadsCount(const dim3 &xy) {
+    setThreadsCount(xy.x, xy.y, xy.z);
   }
 
   void setSharedMemory(uint size);

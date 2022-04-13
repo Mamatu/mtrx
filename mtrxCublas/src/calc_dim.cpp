@@ -25,7 +25,7 @@
 #include <utility>
 
 namespace mtrx {
-void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
+void calculateDim(dim3 &threads, dim3 &blocks,
                   int m, int n, const std::array<int, 3> &blockDim,
                   const std::array<int, 3> &gridDim, int maxThreadsPerBlock) {
 
@@ -77,29 +77,32 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
     n1 = n1 * 2;
   }
 
-  spdlog::debug("{} blockDim {} {} gridDim {} {} maxThreadsPerBlock {}",
-                __func__, blockDim[0], blockDim[1], gridDim[0], gridDim[1],
-                maxThreadsPerBlock);
+  spdlog::debug(
+      "{} m {} n {} blockDim {} {} gridDim {} {} maxThreadsPerBlock {}",
+      __func__, m, n, blockDim[0], blockDim[1], gridDim[0], gridDim[1],
+      maxThreadsPerBlock);
 
   auto front = diffs.begin();
   if (front == diffs.end()) {
     std::stringstream sstream;
     sstream << __func__ << "blockDim " << blockDim[0] << ", " << blockDim[1];
     sstream << " gridDim " << gridDim[0] << ", " << gridDim[1];
-    sstream << "maxThreadsPerBlock " << maxThreadsPerBlock;
+    sstream << " maxThreadsPerBlock " << maxThreadsPerBlock;
     sstream << " - not found any calculated dim.";
     spdlog::error(sstream.str());
     throw std::runtime_error(sstream.str());
   }
 
-  threads[0] = std::get<0>(front->second);
-  threads[1] = std::get<1>(front->second);
-  blocks[0] = std::get<2>(front->second);
-  blocks[1] = std::get<3>(front->second);
+  threads.y = std::get<0>(front->second);
+  threads.x = std::get<1>(front->second);
+  threads.z = 1;
+  blocks.y = std::get<3>(front->second);
+  blocks.x = std::get<2>(front->second);
+  blocks.z = 1;
 
   spdlog::info("{} threads {} {} blocks {} {} blockDim {} {} gridDim {} {} "
                "maxThreadsPerBlock {}",
-               __func__, threads[0], threads[1], blocks[0], blocks[1],
+               __func__, threads.x, threads.y, blocks.x, blocks.y,
                blockDim[0], blockDim[1], gridDim[0], gridDim[1],
                maxThreadsPerBlock);
 }

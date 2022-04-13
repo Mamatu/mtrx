@@ -18,8 +18,13 @@
  */
 
 #include "thread_idx.hpp"
+#include "../thread_id_parser.hpp"
 #include "dim3_utils.hpp"
+#include <mutex>
 #include <sstream>
+#include <thread>
+
+#include <spdlog/spdlog.h>
 
 namespace mtrx {
 
@@ -64,16 +69,15 @@ const dim3 &ThreadIdx::getGridDim() const { return m_gridDim; }
 void *ThreadIdx::getSharedBuffer() const { return m_sharedBuffer; }
 
 void ThreadIdx::createBarrier(const std::vector<std::thread::id> &threads) {
-  s_barriersMutex.lock();
-  BarrierMutex *bm = NULL;
-  for (size_t fa = 0; fa < threads.size(); ++fa) {
-    if (fa == 0) {
+  std::lock_guard<std::mutex> lg(s_barriersMutex);
+  BarrierMutex *bm = nullptr;
+  for (size_t tidx = 0; tidx < threads.size(); ++tidx) {
+    if (tidx == 0) {
       bm = new BarrierMutex();
       bm->m_barrier.init(threads.size());
     }
-    s_barriers[threads[fa]] = bm;
+    s_barriers[threads[tidx]] = bm;
   }
-  s_barriersMutex.unlock();
 }
 
 void ThreadIdx::destroyBarrier(const std::vector<std::thread::id> &threads) {
@@ -95,7 +99,9 @@ void ThreadIdx::wait() {
     sstream << "Thread " << tid << " is not in barrier";
     throw std::runtime_error(sstream.str());
   }
+  spdlog::debug("Thread {} waits on barrier {}", std::this_thread::get_id(), fmt::ptr(&it->second->m_barrier));
   it->second->m_barrier.wait();
+  spdlog::debug("Thread {} unlocked from a wait on barrier {}", std::this_thread::get_id(), fmt::ptr(&it->second->m_barrier));
 }
 
 ThreadIdx::Barriers ThreadIdx::s_barriers;

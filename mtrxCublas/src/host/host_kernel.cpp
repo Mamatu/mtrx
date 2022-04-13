@@ -24,6 +24,8 @@
 #include <memory>
 #include <spdlog/spdlog.h>
 
+#include "../thread_id_parser.hpp"
+
 namespace mtrx {
 std::map<void *, HostKernel::ThreadsPool> HostKernel::s_threads;
 std::mutex HostKernel::s_mutex;
@@ -83,6 +85,7 @@ void HostKernel::executeKernelAsync() {
 
   unsigned int count = blockDim.y * blockDim.x + 1;
 
+  spdlog::debug("Creates barrier with {} count ({} * {} + 1)", count, blockDim.y, blockDim.x);
   mtrx::Barrier barrier(count);
   m_pthreads.reserve(blockDim.x * blockDim.y);
 
@@ -116,6 +119,7 @@ void HostKernel::executeKernelAsync() {
           execute(threadIdx, blockIdx);
           onChange(HostKernel::CUDA_THREAD, threadIdx, blockIdx);
         });
+
         threadImpl->setBlockDim(blockDim);
         threadImpl->setGridDim(gridDim);
         threadImpl->setThreadIdx(threadIdx);
@@ -154,11 +158,14 @@ void HostKernel::executeKernelAsync() {
         }
       }
 
+      spdlog::debug("Thread {} waits on barrier {}", std::this_thread::get_id(), fmt::ptr(&barrier));
       barrier.wait();
+      spdlog::debug("Thread {} unlocked from a wait on barrier {}", std::this_thread::get_id(), fmt::ptr(&barrier));
 
       for (size_t tidx = 0; tidx < m_threads.size(); ++tidx) {
         m_threads.at(tidx)->waitOn();
       }
+
       this->onChange(HostKernel::CUDA_BLOCK, threadIdx, blockIdx);
     }
   }

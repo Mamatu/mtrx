@@ -67,8 +67,8 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
   auto ke = GetKernelExecutor(device);
   const auto &dp = ke->getDeviceProperties();
 
-  std::array<int, 2> threads;
-  std::array<int, 2> blocks;
+  dim3 threads;
+  dim3 blocks;
   calculateDim(threads, blocks, dim, 1, dp.blockDim, dp.gridDim,
                dp.maxThreadsPerBlock);
 
@@ -136,8 +136,8 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
 
   const auto &dp = ke->getDeviceProperties();
 
-  std::array<int, 2> threads;
-  std::array<int, 2> blocks;
+  dim3 threads;
+  dim3 blocks;
   calculateDim(threads, blocks, rows, columns, dp.blockDim, dp.gridDim,
                dp.maxThreadsPerBlock);
 
@@ -154,7 +154,7 @@ void Kernel_isULTriangular(Alloc *alloc, bool &is,
   }
 
   ke->setSharedMemory(sharedMem);
-  auto blocksCount = blocks[0] * blocks[1];
+  auto blocksCount = blocks.x * blocks.y;
 
   int *d_reductionResults = nullptr;
   alloc->malloc(reinterpret_cast<void **>(&d_reductionResults),
@@ -312,12 +312,12 @@ T Kernel_reduceShm(
   auto ke = GetKernelExecutor(device);
   const auto &dp = ke->getDeviceProperties();
 
-  std::array<int, 2> threads;
-  std::array<int, 2> blocks;
+  dim3 threads;
+  dim3 blocks;
   calculateDim(threads, blocks, m, n, dp.blockDim, dp.gridDim,
                dp.maxThreadsPerBlock);
 
-  auto threadsCount = threads[0] * threads[1];
+  auto threadsCount = threads.x * threads.y;
   int sharedMem = threadsCount * sizeof(T);
 
   if (sharedMem > dp.sharedMemPerBlock) {
@@ -328,7 +328,7 @@ T Kernel_reduceShm(
     throw std::runtime_error(sstream.str());
   }
 
-  auto blocksCount = blocks[0] * blocks[1];
+  auto blocksCount = blocks.x * blocks.y;
   std::vector<T> h_reductionResults;
   h_reductionResults.resize(blocksCount);
 

@@ -17,27 +17,21 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_DIM_COUNT_HPP
-#define MTRX_DIM_COUNT_HPP
+#ifndef MTRX_THREAD_ID_PARSER_HPP
+#define MTRX_THREAD_ID_PARSER_HPP
 
-#include <array>
+#include <sstream>
+#include <string>
 
-#include <cuComplex.h>
+#include <spdlog/spdlog.h>
 
-namespace mtrx {
-/**
- * @brief Calculate dim of m x n matrix
- * @param thread - threads outcome
- * @param blocks - blocks outcome
- * @param m - rows
- * @param n - columns
- * @param blockDim - block Dim supported by device
- * @param gridDim - grid dim supported by device
- * @param maxThreadsPerBlocks - max threads per block supported by device
- */
-void calculateDim(dim3 &threads, dim3 &blocks,
-                  int m, int n, const std::array<int, 3> &blockDim,
-                  const std::array<int, 3> &gridDim, int maxThreadsPerBlock);
-} // namespace mtrx
+template <> struct fmt::formatter<std::thread::id> : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const std::thread::id &id, FormatContext &ctx) {
+    std::stringstream sstream;
+    sstream << id;
+    return formatter<string_view>::format(sstream.str(), ctx);
+  }
+};
 
 #endif

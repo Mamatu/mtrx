@@ -20,7 +20,10 @@
 #include "host_kernel_thread.hpp"
 #include "thread_idx.hpp"
 #include <mutex>
+#include <spdlog/spdlog.h>
 #include <thread>
+
+#include "../thread_id_parser.hpp"
 
 namespace mtrx {
 
@@ -74,7 +77,9 @@ HostKernelThread::~HostKernelThread() {
 void HostKernelThread::waitOn() {
   std::unique_lock<std::mutex> lock(m_mutex);
   if (m_cancontinue == false) {
+    spdlog::debug("Thread {} waits", m_thread->get_id());
     m_cond.wait(lock);
+    spdlog::debug("Thread {} unlocked from a wait", m_thread->get_id());
   }
   m_cancontinue = false;
 }
@@ -82,6 +87,7 @@ void HostKernelThread::waitOn() {
 void HostKernelThread::run() {
   m_cancontinue = false;
   m_thread = std::make_shared<std::thread>(HostKernelThread::Execute, this);
+  spdlog::debug("Thread created: {}", m_thread->get_id());
 }
 
 std::thread::id HostKernelThread::get_id() const {
@@ -89,10 +95,13 @@ std::thread::id HostKernelThread::get_id() const {
 }
 
 void HostKernelThread::Execute(HostKernelThread *threadImpl) {
+  spdlog::debug("{}:{} Thread {} is executed", __func__, __LINE__, std::this_thread::get_id());
   threadImpl->onRun(std::this_thread::get_id());
   const int gridSize = threadImpl->m_gridDim.x * threadImpl->m_gridDim.y;
   for (int gridIdx = 0; gridIdx < gridSize; ++gridIdx) {
+    spdlog::debug("{}:{} Thread {} waits on barrier {}", __func__, __LINE__, std::this_thread::get_id(), fmt::ptr(&threadImpl->m_barrier));
     threadImpl->m_barrier->wait();
+    spdlog::debug("{}:{} Thread {} unlocked from a wait on barrier {}", __func__, __LINE__, std::this_thread::get_id(), fmt::ptr(&threadImpl->m_barrier));
 
     ThreadIdx &ti = ThreadIdx::GetThreadIdx();
     ti.setThreadIdx(threadImpl->m_threadIdx);

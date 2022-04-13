@@ -29,5 +29,6 @@ namespace mtrx {
 template <typename A> constexpr int SizeOf(int n = 1) {
   return sizeof(typename std::remove_pointer<A>::type) * n;
 }
+
 } // namespace mtrx
 #endif
