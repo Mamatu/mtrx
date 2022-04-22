@@ -33,7 +33,7 @@ namespace mtrx {
 class ThreadIdx final {
 public:
   ThreadIdx();
-  ~ThreadIdx() = default;
+  ~ThreadIdx();
 
   static void CleanupThreads();
 
@@ -79,7 +79,7 @@ private:
   dim3 m_blockIdx;
   dim3 m_blockDim;
   dim3 m_gridDim;
-  void *m_sharedBuffer;
+  void *m_sharedBuffer = nullptr;
 
   class BarrierMutex {
   public:

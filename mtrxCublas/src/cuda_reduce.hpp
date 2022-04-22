@@ -174,7 +174,7 @@ __device__ void cuda_reduce_shm(int m, int n, T *array, int lda,
   if (ty < m && tx < n) {
     reduceBuffer[ty + trow * tx] = array[tby + lda * tbx];
     const int reduceBufferLen = blockDim.x * blockDim.y;
-    cuda_reduce_shm_multi_blocks(reduceBuffer, reduceBufferLen,
+    cuda_reduce_shm_multi_blocks_sync(reduceBuffer, reduceBufferLen,
                                  reductionResults);
   }
 }

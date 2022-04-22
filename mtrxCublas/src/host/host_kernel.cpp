@@ -85,7 +85,8 @@ void HostKernel::executeKernelAsync() {
 
   unsigned int count = blockDim.y * blockDim.x + 1;
 
-  spdlog::debug("Creates barrier with {} count ({} * {} + 1)", count, blockDim.y, blockDim.x);
+  spdlog::debug("Creates barrier with {} count ({} * {} + 1)", count,
+                blockDim.y, blockDim.x);
   mtrx::Barrier barrier(count);
   m_pthreads.reserve(blockDim.x * blockDim.y);
 
@@ -132,7 +133,6 @@ void HostKernel::executeKernelAsync() {
   }
 
   std::map<std::pair<int, int>, std::vector<char>> sharedMemories;
-  std::unique_ptr<char[]> sharedMemory(nullptr);
   spdlog::debug("Runs kernel in gridDim {} {} {}", gridDim.x, gridDim.y,
                 gridDim.z);
   for (uintt blockIdxY = 0; blockIdxY < gridDim.y; ++blockIdxY) {
@@ -142,7 +142,8 @@ void HostKernel::executeKernelAsync() {
         sharedMemory.resize(m_sharedMemorySize);
         spdlog::debug("Allocates shared memory at {} with size {}",
                       fmt::ptr(sharedMemory.data()), m_sharedMemorySize);
-        sharedMemories[std::make_pair(blockIdxX, blockIdxY)] = sharedMemory;
+        sharedMemories[std::make_pair(blockIdxX, blockIdxY)] =
+            std::move(sharedMemory);
       }
 
       blockIdx.x = blockIdxX;
@@ -158,9 +159,11 @@ void HostKernel::executeKernelAsync() {
         }
       }
 
-      spdlog::debug("Thread {} waits on barrier {}", std::this_thread::get_id(), fmt::ptr(&barrier));
+      spdlog::debug("Thread {} waits on barrier {}", std::this_thread::get_id(),
+                    fmt::ptr(&barrier));
       barrier.wait();
-      spdlog::debug("Thread {} unlocked from a wait on barrier {}", std::this_thread::get_id(), fmt::ptr(&barrier));
+      spdlog::debug("Thread {} unlocked from a wait on barrier {}",
+                    std::this_thread::get_id(), fmt::ptr(&barrier));
 
       for (size_t tidx = 0; tidx < m_threads.size(); ++tidx) {
         m_threads.at(tidx)->waitOn();

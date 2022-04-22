@@ -29,6 +29,7 @@ namespace mtrx {
 
 HostKernelThread::HostKernelThread() : m_pthreads(nullptr), m_barrier(nullptr) {
   m_cancontinue = false;
+  spdlog::debug("HKT {} ctor", fmt::ptr(this));
 }
 
 void HostKernelThread::setThreadFunc(ThreadFunc &&threadFunc) {
@@ -65,6 +66,7 @@ void HostKernelThread::setBarrier(mtrx::Barrier *barrier) {
 }
 
 void HostKernelThread::setSharedBuffer(void *buffer) {
+  spdlog::debug("HKT {} {} {}", fmt::ptr(this), __func__, fmt::ptr(buffer));
   m_sharedBuffer = buffer;
 }
 
@@ -72,14 +74,16 @@ HostKernelThread::~HostKernelThread() {
   if (m_thread && m_thread->joinable()) {
     m_thread->join();
   }
+  spdlog::debug("HKT {} dtor", fmt::ptr(this));
 }
 
 void HostKernelThread::waitOn() {
   std::unique_lock<std::mutex> lock(m_mutex);
   if (m_cancontinue == false) {
-    spdlog::debug("Thread {} waits", m_thread->get_id());
+    spdlog::debug("HKT {} Thread {} waits", fmt::ptr(this), m_thread->get_id());
     m_cond.wait(lock);
-    spdlog::debug("Thread {} unlocked from a wait", m_thread->get_id());
+    spdlog::debug("HKT {} Thread {} unlocked from a wait", fmt::ptr(this),
+                  m_thread->get_id());
   }
   m_cancontinue = false;
 }
@@ -87,7 +91,12 @@ void HostKernelThread::waitOn() {
 void HostKernelThread::run() {
   m_cancontinue = false;
   m_thread = std::make_shared<std::thread>(HostKernelThread::Execute, this);
-  spdlog::debug("Thread created: {}", m_thread->get_id());
+  spdlog::debug("HKT {} Thread created: {}", fmt::ptr(this),
+                m_thread->get_id());
+  {
+    std::unique_lock<std::mutex> ul(m_prepareAndRunMutex);
+    m_prepareAndRunCV.wait(ul, [this]() { return m_isPrepared; });
+  }
 }
 
 std::thread::id HostKernelThread::get_id() const {
@@ -95,13 +104,18 @@ std::thread::id HostKernelThread::get_id() const {
 }
 
 void HostKernelThread::Execute(HostKernelThread *threadImpl) {
-  spdlog::debug("{}:{} Thread {} is executed", __func__, __LINE__, std::this_thread::get_id());
-  threadImpl->onRun(std::this_thread::get_id());
+  threadImpl->initInThread();
+  {
+    std::lock_guard<std::mutex> lg(threadImpl->m_prepareAndRunMutex);
+    threadImpl->m_isPrepared = true;
+  }
+
+  threadImpl->m_prepareAndRunCV.notify_one();
+  spdlog::debug("{}:{} HKT {} Thread {} is executed", __func__, __LINE__,
+                fmt::ptr(threadImpl), std::this_thread::get_id());
   const int gridSize = threadImpl->m_gridDim.x * threadImpl->m_gridDim.y;
   for (int gridIdx = 0; gridIdx < gridSize; ++gridIdx) {
-    spdlog::debug("{}:{} Thread {} waits on barrier {}", __func__, __LINE__, std::this_thread::get_id(), fmt::ptr(&threadImpl->m_barrier));
     threadImpl->m_barrier->wait();
-    spdlog::debug("{}:{} Thread {} unlocked from a wait on barrier {}", __func__, __LINE__, std::this_thread::get_id(), fmt::ptr(&threadImpl->m_barrier));
 
     ThreadIdx &ti = ThreadIdx::GetThreadIdx();
     ti.setThreadIdx(threadImpl->m_threadIdx);
@@ -117,14 +131,17 @@ void HostKernelThread::Execute(HostKernelThread *threadImpl) {
   }
 }
 
-void HostKernelThread::onRun(std::thread::id threadId) {
+void HostKernelThread::initInThread() {
+  std::thread::id threadId = std::this_thread::get_id();
   ThreadIdx &threadIndex = ThreadIdx::GetThreadIdx();
   threadIndex.setThreadIdx(m_threadIdx);
   threadIndex.setBlockIdx(m_blockIdx);
   threadIndex.setBlockDim(m_blockDim);
   threadIndex.setGridDim(m_gridDim);
   threadIndex.setSharedBuffer(m_sharedBuffer);
+
   m_pthreads->push_back(threadId);
+
   if (m_threadIdx.x == m_blockDim.x - 1 && m_threadIdx.y == m_blockDim.y - 1) {
     ThreadIdx::createBarrier(*m_pthreads);
   }

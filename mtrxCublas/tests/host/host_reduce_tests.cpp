@@ -147,9 +147,9 @@ TEST_F(HostReduceTests, reduce_size_3x3) {
 
   HostAlloc hostAlloc;
   Kernels kernels(0, &hostAlloc);
-  std::array<int, 9> h_array = {5, 6, 7, 8, 10, 12, 15, 7, 6};
+  std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  auto reduction = kernels.reduceShm(2, 2, h_array.data(), 2);
+  auto reduction = kernels.reduceShm(3, 3, h_array.data(), 3);
 
   int expected =
       std::accumulate(h_array.begin(), h_array.end(), static_cast<int>(0));

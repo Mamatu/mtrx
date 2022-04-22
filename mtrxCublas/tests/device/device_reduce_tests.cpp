@@ -18,7 +18,7 @@
 #include "../src/kernels.hpp"
 
 namespace mtrx {
-class ReduceTests : public testing::Test {
+class DeviceReduceTests : public testing::Test {
 public:
   void SetUp() override {
 #ifdef CUBLAS_NVPROF_TESTS
@@ -33,7 +33,7 @@ public:
   }
 };
 
-TEST_F(ReduceTests, reduce_size_1x1) {
+TEST_F(DeviceReduceTests, reduce_size_1x1) {
   CudaAlloc cudaAlloc;
   Kernels kernels(0, &cudaAlloc);
 
@@ -51,7 +51,7 @@ TEST_F(ReduceTests, reduce_size_1x1) {
   EXPECT_EQ(expected, reduction);
 }
 
-TEST_F(ReduceTests, reduce_size_2x1) {
+TEST_F(DeviceReduceTests, reduce_size_2x1) {
   CudaAlloc cudaAlloc;
   Kernels kernels(0, &cudaAlloc);
 
@@ -66,7 +66,7 @@ TEST_F(ReduceTests, reduce_size_2x1) {
   EXPECT_EQ(11, reduction);
 }
 
-TEST_F(ReduceTests, reduce_size_1x2) {
+TEST_F(DeviceReduceTests, reduce_size_1x2) {
   CudaAlloc cudaAlloc;
   Kernels kernels(0, &cudaAlloc);
 
@@ -84,7 +84,7 @@ TEST_F(ReduceTests, reduce_size_1x2) {
   EXPECT_EQ(expected, reduction);
 }
 
-TEST_F(ReduceTests, reduce_size_2x2) {
+TEST_F(DeviceReduceTests, reduce_size_2x2) {
   CudaAlloc cudaAlloc;
   Kernels kernels(0, &cudaAlloc);
 
@@ -102,7 +102,7 @@ TEST_F(ReduceTests, reduce_size_2x2) {
   EXPECT_EQ(expected, reduction);
 }
 
-TEST_F(ReduceTests, reduce_size_3x3) {
+TEST_F(DeviceReduceTests, reduce_size_3x3) {
   CudaAlloc cudaAlloc;
   Kernels kernels(0, &cudaAlloc);
 

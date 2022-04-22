@@ -47,13 +47,9 @@ public:
   void setBlocksCount(uint x, uint y, uint z);
   void setThreadsCount(uint x, uint y, uint z);
 
-  void setBlocksCount(const dim3 &xy) {
-    setBlocksCount(xy.x, xy.y, xy.z);
-  }
+  void setBlocksCount(const dim3 &xy) { setBlocksCount(xy.x, xy.y, xy.z); }
 
-  void setThreadsCount(const dim3 &xy) {
-    setThreadsCount(xy.x, xy.y, xy.z);
-  }
+  void setThreadsCount(const dim3 &xy) { setThreadsCount(xy.x, xy.y, xy.z); }
 
   void setSharedMemory(uint size);
 
