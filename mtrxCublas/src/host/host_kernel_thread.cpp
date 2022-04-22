@@ -94,8 +94,8 @@ void HostKernelThread::run() {
   spdlog::debug("HKT {} Thread created: {}", fmt::ptr(this),
                 m_thread->get_id());
   {
-    std::unique_lock<std::mutex> ul(m_prepareAndRunMutex);
-    m_prepareAndRunCV.wait(ul, [this]() { return m_isPrepared; });
+    std::unique_lock<std::mutex> ul(m_mutex);
+    m_cond.wait(ul, [this]() { return m_isPrepared; });
   }
 }
 
@@ -105,12 +105,7 @@ std::thread::id HostKernelThread::get_id() const {
 
 void HostKernelThread::Execute(HostKernelThread *threadImpl) {
   threadImpl->initInThread();
-  {
-    std::lock_guard<std::mutex> lg(threadImpl->m_prepareAndRunMutex);
-    threadImpl->m_isPrepared = true;
-  }
 
-  threadImpl->m_prepareAndRunCV.notify_one();
   spdlog::debug("{}:{} HKT {} Thread {} is executed", __func__, __LINE__,
                 fmt::ptr(threadImpl), std::this_thread::get_id());
   const int gridSize = threadImpl->m_gridDim.x * threadImpl->m_gridDim.y;
@@ -145,5 +140,12 @@ void HostKernelThread::initInThread() {
   if (m_threadIdx.x == m_blockDim.x - 1 && m_threadIdx.y == m_blockDim.y - 1) {
     ThreadIdx::createBarrier(*m_pthreads);
   }
+
+  {
+    std::lock_guard<std::mutex> lg(m_mutex);
+    m_isPrepared = true;
+  }
+
+  m_cond.notify_one();
 }
 } // namespace mtrx

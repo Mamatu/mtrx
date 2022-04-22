@@ -89,8 +89,6 @@ private:
 
   void initInThread();
   bool m_isPrepared = false;
-  std::condition_variable m_prepareAndRunCV;
-  std::mutex m_prepareAndRunMutex;
 };
 } // namespace mtrx
 #endif
