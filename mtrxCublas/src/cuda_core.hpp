@@ -20,13 +20,6 @@
 #ifndef MTRX_CUBLAS_CUDA_CORE_HPP
 #define MTRX_CUBLAS_CUDA_CORE_HPP
 
-#include "sys_pathes_parser.hpp"
-#include "thread_id_parser.hpp"
-
-#define CONCAT_INNER(a, b) a##b
-#define CONCAT(a, b) CONCAT_INNER(a, b)
-#define UNIQUE_NAME(base) CONCAT(base, __COUNTER__)
-
 #ifndef MTRX_HOST_CUDA_BUILD
 
 #include <cuda.h>
