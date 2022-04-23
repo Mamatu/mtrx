@@ -1,17 +1,14 @@
 #include <array>
-#include <gtest/gtest.h>
+#include <mtrxCublas/test.hpp>
 
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
 #include "../src/host/device_properties_provider.hpp"
 #include "../src/host_alloc.hpp"
 #include "../src/kernels.hpp"
-#include <spdlog/spdlog.h>
 
 namespace mtrx {
-class IsULTriangularTests : public testing::Test {
-public:
-  void SetUp() override { spdlog::set_level(spdlog::level::debug); }
+class IsULTriangularTests : public Test {
 };
 
 TEST_F(IsULTriangularTests,

@@ -1,13 +1,12 @@
 #include <array>
-#include <gtest/gtest.h>
+
+#include <mtrxCublas/test.hpp>
 
 #include "../src/calc_dim.hpp"
-#include <spdlog/spdlog.h>
 
 namespace mtrx {
-class CalcDimTests : public testing::Test {
+class CalcDimTests : public Test {
 public:
-  void SetUp() override { spdlog::set_level(spdlog::level::debug); }
 };
 
 TEST_F(CalcDimTests, 1x1) {

@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include <mtrxCublas/test.hpp>
 #include <math.h>
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCore/types.hpp>
@@ -7,7 +7,6 @@
 
 #include <array>
 #include <cuda.h>
-#include <cuda_profiler_api.h>
 #include <numeric>
 
 #ifdef CUBLAS_NVPROF_TESTS
@@ -18,19 +17,7 @@
 #include "../src/kernels.hpp"
 
 namespace mtrx {
-class DeviceReduceTests : public testing::Test {
-public:
-  void SetUp() override {
-#ifdef CUBLAS_NVPROF_TESTS
-    startProfiler();
-#endif
-  }
-
-  void TearDown() override {
-#ifdef CUBLAS_NVPROF_TESTS
-    stopProfiler();
-#endif
-  }
+class DeviceReduceTests : public Test {
 };
 
 TEST_F(DeviceReduceTests, reduce_size_1x1) {

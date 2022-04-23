@@ -48,7 +48,6 @@ void logMulResultComplex(const std::string &file, const std::string &func,
 
 __device__ void cuda_SF_scaleTrace(int /*m*/, int /*n*/, float *matrix, int lda,
                                    float factor) {
-  HOST_CODE(spdlog::set_level(spdlog::level::debug);)
   HOST_INIT();
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
   const int idx = y * lda + y;
