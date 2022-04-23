@@ -81,8 +81,8 @@ __device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
   int idx = y + rows * x;
   int dim = length;
 
-  if (idx < length) {
-    while (dim > 1) {
+  while (dim > 1) {
+    if (idx < length) {
       int next_dim = dim / 2;
       if (idx < next_dim) {
         oper_plus_equal(array_shm, idx, idx + next_dim);
@@ -91,8 +91,8 @@ __device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
         }
       }
       dim = next_dim;
-      __syncthreads();
     }
+    __syncthreads();
   }
   __syncthreads();
   return array_shm[0];
@@ -152,7 +152,7 @@ __device__ void cuda_reduce_shm_multi_blocks_sync(T *array_shm, int length,
 }
 
 /**
- * @brief Calculate reduction of array.
+ * @brief Calculate reduction of 2d array.
  * WARNING! It requires shared memory!
  */
 template <typename T>
@@ -174,7 +174,7 @@ __device__ void cuda_reduce_shm(int m, int n, T *array, int lda,
   if (ty < m && tx < n) {
     reduceBuffer[ty + trow * tx] = array[tby + lda * tbx];
     const int reduceBufferLen = blockDim.x * blockDim.y;
-    cuda_reduce_shm_multi_blocks(reduceBuffer, reduceBufferLen,
+    cuda_reduce_shm_multi_blocks_sync(reduceBuffer, reduceBufferLen,
                                  reductionResults);
   }
 }

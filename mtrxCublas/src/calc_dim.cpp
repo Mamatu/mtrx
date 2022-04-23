@@ -20,13 +20,73 @@
 #include "calc_dim.hpp"
 #include <functional>
 #include <map>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <utility>
 
+namespace {
+void calculateDim_maximizeBlockDimUsage(dim3 &threads, dim3 &blocks, int m,
+                                        int n,
+                                        const std::array<int, 3> &blockDim,
+                                        const std::array<int, 3> &gridDim,
+                                        int maxThreadsPerBlock) {
+
+  auto calcThreadsBlocksCount = [](auto matrixDim, auto blockDim) {
+    if (matrixDim <= blockDim) {
+      return std::make_pair(matrixDim, 1);
+    }
+
+    auto div = matrixDim / blockDim;
+    auto modulo = matrixDim % blockDim;
+
+    if (modulo != 0) {
+      div = div + 1;
+    }
+
+    return std::make_pair(blockDim, div);
+  };
+
+  threads = {1, 1, 1};
+  blocks = {1, 1, 1};
+
+  auto y = calcThreadsBlocksCount(m, blockDim[1]);
+  auto x = calcThreadsBlocksCount(n, blockDim[0]);
+
+  auto check = [](auto calculatedGridDim, auto gridDim,
+                  const std::string &label) {
+    if (calculatedGridDim > gridDim) {
+      std::stringstream sstream;
+      sstream << "Exceeds grid dimension in " << label << " axis (";
+      sstream << calculatedGridDim << " > " << gridDim;
+      sstream << ")";
+      throw std::runtime_error(sstream.str());
+    }
+  };
+
+  check(x.second, gridDim[0], "x");
+  check(y.second, gridDim[1], "y");
+
+  if (x.first * y.first > maxThreadsPerBlock) {
+    std::stringstream sstream;
+    sstream << "Calculated threads count per block " << x.first * y.first;
+    sstream << "is higher than maxThreadsPerBlock " << maxThreadsPerBlock;
+    throw std::runtime_error(sstream.str());
+  }
+
+  threads.x = x.first;
+  blocks.x = x.second;
+
+  threads.y = y.first;
+  blocks.y = y.second;
+}
+} // namespace
+
 namespace mtrx {
-void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
-                  int m, int n, const std::array<int, 3> &blockDim,
-                  const std::array<int, 3> &gridDim, int maxThreadsPerBlock) {
+
+void calculateDim(dim3 &threads, dim3 &blocks, int m, int n,
+                  const std::array<int, 3> &blockDim,
+                  const std::array<int, 3> &gridDim, int maxThreadsPerBlock,
+                  CalcDimStrategy calcDimStrategy) {
 
   if (m == 0 || n == 0) {
     std::stringstream sstream;
@@ -48,45 +108,23 @@ void calculateDim(std::array<int, 2> &threads, std::array<int, 2> &blocks,
     throw std::runtime_error(sstream.str());
   }
 
-  std::map<int, std::tuple<int, int, int, int>, std::less<int>> diffs;
+  using Func = std::function<void(dim3 & threads, dim3 & blocks, int m, int n,
+                                  const std::array<int, 3> &blockDim,
+                                  const std::array<int, 3> &gridDim,
+                                  int maxThreadsPerBlock)>;
 
-  int m1 = (m * n <= maxThreadsPerBlock) ? m * n : maxThreadsPerBlock;
-  int n1 = 1;
-
-  auto calc_count = [](int a, int a1) {
-    int count_a = a / a1;
-    if (count_a < 1) {
-      count_a = 1;
-    }
-    return count_a;
+  auto maximizeBlockDimUsage = [](auto &threads, auto &blocks, auto m, auto n,
+                                  const auto &blockDim, const auto &gridDim,
+                                  auto maxThreadsPerBlock) {
+    calculateDim_maximizeBlockDimUsage(threads, blocks, m, n, blockDim, gridDim,
+                                       maxThreadsPerBlock);
   };
 
-  while (m1 >= 1) {
+  std::map<CalcDimStrategy, Func> strategies;
+  strategies.insert({CalcDimStrategy::MAXIMIZE_BLOCK_DIM_USAGE,
+                     std::move(maximizeBlockDimUsage)});
 
-    int count_m = calc_count(m, m1);
-    int count_n = calc_count(n, n1);
-
-    if (m1 <= blockDim[0] && n1 <= blockDim[1] && count_m <= gridDim[0] &&
-        count_n <= gridDim[1] && m1 * n1 <= maxThreadsPerBlock) {
-      int s = m * n;
-      int s1 = m1 * count_m * n1 * count_n;
-      int diff = s1 - s;
-      diffs[diff] = std::make_tuple(m1, n1, count_m, count_n);
-    }
-    m1 = m1 / 2;
-    n1 = n1 * 2;
-  }
-
-  auto front = diffs.begin();
-  if (front == diffs.end()) {
-    std::stringstream sstream;
-    sstream << "Not found any calculated dim";
-    throw std::runtime_error(sstream.str());
-  }
-
-  threads[0] = std::get<0>(front->second);
-  threads[1] = std::get<1>(front->second);
-  blocks[0] = std::get<2>(front->second);
-  blocks[1] = std::get<3>(front->second);
+  const auto &func = strategies[calcDimStrategy];
+  func(threads, blocks, m, n, blockDim, gridDim, maxThreadsPerBlock);
 }
 } // namespace mtrx

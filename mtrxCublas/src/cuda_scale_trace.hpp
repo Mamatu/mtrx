@@ -48,48 +48,47 @@ void logMulResultComplex(const std::string &file, const std::string &func,
 
 __device__ void cuda_SF_scaleTrace(int /*m*/, int /*n*/, float *matrix, int lda,
                                    float factor) {
-  HOST_CODE(spdlog::set_level(spdlog::level::debug);)
   HOST_INIT();
-  const int x = threadIdx.x + blockDim.x * blockIdx.x;
-  const int idx = x * lda + x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+  const int idx = y * lda + y;
   HOST_CODE(float host_matrixValue = matrix[idx];);
   matrix[idx] = matrix[idx] * factor;
   HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx,
-                         host_matrixValue, factor, x, lda);)
+                         host_matrixValue, factor, y, lda);)
 }
 
 __device__ void cuda_SD_scaleTrace(int /*m*/, int /*n*/, double *matrix,
                                    int lda, double factor) {
   HOST_INIT();
-  const int x = threadIdx.x + blockDim.x * blockIdx.x;
-  const int idx = x * lda + x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+  const int idx = y * lda + y;
   HOST_CODE(double host_matrixValue = matrix[idx];);
   matrix[idx] = matrix[idx] * factor;
   HOST_CODE(logMulResult(__FILE__, __func__, __LINE__, matrix, idx,
-                         host_matrixValue, factor, x, lda);)
+                         host_matrixValue, factor, y, lda);)
 }
 
 __device__ void cuda_CF_scaleTrace(int /*m*/, int /*n*/, cuComplex *matrix,
                                    int lda, cuComplex factor) {
   HOST_INIT();
-  const int x = threadIdx.x + blockDim.x * blockIdx.x;
-  const int idx = x * lda + x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+  const int idx = y * lda + y;
   HOST_CODE(cuComplex host_matrixValue = matrix[idx];);
   matrix[idx] = cuCmulf(matrix[idx], factor);
   HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx,
-                                host_matrixValue, factor, x, lda);)
+                                host_matrixValue, factor, y, lda);)
 }
 
 __device__ void cuda_CD_scaleTrace(int /*m*/, int /*n*/,
                                    cuDoubleComplex *matrix, int lda,
                                    cuDoubleComplex factor) {
   HOST_INIT();
-  const int x = threadIdx.x + blockDim.x * blockIdx.x;
-  const int idx = x * lda + x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+  const int idx = y * lda + y;
   HOST_CODE(cuDoubleComplex host_matrixValue = matrix[idx];);
   matrix[idx] = cuCmul(matrix[idx], factor);
   HOST_CODE(logMulResultComplex(__FILE__, __func__, __LINE__, matrix, idx,
-                                host_matrixValue, factor, x, lda);)
+                                host_matrixValue, factor, y, lda);)
 }
 
 #endif

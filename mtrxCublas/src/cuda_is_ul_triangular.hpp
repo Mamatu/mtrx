@@ -43,7 +43,7 @@ __device__ void cuda_isUpperTriangular(int rows, int columns, T *matrix,
     int is = (x >= y && cuda_isAbsHigher(v, delta)) ||
              (x < y && !cuda_isAbsHigher(v, delta));
 
-    reduceBuffer[x * blockDim.y + y] = is;
+    reduceBuffer[threadIdx.x * blockDim.y + threadIdx.y] = is;
     const int reduceBufferLen = blockDim.x * blockDim.y;
     cuda_reduce_shm_multi_blocks_sync<int>(reduceBuffer, reduceBufferLen,
                                            reductionResults);
@@ -69,7 +69,7 @@ __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
     int is = (x > y && !cuda_isAbsHigher(v, delta)) ||
              (x <= y && cuda_isAbsHigher(v, delta));
 
-    reduceBuffer[x * blockDim.y + y] = is;
+    reduceBuffer[threadIdx.x * blockDim.y + threadIdx.y] = is;
     const int reduceBufferLen = blockDim.x * blockDim.y;
     cuda_reduce_shm_multi_blocks_sync<int>(reduceBuffer, reduceBufferLen,
                                            reductionResults);

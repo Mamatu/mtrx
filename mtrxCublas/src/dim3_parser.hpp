@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022 Marcin Matula
+ * Copyright 2016 - 2021 Marcin Matula
  *
  * This file is part of mtrx.
  *
@@ -17,18 +17,22 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_SIZE_OF_HPP
-#define MTRX_CORE_SIZE_OF_HPP
+#ifndef MTRX_DIM3_PARSER_HPP
+#define MTRX_DIM3_PARSER_HPP
 
-#include <type_traits>
+#include <sstream>
+#include <string>
 
-#include "status_handler.hpp"
-#include "types.hpp"
+#include <spdlog/spdlog.h>
+#include <vector_types.h>
 
-namespace mtrx {
-template <typename A> constexpr int SizeOf(int n = 1) {
-  return sizeof(typename std::remove_pointer<A>::type) * n;
-}
+template <> struct fmt::formatter<dim3> : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const dim3 &dim, FormatContext &ctx) {
+    std::stringstream sstream;
+    sstream << dim.x << ", " << dim.y << ", " << dim.z;
+    return formatter<string_view>::format(sstream.str(), ctx);
+  }
+};
 
-} // namespace mtrx
 #endif

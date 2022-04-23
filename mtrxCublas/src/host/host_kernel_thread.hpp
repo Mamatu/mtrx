@@ -70,7 +70,6 @@ public:
   // void stop();
 protected:
   static void Execute(HostKernelThread *hkt);
-  virtual void onRun(std::thread::id threadId);
 
 private:
   dim3 m_threadIdx;
@@ -87,6 +86,9 @@ private:
 
   std::shared_ptr<std::thread> m_thread;
   ThreadFunc m_threadFunc;
+
+  void initInThread();
+  bool m_isPrepared = false;
 };
 } // namespace mtrx
 #endif

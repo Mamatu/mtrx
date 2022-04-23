@@ -18,6 +18,9 @@
  */
 
 #include "barrier.hpp"
+#include "../thread_id_parser.hpp"
+#include <spdlog/spdlog.h>
+#include <thread>
 
 namespace mtrx {
 
@@ -33,5 +36,11 @@ void Barrier::init(unsigned int count) {
   m_init = true;
 }
 
-void Barrier::wait() { pthread_barrier_wait(&m_barrier); }
+void Barrier::wait() {
+  spdlog::debug("Barrier: Thread {} waits on barrier {}",
+                std::this_thread::get_id(), fmt::ptr(this));
+  pthread_barrier_wait(&m_barrier);
+  spdlog::debug("Barrier: Thread {} released from barrier {}",
+                std::this_thread::get_id(), fmt::ptr(this));
+}
 } // namespace mtrx

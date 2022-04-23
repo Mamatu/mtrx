@@ -28,8 +28,8 @@
 #define HOST_INIT()
 
 #define GENERIC_INIT_SHARED(type, buffer)                                      \
-  extern __shared__ type mtrx_shared_buffer[];                                 \
-  buffer = mtrx_shared_buffer;
+  extern __shared__ char mtrx_shared_buffer[];                                 \
+  buffer = reinterpret_cast<type *>(mtrx_shared_buffer);
 
 #define HOST_CODE(code)
 
@@ -52,8 +52,8 @@
   gridDim = gridDim;     /*for suppress warning*/
 
 #define GENERIC_INIT_SHARED(type, buffer)                                      \
-  mtrx::ThreadIdx &_this_tidx = mtrx::ThreadIdx::GetThreadIdx();               \
-  buffer = static_cast<type *>(_this_tidx.getSharedBuffer());
+  mtrx::ThreadIdx &mtrx_shared_buffer = mtrx::ThreadIdx::GetThreadIdx();       \
+  buffer = static_cast<type *>(mtrx_shared_buffer.getSharedBuffer());
 
 #define HOST_CODE(code) code
 

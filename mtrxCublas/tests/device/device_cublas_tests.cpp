@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include <mtrxCublas/test.hpp>
 #include <math.h>
 #include <mtrxCore/types.hpp>
 #include <mtrxCublas/cublas.hpp>
@@ -6,14 +6,9 @@
 
 #include <array>
 #include <cuda.h>
-#include <cuda_profiler_api.h>
-
-#ifdef CUBLAS_NVPROF_TESTS
-#include "cuda_profiler.hpp"
-#endif
 
 namespace mtrx {
-class DeviceCublasTests : public testing::Test {
+class DeviceCublasTests : public Test {
 public:
   void SetUp() override {
 #ifdef CUBLAS_NVPROF_TESTS

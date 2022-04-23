@@ -1,13 +1,10 @@
 #include <array>
-#include <gtest/gtest.h>
+#include <mtrxCublas/test.hpp>
 
 #include "../src/sys_pathes_parser.hpp"
-#include <spdlog/spdlog.h>
 
 namespace mtrx {
-class SysPathesTests : public testing::Test {
-public:
-  void SetUp() override { spdlog::set_level(spdlog::level::debug); }
+class SysPathesTests : public Test {
 };
 
 TEST_F(SysPathesTests, parse_empty) {
