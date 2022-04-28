@@ -46,7 +46,7 @@ void logMulResultComplex(const std::string &file, const std::string &func,
 }
 #endif
 
-__device__ void cuda_SF_scaleTrace(int /*m*/, int /*n*/, float *matrix, int lda,
+__device__ void cuda_SF_scaleDiagonal(int /*m*/, int /*n*/, float *matrix, int lda,
                                    float factor) {
   HOST_INIT();
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -57,7 +57,7 @@ __device__ void cuda_SF_scaleTrace(int /*m*/, int /*n*/, float *matrix, int lda,
                          host_matrixValue, factor, y, lda);)
 }
 
-__device__ void cuda_SD_scaleTrace(int /*m*/, int /*n*/, double *matrix,
+__device__ void cuda_SD_scaleDiagonal(int /*m*/, int /*n*/, double *matrix,
                                    int lda, double factor) {
   HOST_INIT();
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -68,7 +68,7 @@ __device__ void cuda_SD_scaleTrace(int /*m*/, int /*n*/, double *matrix,
                          host_matrixValue, factor, y, lda);)
 }
 
-__device__ void cuda_CF_scaleTrace(int /*m*/, int /*n*/, cuComplex *matrix,
+__device__ void cuda_CF_scaleDiagonal(int /*m*/, int /*n*/, cuComplex *matrix,
                                    int lda, cuComplex factor) {
   HOST_INIT();
   const int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -79,7 +79,7 @@ __device__ void cuda_CF_scaleTrace(int /*m*/, int /*n*/, cuComplex *matrix,
                                 host_matrixValue, factor, y, lda);)
 }
 
-__device__ void cuda_CD_scaleTrace(int /*m*/, int /*n*/,
+__device__ void cuda_CD_scaleDiagonal(int /*m*/, int /*n*/,
                                    cuDoubleComplex *matrix, int lda,
                                    cuDoubleComplex factor) {
   HOST_INIT();

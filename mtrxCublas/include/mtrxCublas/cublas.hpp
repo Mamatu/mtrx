@@ -91,8 +91,8 @@ protected:
   void _add(Mem *output, Mem *a, Mem *b) override;
   void _subtract(Mem *output, Mem *a, Mem *b) override;
 
-  void _scaleTrace(Mem *matrix, Mem *factor) override;
-  void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) override;
+  void _scaleDiagonal(Mem *matrix, Mem *factor) override;
+  void _scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) override;
 
   void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) override;
   void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) override;

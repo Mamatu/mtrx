@@ -319,14 +319,14 @@ void Blas::subtract(Mem *output, Mem *a, Mem *b) {
   _subtract(output, a, b);
 }
 
-void Blas::scaleTrace(Mem *matrix, Mem *factor) {
+void Blas::scaleDiagonal(Mem *matrix, Mem *factor) {
   checkMem(matrix);
-  _scaleTrace(matrix, factor);
+  _scaleDiagonal(matrix, factor);
 }
 
-void Blas::scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
+void Blas::scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) {
   checkMem(matrix);
-  _scaleTrace(matrix, factor, factorType);
+  _scaleDiagonal(matrix, factor, factorType);
 }
 
 void Blas::tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {

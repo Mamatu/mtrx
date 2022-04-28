@@ -30,10 +30,10 @@ public:
   Kernels(int device, Alloc *alloc);
   ~Kernels() = default;
 
-  void scaleTrace(int dim, float *matrix, int lda, float factor);
-  void scaleTrace(int dim, double *matrix, int lda, double factor);
-  void scaleTrace(int dim, cuComplex *matrix, int lda, cuComplex factor);
-  void scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
+  void scaleDiagonal(int dim, float *matrix, int lda, float factor);
+  void scaleDiagonal(int dim, double *matrix, int lda, double factor);
+  void scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex factor);
+  void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
                   cuDoubleComplex factor);
 
   bool isUpperTriangular(int rows, int columns, float *matrix, int lda,

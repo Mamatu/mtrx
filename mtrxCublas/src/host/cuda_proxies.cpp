@@ -20,7 +20,7 @@
 #include "cuda_proxies.hpp"
 #include "../cuda_is_ul_triangular.hpp"
 #include "../cuda_reduce.hpp"
-#include "../cuda_scale_trace.hpp"
+#include "../cuda_scale_diagonal.hpp"
 
 template <typename T> T *getParam(const void *param) {
   return *static_cast<T *const *>(param);
@@ -112,7 +112,7 @@ template <typename T> T *getParam(void **params, size_t index) {
   }
 
 template <typename T, typename Callback>
-void proxy_HostKernel_generic_scaleTrace(const void **params,
+void proxy_HostKernel_generic_scaleDiagonal(const void **params,
                                          Callback &&callback) {
   int m = *static_cast<const int *>(params[0]);
   int n = *static_cast<const int *>(params[1]);
@@ -123,42 +123,42 @@ void proxy_HostKernel_generic_scaleTrace(const void **params,
   callback(m, n, matrix, lda, factor);
 }
 
-void HostKernel_SF_scaleTrace(int m, int n, float *matrix, int lda,
+void HostKernel_SF_scaleDiagonal(int m, int n, float *matrix, int lda,
                               float factor) {
-  cuda_SF_scaleTrace(m, n, matrix, lda, factor);
+  cuda_SF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-void proxy_HostKernel_SF_scaleTrace(const void **params) {
-  proxy_HostKernel_generic_scaleTrace<float>(params, HostKernel_SF_scaleTrace);
+void proxy_HostKernel_SF_scaleDiagonal(const void **params) {
+  proxy_HostKernel_generic_scaleDiagonal<float>(params, HostKernel_SF_scaleDiagonal);
 }
 
-void HostKernel_SD_scaleTrace(int m, int n, double *matrix, int lda,
+void HostKernel_SD_scaleDiagonal(int m, int n, double *matrix, int lda,
                               double factor) {
-  cuda_SD_scaleTrace(m, n, matrix, lda, factor);
+  cuda_SD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-void proxy_HostKernel_SD_scaleTrace(const void **params) {
-  proxy_HostKernel_generic_scaleTrace<double>(params, HostKernel_SD_scaleTrace);
+void proxy_HostKernel_SD_scaleDiagonal(const void **params) {
+  proxy_HostKernel_generic_scaleDiagonal<double>(params, HostKernel_SD_scaleDiagonal);
 }
 
-void HostKernel_CF_scaleTrace(int m, int n, cuComplex *matrix, int lda,
+void HostKernel_CF_scaleDiagonal(int m, int n, cuComplex *matrix, int lda,
                               cuComplex factor) {
-  cuda_CF_scaleTrace(m, n, matrix, lda, factor);
+  cuda_CF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-void proxy_HostKernel_CF_scaleTrace(const void **params) {
-  proxy_HostKernel_generic_scaleTrace<cuComplex>(params,
-                                                 HostKernel_CF_scaleTrace);
+void proxy_HostKernel_CF_scaleDiagonal(const void **params) {
+  proxy_HostKernel_generic_scaleDiagonal<cuComplex>(params,
+                                                 HostKernel_CF_scaleDiagonal);
 }
 
-void HostKernel_CD_scaleTrace(int m, int n, cuDoubleComplex *matrix, int lda,
+void HostKernel_CD_scaleDiagonal(int m, int n, cuDoubleComplex *matrix, int lda,
                               cuDoubleComplex factor) {
-  cuda_CD_scaleTrace(m, n, matrix, lda, factor);
+  cuda_CD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-void proxy_HostKernel_CD_scaleTrace(const void **params) {
-  proxy_HostKernel_generic_scaleTrace<cuDoubleComplex>(
-      params, HostKernel_CD_scaleTrace);
+void proxy_HostKernel_CD_scaleDiagonal(const void **params) {
+  proxy_HostKernel_generic_scaleDiagonal<cuDoubleComplex>(
+      params, HostKernel_CD_scaleDiagonal);
 }
 
 template <typename T, typename Callback>

@@ -111,8 +111,8 @@ public:
   void add(Mem *output, Mem *a, Mem *b);
   void subtract(Mem *output, Mem *a, Mem *b);
 
-  void scaleTrace(Mem *matrix, Mem *factor);
-  void scaleTrace(Mem *matrix, void *factor, ValueType factorType);
+  void scaleDiagonal(Mem *matrix, Mem *factor);
+  void scaleDiagonal(Mem *matrix, void *factor, ValueType factorType);
 
   void tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda);
   void trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP);
@@ -180,8 +180,8 @@ protected:
   virtual void _add(Mem *output, Mem *a, Mem *b) = 0;
   virtual void _subtract(Mem *output, Mem *a, Mem *b) = 0;
 
-  virtual void _scaleTrace(Mem *matrix, Mem *factor) = 0;
-  virtual void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) = 0;
+  virtual void _scaleDiagonal(Mem *matrix, Mem *factor) = 0;
+  virtual void _scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) = 0;
 
   virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
   virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;

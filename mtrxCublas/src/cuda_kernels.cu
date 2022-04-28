@@ -17,28 +17,28 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cuda_scale_trace.hpp"
+#include "cuda_scale_diagonal.hpp"
 #include "cuda_is_ul_triangular.hpp"
 #include "cuda_reduce.hpp"
 
-extern "C" __global__ void CudaKernel_SF_scaleTrace(int m, int n, float* matrix, int lda, float factor)
+extern "C" __global__ void CudaKernel_SF_scaleDiagonal(int m, int n, float* matrix, int lda, float factor)
 {
-  cuda_SF_scaleTrace(m, n, matrix, lda, factor);
+  cuda_SF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-extern "C" __global__ void CudaKernel_SD_scaleTrace(int m, int n, double* matrix, int lda, double factor)
+extern "C" __global__ void CudaKernel_SD_scaleDiagonal(int m, int n, double* matrix, int lda, double factor)
 {
-  cuda_SD_scaleTrace(m, n, matrix, lda, factor);
+  cuda_SD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-extern "C" __global__ void CudaKernel_CF_scaleTrace(int m, int n, cuComplex* matrix, int lda, cuComplex factor)
+extern "C" __global__ void CudaKernel_CF_scaleDiagonal(int m, int n, cuComplex* matrix, int lda, cuComplex factor)
 {
-  cuda_CF_scaleTrace(m, n, matrix, lda, factor);
+  cuda_CF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
-extern "C" __global__ void CudaKernel_CD_scaleTrace(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
+extern "C" __global__ void CudaKernel_CD_scaleDiagonal(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex factor)
 {
-  cuda_CD_scaleTrace(m, n, matrix, lda, factor);
+  cuda_CD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
 extern "C" __global__ void CudaKernel_SF_isUpperTriangular(int m, int n, float* matrix, int lda, float delta, int* reductionResults)

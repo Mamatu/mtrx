@@ -478,10 +478,10 @@ void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
     call(FillMode::UPPER);
     if (alphaType == ValueType::FLOAT) {
       float scaleFactor = 0.5f;
-      scaleTrace(output, static_cast<void *>(&scaleFactor), ValueType::FLOAT);
+      scaleDiagonal(output, static_cast<void *>(&scaleFactor), ValueType::FLOAT);
     } else if (alphaType == ValueType::DOUBLE) {
       double scaleFactor = 0.5;
-      scaleTrace(output, static_cast<void *>(&scaleFactor), ValueType::DOUBLE);
+      scaleDiagonal(output, static_cast<void *>(&scaleFactor), ValueType::DOUBLE);
     } else {
       throw std::runtime_error("Not supported yet...");
     }
@@ -1236,7 +1236,7 @@ void Cublas::_subtract(Mem *output, Mem *a, Mem *b) {
 }
 
 template <typename T>
-cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
+cublasStatus_t cublas_scaleDiagonal(Cublas *cublas, Mem *matrix, void *factor,
                                  ValueType factorType) {
 
   auto rows = cublas->getRows(matrix);
@@ -1253,19 +1253,19 @@ cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
 
   switch (factorType) {
   case ValueType::FLOAT:
-    kernels.scaleTrace(rows, reinterpret_cast<float *>(matrix->ptr), rows,
+    kernels.scaleDiagonal(rows, reinterpret_cast<float *>(matrix->ptr), rows,
                        *reinterpret_cast<float *>(factor));
     break;
   case ValueType::DOUBLE:
-    kernels.scaleTrace(rows, reinterpret_cast<double *>(matrix->ptr), rows,
+    kernels.scaleDiagonal(rows, reinterpret_cast<double *>(matrix->ptr), rows,
                        *reinterpret_cast<double *>(factor));
     break;
   case ValueType::FLOAT_COMPLEX:
-    kernels.scaleTrace(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
+    kernels.scaleDiagonal(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
                        *reinterpret_cast<cuComplex *>(factor));
     break;
   case ValueType::DOUBLE_COMPLEX:
-    kernels.scaleTrace(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+    kernels.scaleDiagonal(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
                        rows, *reinterpret_cast<cuDoubleComplex *>(factor));
     break;
   case ValueType::NOT_DEFINED:
@@ -1274,11 +1274,11 @@ cublasStatus_t cublas_scaleTrace(Cublas *cublas, Mem *matrix, void *factor,
   return CUBLAS_STATUS_SUCCESS;
 }
 
-void Cublas::_scaleTrace(Mem *matrix, Mem *factor) {
-  _scaleTrace(matrix, factor->ptr, factor->valueType);
+void Cublas::_scaleDiagonal(Mem *matrix, Mem *factor) {
+  _scaleDiagonal(matrix, factor->ptr, factor->valueType);
 }
 
-void Cublas::_scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
+void Cublas::_scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) {
   if (matrix->valueType != factorType) {
     throw std::runtime_error("None identical types");
   }
@@ -1287,17 +1287,17 @@ void Cublas::_scaleTrace(Mem *matrix, void *factor, ValueType factorType) {
 
   switch (factorType) {
   case ValueType::FLOAT:
-    status = cublas_scaleTrace<float>(this, matrix, factor, factorType);
+    status = cublas_scaleDiagonal<float>(this, matrix, factor, factorType);
     break;
   case ValueType::DOUBLE:
-    status = cublas_scaleTrace<double>(this, matrix, factor, factorType);
+    status = cublas_scaleDiagonal<double>(this, matrix, factor, factorType);
     break;
   case ValueType::FLOAT_COMPLEX:
-    status = cublas_scaleTrace<cuComplex>(this, matrix, factor, factorType);
+    status = cublas_scaleDiagonal<cuComplex>(this, matrix, factor, factorType);
     break;
   case ValueType::DOUBLE_COMPLEX:
     status =
-        cublas_scaleTrace<cuDoubleComplex>(this, matrix, factor, factorType);
+        cublas_scaleDiagonal<cuDoubleComplex>(this, matrix, factor, factorType);
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");
