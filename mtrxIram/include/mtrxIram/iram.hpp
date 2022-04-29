@@ -29,6 +29,10 @@ namespace mtrx {
 
 class Iram {
 public:
+  void setEigensCount(int eigenCount);
+
+private:
+  int m_eigenCount = 0;
 };
 
 } // namespace mtrx

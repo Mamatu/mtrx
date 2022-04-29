@@ -9,8 +9,7 @@
 #include <numeric>
 
 namespace mtrx {
-class HostReduceTests : public Test {
-};
+class HostReduceTests : public Test {};
 
 TEST_F(HostReduceTests, constant) {
   DeviceProperties dp;

@@ -1,8 +1,8 @@
-#include <mtrxCublas/test.hpp>
 #include <math.h>
 #include <mtrxCore/types.hpp>
 #include <mtrxCublas/cublas.hpp>
 #include <mtrxCublas/matchers.hpp>
+#include <mtrxCublas/test.hpp>
 
 #include <array>
 #include <cuda.h>

@@ -113,7 +113,7 @@ template <typename T> T *getParam(void **params, size_t index) {
 
 template <typename T, typename Callback>
 void proxy_HostKernel_generic_scaleDiagonal(const void **params,
-                                         Callback &&callback) {
+                                            Callback &&callback) {
   int m = *static_cast<const int *>(params[0]);
   int n = *static_cast<const int *>(params[1]);
   T *matrix = getParam<T>(params[2]);
@@ -124,35 +124,37 @@ void proxy_HostKernel_generic_scaleDiagonal(const void **params,
 }
 
 void HostKernel_SF_scaleDiagonal(int m, int n, float *matrix, int lda,
-                              float factor) {
+                                 float factor) {
   cuda_SF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
 void proxy_HostKernel_SF_scaleDiagonal(const void **params) {
-  proxy_HostKernel_generic_scaleDiagonal<float>(params, HostKernel_SF_scaleDiagonal);
+  proxy_HostKernel_generic_scaleDiagonal<float>(params,
+                                                HostKernel_SF_scaleDiagonal);
 }
 
 void HostKernel_SD_scaleDiagonal(int m, int n, double *matrix, int lda,
-                              double factor) {
+                                 double factor) {
   cuda_SD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
 void proxy_HostKernel_SD_scaleDiagonal(const void **params) {
-  proxy_HostKernel_generic_scaleDiagonal<double>(params, HostKernel_SD_scaleDiagonal);
+  proxy_HostKernel_generic_scaleDiagonal<double>(params,
+                                                 HostKernel_SD_scaleDiagonal);
 }
 
 void HostKernel_CF_scaleDiagonal(int m, int n, cuComplex *matrix, int lda,
-                              cuComplex factor) {
+                                 cuComplex factor) {
   cuda_CF_scaleDiagonal(m, n, matrix, lda, factor);
 }
 
 void proxy_HostKernel_CF_scaleDiagonal(const void **params) {
-  proxy_HostKernel_generic_scaleDiagonal<cuComplex>(params,
-                                                 HostKernel_CF_scaleDiagonal);
+  proxy_HostKernel_generic_scaleDiagonal<cuComplex>(
+      params, HostKernel_CF_scaleDiagonal);
 }
 
 void HostKernel_CD_scaleDiagonal(int m, int n, cuDoubleComplex *matrix, int lda,
-                              cuDoubleComplex factor) {
+                                 cuDoubleComplex factor) {
   cuda_CD_scaleDiagonal(m, n, matrix, lda, factor);
 }
 

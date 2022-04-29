@@ -34,7 +34,7 @@ public:
   void scaleDiagonal(int dim, double *matrix, int lda, double factor);
   void scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex factor);
   void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
-                  cuDoubleComplex factor);
+                     cuDoubleComplex factor);
 
   bool isUpperTriangular(int rows, int columns, float *matrix, int lda,
                          float delta);

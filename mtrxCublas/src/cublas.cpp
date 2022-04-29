@@ -478,10 +478,12 @@ void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
     call(FillMode::UPPER);
     if (alphaType == ValueType::FLOAT) {
       float scaleFactor = 0.5f;
-      scaleDiagonal(output, static_cast<void *>(&scaleFactor), ValueType::FLOAT);
+      scaleDiagonal(output, static_cast<void *>(&scaleFactor),
+                    ValueType::FLOAT);
     } else if (alphaType == ValueType::DOUBLE) {
       double scaleFactor = 0.5;
-      scaleDiagonal(output, static_cast<void *>(&scaleFactor), ValueType::DOUBLE);
+      scaleDiagonal(output, static_cast<void *>(&scaleFactor),
+                    ValueType::DOUBLE);
     } else {
       throw std::runtime_error("Not supported yet...");
     }
@@ -1237,7 +1239,7 @@ void Cublas::_subtract(Mem *output, Mem *a, Mem *b) {
 
 template <typename T>
 cublasStatus_t cublas_scaleDiagonal(Cublas *cublas, Mem *matrix, void *factor,
-                                 ValueType factorType) {
+                                    ValueType factorType) {
 
   auto rows = cublas->getRows(matrix);
   auto columns = cublas->getColumns(matrix);
@@ -1254,19 +1256,20 @@ cublasStatus_t cublas_scaleDiagonal(Cublas *cublas, Mem *matrix, void *factor,
   switch (factorType) {
   case ValueType::FLOAT:
     kernels.scaleDiagonal(rows, reinterpret_cast<float *>(matrix->ptr), rows,
-                       *reinterpret_cast<float *>(factor));
+                          *reinterpret_cast<float *>(factor));
     break;
   case ValueType::DOUBLE:
     kernels.scaleDiagonal(rows, reinterpret_cast<double *>(matrix->ptr), rows,
-                       *reinterpret_cast<double *>(factor));
+                          *reinterpret_cast<double *>(factor));
     break;
   case ValueType::FLOAT_COMPLEX:
-    kernels.scaleDiagonal(rows, reinterpret_cast<cuComplex *>(matrix->ptr), rows,
-                       *reinterpret_cast<cuComplex *>(factor));
+    kernels.scaleDiagonal(rows, reinterpret_cast<cuComplex *>(matrix->ptr),
+                          rows, *reinterpret_cast<cuComplex *>(factor));
     break;
   case ValueType::DOUBLE_COMPLEX:
-    kernels.scaleDiagonal(rows, reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
-                       rows, *reinterpret_cast<cuDoubleComplex *>(factor));
+    kernels.scaleDiagonal(rows,
+                          reinterpret_cast<cuDoubleComplex *>(matrix->ptr),
+                          rows, *reinterpret_cast<cuDoubleComplex *>(factor));
     break;
   case ValueType::NOT_DEFINED:
     throw std::runtime_error("Not defined value type");

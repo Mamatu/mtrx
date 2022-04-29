@@ -1,9 +1,9 @@
-#include <mtrxCublas/test.hpp>
 #include <math.h>
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCore/types.hpp>
 #include <mtrxCublas/cublas.hpp>
 #include <mtrxCublas/matchers.hpp>
+#include <mtrxCublas/test.hpp>
 
 #include <array>
 #include <cuda.h>
@@ -17,8 +17,7 @@
 #include "../src/kernels.hpp"
 
 namespace mtrx {
-class DeviceReduceTests : public Test {
-};
+class DeviceReduceTests : public Test {};
 
 TEST_F(DeviceReduceTests, reduce_size_1x1) {
   CudaAlloc cudaAlloc;

@@ -181,7 +181,8 @@ protected:
   virtual void _subtract(Mem *output, Mem *a, Mem *b) = 0;
 
   virtual void _scaleDiagonal(Mem *matrix, Mem *factor) = 0;
-  virtual void _scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) = 0;
+  virtual void _scaleDiagonal(Mem *matrix, void *factor,
+                              ValueType factorType) = 0;
 
   virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
   virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;

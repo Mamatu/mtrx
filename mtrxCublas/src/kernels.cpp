@@ -63,7 +63,7 @@ std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor(int device) {
 
 template <typename T>
 void Kernel_scaleDiagonal(const std::string &kernelName, int dim, T *matrix,
-                       int lda, T factor, int device) {
+                          int lda, T factor, int device) {
   auto ke = GetKernelExecutor(device);
   const auto &dp = ke->getDeviceProperties();
 
@@ -88,22 +88,22 @@ void Kernel_scaleDiagonal(const std::string &kernelName, int dim, T *matrix,
 }
 
 void Kernel_SF_scaleDiagonal(int dim, float *matrix, int lda, float factor,
-                          int device) {
+                             int device) {
   Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
 void Kernel_SD_scaleDiagonal(int dim, double *matrix, int lda, double factor,
-                          int device) {
+                             int device) {
   Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernel_CF_scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex factor,
-                          int device) {
+void Kernel_CF_scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                             cuComplex factor, int device) {
   Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
 void Kernel_CD_scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
-                          cuDoubleComplex factor, int device) {
+                             cuDoubleComplex factor, int device) {
   Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
@@ -116,12 +116,12 @@ void Kernels::scaleDiagonal(int dim, double *matrix, int lda, double factor) {
 }
 
 void Kernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
-                         cuComplex factor) {
+                            cuComplex factor) {
   Kernel_CF_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
 
 void Kernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
-                         cuDoubleComplex factor) {
+                            cuDoubleComplex factor) {
   Kernel_CD_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
 
