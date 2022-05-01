@@ -980,8 +980,8 @@ void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
   const auto valueType = H->valueType;
   const auto _valueType = Q->valueType;
 
-  check(valueType, _valueType, "H", "Q");
-  check(dims, _dims, "H", "Q");
+  checkIfAllEqual(valueType, _valueType, "H", "Q");
+  checkIfAllEqual(dims, _dims, "H", "Q");
 
   Mem *aux_Q = createIdentityMatrix(rows, columns, valueType);
   Mem *aux_Q1 = createMatrix(rows, columns, valueType);
