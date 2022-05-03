@@ -20,6 +20,7 @@
 #ifndef MTRX_CORE_IRAM_API_HPP
 #define MTRX_CORE_IRAM_API_HPP
 
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -27,12 +28,45 @@
 
 namespace mtrx {
 
+/**
+ * For refence see:
+ * https://www.caam.rice.edu/software/ARPACK/UG/node45.html#SECTION00800000000000000000
+ */
 class Iram {
 public:
-  void setEigensCount(int eigenCount);
+  enum class Type { CUDA, HOST };
+  void setArnoldiFactorizationLength(int afLength);
+
+  using EigenValues = std::vector<float>;
+  using Wanted = std::vector<int>;
+  using Unwanted = std::vector<int>;
+
+  void setVectorToInit(Mem* vector, Type type);
+  void setUnitVectorToInit(Type type);
+  void setRandomVectorToInit(Type type);
+
+  /**
+   * Sort of eigenvalues.
+   * As the output it should be wanted and unwanted set which contain indexies
+   * of eigenvalues from EigenValues
+   */
+  using Sort = std::function<void(Wanted &wanted, Unwanted &unwanted,
+                                  const EigenValues &eigenValues)>;
+  void setEigenValuesSort(const Sort &sort);
+  void setEigenValuesSort(Sort &&sort);
+
+  void start();
 
 private:
-  int m_eigenCount = 0;
+  int m_afLength = 0;
+
+  enum class InitVecType { CustomVector, UnitVector, RandomVector, NotSet };
+  InitVecType m_initVecType = InitVecType::NotSet;
+  Mem* m_initVector;
+
+  Sort m_sort = nullptr;
+
+  void check();
 };
 
 } // namespace mtrx
