@@ -17,12 +17,15 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_IRAM_CHECKERS_HPP
-#define MTRX_CORE_IRAM_CHECKERS_HPP
+#ifndef MTRX_IRAM_IRAM_CHECKERS_HPP
+#define MTRX_IRAM_IRAM_CHECKERS_HPP
 
 #include <mtrxIram/iram.hpp>
 
+namespace mtrx {
 void checkSortFunction(const mtrx::Iram::Sort &sort);
 void checkAFLength(int afLength);
+void checkInitVector(Mem *initVector, MemoryType type);
+} // namespace mtrx
 
 #endif

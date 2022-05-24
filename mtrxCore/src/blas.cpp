@@ -124,6 +124,11 @@ void Blas::copyHostToKernel(Mem *mem, void *array) {
   _copyHostToKernel(mem, array);
 }
 
+void Blas::copyHostToKernel(Mem *mem, const void *array) {
+  checkMem(mem);
+  _copyHostToKernel(mem, array);
+}
+
 void Blas::copyKernelToHost(void *array, Mem *mem) {
   checkMem(mem);
   _copyKernelToHost(array, mem);
@@ -339,6 +344,16 @@ void Blas::trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
   checkMem(AP);
   checkMem(A);
   _trttp(uplo, n, A, lda, AP);
+}
+
+bool Blas::isUnit(Mem *mem, void *delta, ValueType deltaType) {
+  checkMem(mem);
+  return _isUnit(mem, delta, deltaType);
+}
+
+bool Blas::isUnit(Mem *mem, Mem *delta) {
+  checkMem(mem);
+  return _isUnit(mem, delta);
 }
 
 std::string Blas::toStr(Mem *mem) {

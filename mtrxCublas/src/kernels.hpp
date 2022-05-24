@@ -20,6 +20,8 @@
 #ifndef MTRX_CUBLAS_KERNELS_H
 #define MTRX_CUBLAS_KERNELS_H
 
+#include <mtrxCore/types.hpp>
+
 #include "alloc.hpp"
 #include <cuComplex.h>
 
@@ -57,27 +59,40 @@ public:
   /**
    * @brief Reduction by using shared memory.
    */
-  int reduceShm(int m, int n, int *array, int lda);
+  int reduceShm(int m, int n, int *array, int lda,
+                AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  float reduceShm(int m, int n, float *array, int lda);
+  float reduceShm(int m, int n, float *array, int lda,
+                  AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  double reduceShm(int m, int n, double *array, int lda);
+  double reduceShm(int m, int n, double *array, int lda,
+                   AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  cuComplex reduceShm(int m, int n, cuComplex *array, int lda);
+  cuComplex reduceShm(int m, int n, cuComplex *array, int lda,
+                      AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda);
+  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda,
+                            AccumulationMode mode = AccumulationMode::NORMAL);
+
+  bool isUnit(int m, int n, float *matrix, int lda, float delta);
+
+  bool isUnit(int m, int n, double *matrix, int lda, double delta);
+
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, float delta);
+
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda, double delta);
 
 private:
   int m_device;

@@ -12,3 +12,5 @@ add_subdirectory(mtrxCore)
 if(MTRX_BUILD_CUBLAS)
   add_subdirectory(mtrxCublas)
 endif()
+
+add_subdirectory(mtrxIram)

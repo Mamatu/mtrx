@@ -10,6 +10,6 @@ file(GLOB SRC "src/*.cpp")
 file(GLOB HEADERS "include/mtrxIram/*.hpp")
 
 add_library(mtrxIram STATIC ${SRC})
-set_target_properties(mtrxIram PROPERTIES PUBLIC ${HEADERS})
-target_link_libraries(mtrxIram spdlog)
+set_target_properties(mtrxIram PROPERTIES PUBLIC ${HEADERS} "src/*.hpp")
+target_link_libraries(mtrxIram spdlog mtrxCore mtrxCublas)
 target_include_directories(mtrxIram PUBLIC include)

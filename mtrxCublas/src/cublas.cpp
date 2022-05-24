@@ -21,6 +21,7 @@
 #include "driver_types.h"
 #include "mtrxCore/status_handler.hpp"
 #include "mtrxCore/types.hpp"
+#include <array>
 #include <cassert>
 #include <cstdio>
 #include <exception>
@@ -36,6 +37,7 @@
 #include <spdlog/fmt/bundled/format-inl.h>
 #include <spdlog/spdlog.h>
 #include <type_traits>
+#include <utility>
 
 #include "cuda_alloc.hpp"
 #include "kernels.hpp"
@@ -267,6 +269,12 @@ uintt Cublas::_getSizeInBytes(const Mem *mem) const {
 }
 
 void Cublas::_copyHostToKernel(Mem *mem, void *array) {
+  auto status = cublasSetVector(mem->count, SizeOf(mem->valueType), array, 1,
+                                mem->ptr, 1);
+  handleStatus(status);
+}
+
+void Cublas::_copyHostToKernel(Mem *mem, const void *array) {
   auto status = cublasSetVector(mem->count, SizeOf(mem->valueType), array, 1,
                                 mem->ptr, 1);
   handleStatus(status);
@@ -1441,6 +1449,62 @@ template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
 
   sstream << "]";
   return sstream.str();
+}
+
+bool Cublas::_isUnit(Mem *mem, void *delta, ValueType deltaType) {
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  auto m = getRows(mem);
+  auto n = getColumns(mem);
+  auto lda = m;
+
+  auto _isUnitS = [m, n, lda, &kernels](Mem *mem, void *delta) {
+    auto *mem_c = static_cast<float *>(mem->ptr);
+    auto *delta_c = static_cast<float *>(delta);
+    return kernels.isUnit(m, n, mem_c, lda, *delta_c);
+  };
+
+  auto _isUnitD = [m, n, lda, &kernels](Mem *mem, void *delta) {
+    auto *mem_c = static_cast<double *>(mem->ptr);
+    auto *delta_c = static_cast<double *>(delta);
+    return kernels.isUnit(m, n, mem_c, lda, *delta_c);
+  };
+
+  auto _isUnitC = [m, n, lda, &kernels](Mem *mem, void *delta) {
+    auto *mem_c = static_cast<cuComplex *>(mem->ptr);
+    auto *delta_c = static_cast<float *>(delta);
+    return kernels.isUnit(m, n, mem_c, lda, *delta_c);
+  };
+
+  auto _isUnitZ = [m, n, lda, &kernels](Mem *mem, void *delta) {
+    auto *mem_c = static_cast<cuDoubleComplex *>(mem->ptr);
+    auto *delta_c = static_cast<double *>(delta);
+    return kernels.isUnit(m, n, mem_c, lda, *delta_c);
+  };
+
+  using Impl = std::function<bool(Mem * mem, void *delta)>;
+  const std::map<std::pair<ValueType, ValueType>, Impl> impls = {
+      {{ValueType::FLOAT, ValueType::FLOAT}, std::move(_isUnitS)},
+      {{ValueType::DOUBLE, ValueType::DOUBLE}, std::move(_isUnitD)},
+      {{ValueType::FLOAT_COMPLEX, ValueType::FLOAT}, std::move(_isUnitC)},
+      {{ValueType::DOUBLE_COMPLEX, ValueType::DOUBLE}, std::move(_isUnitZ)},
+  };
+
+  auto it = impls.find(std::make_pair(mem->valueType, deltaType));
+
+  if (it == impls.end()) {
+    std::stringstream sstream;
+    sstream << "Cannot find implementation for " << toString(mem->valueType)
+            << " " << toString(deltaType);
+    throw std::runtime_error(sstream.str());
+  }
+
+  return it->second(mem, delta);
+}
+
+bool Cublas::_isUnit(Mem *mem, Mem *delta) {
+  return _isUnit(m, n, mem, lda, delta->ptr, delta->valueType);
 }
 
 std::string Cublas::_toStr(Mem *mem) {

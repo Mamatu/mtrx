@@ -57,6 +57,7 @@ public:
   std::pair<size_t, size_t> getDims(const Mem *mem) const;
 
   void copyHostToKernel(Mem *mem, void *array);
+  void copyHostToKernel(Mem *mem, const void *array);
   void copyKernelToHost(void *array, Mem *mem);
 
   uintt amax(const Mem *mem);
@@ -117,6 +118,9 @@ public:
   void tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda);
   void trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP);
 
+  bool isUnit(Mem *mem, void *delta, ValueType deltaType);
+  bool isUnit(Mem *mem, Mem *delta);
+
   std::string toStr(Mem *mem);
 
 protected:
@@ -133,6 +137,7 @@ protected:
   virtual size_t _getSizeInBytes(const Mem *mem) const = 0;
 
   virtual void _copyHostToKernel(Mem *mem, void *array) = 0;
+  virtual void _copyHostToKernel(Mem *mem, const void *array) = 0;
   virtual void _copyKernelToHost(void *array, Mem *mem) = 0;
 
   virtual uintt _amax(const Mem *mem) = 0;
@@ -186,6 +191,9 @@ protected:
 
   virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
   virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;
+
+  virtual bool _isUnit(Mem *mem, void *delta, ValueType deltaType) = 0;
+  virtual bool _isUnit(Mem *mem, Mem *delta) = 0;
 
   virtual std::string _toStr(Mem *mem) = 0;
 

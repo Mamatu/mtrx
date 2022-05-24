@@ -17,14 +17,18 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_IRAM_API_HPP
-#define MTRX_CORE_IRAM_API_HPP
+#ifndef MTRX_IRAM_IRAM_HPP
+#define MTRX_IRAM_IRAM_HPP
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
+#include <mtrxCore/blas.hpp>
 #include <mtrxCore/types.hpp>
+
+#include "iram_types.hpp"
 
 namespace mtrx {
 
@@ -32,18 +36,20 @@ namespace mtrx {
  * For refence see:
  * https://www.caam.rice.edu/software/ARPACK/UG/node45.html#SECTION00800000000000000000
  */
-class Iram {
+class Iram final {
 public:
-  enum class Type { CUDA, HOST };
+  Iram(ValueType valueType, CalculationDevice calculationDevice);
+  ~Iram() = default;
+
   void setArnoldiFactorizationLength(int afLength);
 
   using EigenValues = std::vector<float>;
   using Wanted = std::vector<int>;
   using Unwanted = std::vector<int>;
 
-  void setVectorToInit(Mem* vector, Type type);
-  void setUnitVectorToInit(Type type);
-  void setRandomVectorToInit(Type type);
+  void setVectorToInit(Mem *vector, MemoryType type);
+  void setUnitVectorToInit(unsigned int length, MemoryType type);
+  void setRandomVectorToInit(unsigned int length, MemoryType type);
 
   /**
    * Sort of eigenvalues.
@@ -58,15 +64,23 @@ public:
   void start();
 
 private:
+  ValueType m_valueType = ValueType::NOT_DEFINED;
+  CalculationDevice m_calculationDevice;
+  std::shared_ptr<mtrx::Blas> m_blas = nullptr;
+
   int m_afLength = 0;
 
-  enum class InitVecType { CustomVector, UnitVector, RandomVector, NotSet };
-  InitVecType m_initVecType = InitVecType::NotSet;
-  Mem* m_initVector;
+  std::pair<InitVectorType, MemoryType> m_initVecType =
+      std::make_pair(InitVectorType::NONE, MemoryType::NONE);
+
+  Mem *m_initVector = nullptr;
+  unsigned int m_length = 0;
 
   Sort m_sort = nullptr;
 
   void check();
+  void checkInitVector();
+  void createInitVector();
 };
 
 } // namespace mtrx

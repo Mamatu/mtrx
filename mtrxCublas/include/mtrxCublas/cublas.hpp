@@ -17,8 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CUBLAS_MATRIX_API_HPP
-#define MTRX_CUBLAS_MATRIX_API_HPP
+#ifndef MTRX_CUBLAS_HPP
+#define MTRX_CUBLAS_HPP
 
 #include <cublas_v2.h>
 #include <mtrxCore/blas.hpp>
@@ -44,6 +44,7 @@ protected:
   uintt _getSizeInBytes(const Mem *mem) const override;
 
   void _copyHostToKernel(Mem *mem, void *array) override;
+  void _copyHostToKernel(Mem *mem, const void *array) override;
   void _copyKernelToHost(void *array, Mem *mem) override;
 
   uintt _amax(const Mem *mem) override;
@@ -96,6 +97,9 @@ protected:
 
   void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) override;
   void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) override;
+
+  bool _isUnit(Mem *mem, void *delta, ValueType deltaType) override;
+  bool _isUnit(Mem *mem, Mem *delta) override;
 
   std::string _toStr(Mem *mem) override;
 

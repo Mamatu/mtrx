@@ -21,6 +21,8 @@
 
 #include <stdexcept>
 
+namespace mtrx {
+
 void checkSortFunction(const mtrx::Iram::Sort &sort) {
   if (!sort) {
     throw std::runtime_error("Sort function was not initialized");
@@ -33,3 +35,6 @@ void checkAFLength(int afLength) {
                              "properly (cannot be 0)");
   }
 }
+
+void checkInitVector(Mem * /*initVector*/, MemoryType /*type*/) {}
+} // namespace mtrx

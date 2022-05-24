@@ -19,12 +19,14 @@
 
 #include "kernels.hpp"
 
+#include <cstdlib>
 #include <mtrxCore/checkers.hpp>
 #include <mtrxCore/to_string.hpp>
 
 #include "calc_dim.hpp"
 #include "driver_types.h"
 #include "ikernel_executor.hpp"
+#include "mtrxCore/types.hpp"
 #include "mtrxCublas/status_handler.hpp"
 #include <memory>
 #include <numeric>
@@ -305,7 +307,7 @@ template <typename T,
           typename BinaryOperation = std::function<T(const T &, const T &)>>
 T Kernel_reduceShm(
     Alloc *alloc, const std::string &kernelName, int m, int n, T *array,
-    int lda, CUdevice device,
+    int lda, AccumulationMode mode, CUdevice device,
     BinaryOperation &&boper = [](const T &t1, const T &t2) {
       return t1 + t2;
     }) {
@@ -340,7 +342,7 @@ T Kernel_reduceShm(
   ke->setBlocksCount(blocks);
   ke->setSharedMemory(sharedMem);
 
-  void *params[] = {&m, &n, &array, &lda, &d_reductionResults};
+  void *params[] = {&m, &n, &array, &lda, &d_reductionResults, &mode};
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
@@ -358,29 +360,55 @@ T Kernel_reduceShm(
                          T(), std::forward<BinaryOperation>(boper));
 }
 
-int Kernels::reduceShm(int m, int n, int *array, int lda) {
+int Kernels::reduceShm(int m, int n, int *array, int lda,
+                       AccumulationMode mode) {
   return Kernel_reduceShm<int>(m_alloc, "Kernel_SI_reduceShm", m, n, array, lda,
-                               m_device);
+                               mode, m_device);
 }
 
-float Kernels::reduceShm(int m, int n, float *array, int lda) {
+float Kernels::reduceShm(int m, int n, float *array, int lda,
+                         AccumulationMode mode) {
   return Kernel_reduceShm<float>(m_alloc, "Kernel_SF_reduceShm", m, n, array,
-                                 lda, m_device);
+                                 lda, mode, m_device);
 }
 
-double Kernels::reduceShm(int m, int n, double *array, int lda) {
+double Kernels::reduceShm(int m, int n, double *array, int lda,
+                          AccumulationMode mode) {
   return Kernel_reduceShm<double>(m_alloc, "Kernel_SD_reduceShm", m, n, array,
-                                  lda, m_device);
+                                  lda, mode, m_device);
 }
 
-cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda) {
+cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda,
+                             AccumulationMode mode) {
   return Kernel_reduceShm<cuComplex>(m_alloc, "Kernel_CF_reduceShm", m, n,
-                                     array, lda, m_device, cuCaddf);
+                                     array, lda, mode, m_device, cuCaddf);
 }
 
 cuDoubleComplex Kernels::reduceShm(int m, int n, cuDoubleComplex *array,
-                                   int lda) {
+                                   int lda, AccumulationMode mode) {
   return Kernel_reduceShm<cuDoubleComplex>(m_alloc, "Kernel_CD_reduceShm", m, n,
-                                           array, lda, m_device, cuCadd);
+                                           array, lda, mode, m_device, cuCadd);
 }
+
+bool Kernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, double *matrix, int lda, double delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, cuComplex *matrix, int lda, float delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum.x - sum.y - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+                     double delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum.x - sum.y - 1) < delta;
+}
+
 } // namespace mtrx
