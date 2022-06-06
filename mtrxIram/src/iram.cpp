@@ -49,11 +49,6 @@ void Iram::checkInitVector() {
   mtrx::checkInitVector(m_initVector, m_initVecType.second);
 }
 
-namespace {
-template <mtrx::ValueType vt>
-using get_type = typename mtrx::get_cublas_value_type<vt>::type;
-}
-
 void Iram::createInitVector() {
 
   if (m_initVecType.first == InitVectorType::RANDOM_UNIT_VECTOR) {
@@ -64,7 +59,7 @@ void Iram::createInitVector() {
   }
   if (m_initVecType.first == InitVectorType::CUSTOM_VECTOR &&
       m_initVecType.second == MemoryType::HOST) {
-    // auto *initVector = m_blas->createMatrix(m_length, 1, m_valueType);
+    auto *initVector = m_blas->createMatrix(m_length, 1, m_valueType);
   }
 }
 

@@ -205,6 +205,13 @@ private:
   void checkMems(const Mems &mems) const;
 };
 
+template <typename Toutput, typename Talpha, typename Ta, typename Tb,
+          typename Tbeta>
+void gemm(Blas &blas, Toutput *output, Talpha *alpha, Ta *a, Tb *b,
+          Tbeta *beta) {
+  blas.gemm(output, alpha, a, b, beta);
+}
+
 } // namespace mtrx
 
 #endif

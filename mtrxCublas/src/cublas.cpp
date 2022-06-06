@@ -17,6 +17,7 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "cublas.hpp"
 #include "cuComplex.h"
 #include "driver_types.h"
 #include "mtrxCore/status_handler.hpp"
@@ -28,7 +29,6 @@
 
 #include <cuda_runtime.h>
 #include <mtrxCore/checkers.hpp>
-#include <mtrxCublas/cublas.hpp>
 
 #include <map>
 #include <mtrxCore/size_of.hpp>
@@ -50,11 +50,6 @@
 #endif
 
 namespace mtrx {
-struct Mem {
-  void *ptr = nullptr;
-  int count = 0;
-  ValueType valueType = ValueType::NOT_DEFINED;
-};
 
 template <typename T> void *cublas_getOffset(Mem *mem, int idx) {
   T *ptr = static_cast<T *>(mem->ptr);
@@ -231,36 +226,48 @@ Mem *Cublas::_createIdentityMatrix(size_t rows, size_t columns,
   return nullptr;
 }
 
-Mem *Cublas::_createMem(size_t count, ValueType valueType) {
+template <typename T> T *cublas_alloc(size_t count) {
   if (count <= 0) {
     std::stringstream sstream;
     sstream << "Cannot created mem with count: " << count;
     throw std::runtime_error(sstream.str());
   }
 
-  Mem *mem = new Mem();
-
+  T *ptr = nullptr;
   try {
-    mem->ptr = nullptr;
-    mem->count = count;
-    mem->valueType = valueType;
-
-    auto error = cudaMalloc(&(mem->ptr), SizeOf(valueType, mem->count));
+    auto error = cudaMalloc(&ptr, SizeOf<T>(count));
     handleStatus(error);
-    auto error1 = cudaMemset(mem->ptr, 0, SizeOf(valueType, mem->count));
+    auto error1 = cudaMemset(ptr, 0, SizeOf<T>(count));
     handleStatus(error1);
   } catch (const std::exception &ex) {
-    delete mem;
+    cudaFree(ptr);
     throw std::runtime_error(ex.what());
   }
-  return mem;
+  return ptr;
 }
 
-void Cublas::_destroy(const Mem *mem) {
-  auto error = cudaFree(mem->ptr);
-  handleStatus(error);
-  delete mem;
+float *Cublas::allocS(size_t size) { return cublas_alloc<float>(size); }
+
+double *Cublas::allocD(size_t size) { return cublas_alloc<double>(size); }
+
+cuComplex *Cublas::allocC(size_t size) { return cublas_alloc<cuComplex>(size); }
+
+cuDoubleComplex *Cublas::allocZ(size_t size) {
+  return cublas_alloc<cuDoubleComplex>(size);
 }
+
+void cublas_dealloc(void *mem) {
+  auto status = cudaFree(mem);
+  handleStatus(status);
+}
+
+void Cublas::dealloc(float *mem) { cublas_dealloc(mem); }
+
+void Cublas::dealloc(double *mem) { cublas_dealloc(mem); }
+
+void Cublas::dealloc(cuComplex *mem) { cublas_dealloc(mem); }
+
+void Cublas::dealloc(cuDoubleComplex *mem) { cublas_dealloc(mem); }
 
 uintt Cublas::_getCount(const Mem *mem) const { return mem->count; }
 
