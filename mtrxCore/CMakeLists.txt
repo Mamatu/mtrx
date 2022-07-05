@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 file(GLOB SRC "src/*.cpp")
 file(GLOB HEADERS "include/mtrxCore/*.hpp")
 
+message("${HEADERS}")
 add_library(mtrxCore STATIC ${SRC})
 set_target_properties(mtrxCore PROPERTIES PUBLIC ${HEADERS})
 target_link_libraries(mtrxCore spdlog)

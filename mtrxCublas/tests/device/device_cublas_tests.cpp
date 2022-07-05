@@ -1,6 +1,6 @@
 #include <math.h>
 #include <mtrxCore/types.hpp>
-#include <mtrxCublas/cublas.hpp>
+#include <mtrxCublas/cublas_generic.hpp>
 #include <mtrxCublas/matchers.hpp>
 #include <mtrxCublas/test.hpp>
 

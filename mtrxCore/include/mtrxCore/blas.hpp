@@ -17,8 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_BLAS_API_HPP
-#define MTRX_CORE_BLAS_API_HPP
+#ifndef MTRX_CORE_BLAS_GENERIC_HPP
+#define MTRX_CORE_BLAS_GENERIC_HPP
 
 #include <map>
 #include <vector>
@@ -27,9 +27,9 @@
 
 namespace mtrx {
 
-class Blas {
+template <typename T> class Blas {
 public:
-  using Mems = std::vector<Mem *>;
+  using Vec = std::vector<T *>;
 
   Blas() = default;
   virtual ~Blas() = default;
@@ -37,180 +37,150 @@ public:
   std::vector<int> getDevices() const;
   void setDevice(int device);
 
-  Mem *create(size_t count, ValueType valueType);
-  Mem *createMatrix(size_t rows, size_t columns, ValueType valueType);
-  Mem *createMatrix(size_t rows, size_t columns, Mem *mem);
+  T *create(size_t count);
+  T *createMatrix(size_t rows, size_t columns);
+  T *createMatrix(size_t rows, size_t columns, T *mem);
 
-  Mem *createIdentityMatrix(size_t rows, size_t columns, ValueType valueType);
+  T *createIdentityMatrix(size_t rows, size_t columns);
 
-  void destroy(const Mem *mem);
+  void destroy(const T *mem);
 
-  bool isAllocator(const Mem *mem) const;
+  bool isAllocator(const T *mem) const;
 
-  size_t getCount(const Mem *mem) const;
-  size_t getSizeInBytes(const Mem *mem) const;
+  size_t getCount(const T *mem) const;
+  size_t getSizeInBytes(const T *mem) const;
 
-  size_t getRows(const Mem *mem) const;
-  size_t getColumns(const Mem *mem) const;
-  ValueType getValueType(const Mem *mem) const;
+  size_t getRows(const T *mem) const;
+  size_t getColumns(const T *mem) const;
+  ValueType getValueType(const T *mem) const;
 
-  std::pair<size_t, size_t> getDims(const Mem *mem) const;
+  std::pair<size_t, size_t> getDims(const T *mem) const;
 
-  void copyHostToKernel(Mem *mem, void *array);
-  void copyHostToKernel(Mem *mem, const void *array);
-  void copyKernelToHost(void *array, Mem *mem);
+  void copyHostToKernel(T *mem, T *array);
+  void copyHostToKernel(T *mem, const T *array);
+  void copyKernelToHost(T *array, T *mem);
 
-  uintt amax(const Mem *mem);
-  uintt amin(const Mem *mem);
+  uintt amax(const T *mem);
+  uintt amin(const T *mem);
 
-  void rot(Mem *x, Mem *y, void *c, ValueType cType, void *s, ValueType sType);
-  void rot(Mem *x, Mem *y, Mem *c, Mem *s);
-  void rot(Mem *x, Mem *y, float c, float s);
-  void rot(Mem *x, Mem *y, double c, double s);
+  void rot(T *x, T *y, T *c);
+  void rot(T *x, T *y, T *c, T *s);
+  void rot(T *x, T *y, float c, float s);
+  void rot(T *x, T *y, double c, double s);
 
-  void syr(FillMode fillMode, Mem *output, void *alpha, ValueType alphaType,
-           Mem *x);
-  void syr(FillMode fillMode, Mem *output, Mem *alpha, Mem *x);
+  void syr(FillMode fillMode, T *output, T *alpha, T *x);
 
-  void gemm(Mem *output, void *alpha, ValueType alphaType, Mem *a, Mem *b,
-            void *beta, ValueType betaType);
-  void gemm(Mem *output, Mem *alpha, Mem *a, Mem *b, Mem *beta);
+  void gemm(T *output, T *alpha, T *beta);
+  void gemm(T *output, T *alpha, T *a, T *b, T *beta);
 
-  void gemm(Mem *output, void *alpha, ValueType alphaType, Operation transa,
-            Mem *a, Operation transb, Mem *b, void *beta, ValueType betaType);
-  void gemm(Mem *output, Mem *alpha, Operation transa, Mem *a, Operation transb,
-            Mem *b, Mem *beta);
+  void gemm(T *output, T *alpha, T *a, Operation transb, T *b, T *beta);
+  void gemm(T *output, T *alpha, Operation transa, T *a, Operation transb, T *b,
+            T *beta);
 
-  void symm(SideMode sideMode, FillMode fillMode, Mem *output, void *alpha,
-            ValueType alphaType, Mem *a, Mem *b, void *beta,
-            ValueType betaType);
-  void symm(SideMode sideMode, FillMode fillMode, Mem *output, Mem *alpha,
-            Mem *a, Mem *b, Mem *beta);
+  void symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha);
+  void symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha, T *a,
+            T *b, T *beta);
 
-  void matrixMul(Mem *output, Mem *a, Mem *b);
+  void matrixMul(T *output, T *a, T *b);
 
-  void geqrf(Mem *a, Mem *tau);
-  void geqrf(Mems &a, Mems &tau);
+  void geqrf(T *a, T *tau);
+  void geqrf(typename Blas<T>::Vec &a, typename Blas<T>::Vec &tau);
 
-  void qrDecomposition(Mem *q, Mem *r, Mem *a);
-  void qrDecomposition(Mems &q, Mems &r, Mems &a);
+  void qrDecomposition(T *q, T *r, T *a);
+  void qrDecomposition(typename Blas<T>::Vec &q, typename Blas<T>::Vec &r,
+                       typename Blas<T>::Vec &a);
 
-  void shiftQRIteration(Mem *H, Mem *Q);
+  void shiftQRIteration(T *H, T *Q);
 
-  bool isUpperTriangular(Mem *m);
-  bool isLowerTriangular(Mem *m);
+  bool isUpperTriangular(T *m);
+  bool isLowerTriangular(T *m);
 
   /**
    * @brief matrix-matrix addition/transposition
    * output = alpha * oper(a) + beta * oper(b)
    */
-  void geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
-            Operation transb, Mem *b);
-  void geam(Mem *output, void *alpha, ValueType alphaType, Operation transa,
-            Mem *a, void *beta, ValueType betaType, Operation transb, Mem *b);
+  void geam(T *output, T *alpha, Operation transa, T *a, T *beta,
+            Operation transb, T *b);
 
-  void add(Mem *output, Mem *a, Mem *b);
-  void subtract(Mem *output, Mem *a, Mem *b);
+  void add(T *output, T *a, T *b);
+  void subtract(T *output, T *a, T *b);
 
-  void scaleDiagonal(Mem *matrix, Mem *factor);
-  void scaleDiagonal(Mem *matrix, void *factor, ValueType factorType);
+  void scaleDiagonal(T *matrix, T factor);
 
-  void tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda);
-  void trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP);
+  void tpttr(FillMode uplo, int n, T *AP, T *A, int lda);
+  void trttp(FillMode uplo, int n, T *A, int lda, T *AP);
 
-  bool isUnit(Mem *mem, void *delta, ValueType deltaType);
-  bool isUnit(Mem *mem, Mem *delta);
+  bool isUnit(T *mem, T delta);
 
-  std::string toStr(Mem *mem);
+  std::string toStr(T *mem);
 
 protected:
   virtual std::vector<int> _getDevices() const = 0;
   virtual void _setDevice(int device) = 0;
 
-  virtual Mem *_createMem(size_t count, ValueType valueType) = 0;
-  virtual void _destroy(const Mem *mem) = 0;
+  virtual T *_createMem(size_t count) = 0;
+  virtual void _destroy(const T *mem) = 0;
 
-  virtual Mem *_createIdentityMatrix(size_t rows, size_t columns,
-                                     ValueType valueType) = 0;
+  virtual T *_createIdentityMatrix(size_t rows, size_t columns) = 0;
 
-  virtual size_t _getCount(const Mem *mem) const = 0;
-  virtual size_t _getSizeInBytes(const Mem *mem) const = 0;
+  virtual size_t _getCount(const T *mem) const = 0;
+  virtual size_t _getSizeInBytes(const T *mem) const = 0;
 
-  virtual void _copyHostToKernel(Mem *mem, void *array) = 0;
-  virtual void _copyHostToKernel(Mem *mem, const void *array) = 0;
-  virtual void _copyKernelToHost(void *array, Mem *mem) = 0;
+  virtual void _copyHostToKernel(T *mem, T *array) = 0;
+  virtual void _copyHostToKernel(T *mem, const T *array) = 0;
+  virtual void _copyKernelToHost(T *array, T *mem) = 0;
 
-  virtual uintt _amax(const Mem *mem) = 0;
-  virtual uintt _amin(const Mem *mem) = 0;
+  virtual uintt _amax(const T *mem) = 0;
+  virtual uintt _amin(const T *mem) = 0;
 
-  virtual void _rot(Mem *x, Mem *y, void *c, ValueType cType, void *s,
-                    ValueType sType) = 0;
-  virtual void _rot(Mem *x, Mem *y, Mem *c, Mem *s) = 0;
+  virtual void _rot(T *x, T *y, T *c, T *s) = 0;
 
-  virtual void _syr(FillMode fillMode, Mem *output, void *alpha,
-                    ValueType alphaType, Mem *x) = 0;
-  virtual void _syr(FillMode fillMode, Mem *output, Mem *alpha, Mem *x) = 0;
+  virtual void _syr(FillMode fillMode, T *output, T *alpha, T *x) = 0;
 
-  virtual void _gemm(Mem *output, void *alpha, ValueType alphaType,
-                     Operation transa, Mem *a, Operation transb, Mem *b,
-                     void *beta, ValueType betaType) = 0;
-  virtual void _gemm(Mem *output, Mem *alpha, Operation transa, Mem *a,
-                     Operation transb, Mem *b, Mem *beta) = 0;
+  virtual void _gemm(T *output, T *alpha, Operation transa, T *a,
+                     Operation transb, T *b, T *beta) = 0;
 
-  virtual void _matrixMul(Mem *output, Mem *a, Mem *b) = 0;
+  virtual void _matrixMul(T *output, T *a, T *b) = 0;
 
-  virtual void _geqrf(Mem *a, Mem *tau) = 0;
-  virtual void _geqrf(Mems &a, Mems &tau) = 0;
+  virtual void _geqrf(T *a, T *tau) = 0;
+  virtual void _geqrf(typename Blas<T>::Vec &a, typename Blas<T>::Vec &tau) = 0;
 
-  virtual void _qrDecomposition(Mem *q, Mem *r, Mem *a) = 0;
-  virtual void _qrDecomposition(Mems &q, Mems &r, Mems &a) = 0;
+  virtual void _qrDecomposition(T *q, T *r, T *a) = 0;
+  virtual void _qrDecomposition(typename Blas<T>::Vec &q,
+                                typename Blas<T>::Vec &r,
+                                typename Blas<T>::Vec &a) = 0;
 
-  virtual void _shiftQRIteration(Mem *H, Mem *Q) = 0;
+  virtual void _shiftQRIteration(T *H, T *Q) = 0;
 
-  virtual bool _isUpperTriangular(Mem *m) = 0;
-  virtual bool _isLowerTriangular(Mem *m) = 0;
+  virtual bool _isUpperTriangular(T *m) = 0;
+  virtual bool _isLowerTriangular(T *m) = 0;
 
-  virtual void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a,
-                     Mem *beta, Operation transb, Mem *b) = 0;
-  virtual void _geam(Mem *output, void *alpha, ValueType alphaType,
-                     Operation transa, Mem *a, void *beta, ValueType betaType,
-                     Operation transb, Mem *b) = 0;
+  virtual void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
+                     Operation transb, T *b) = 0;
 
-  virtual void _symm(SideMode sideMode, FillMode fillMode, Mem *output,
-                     void *alpha, ValueType alphaType, Mem *a, Mem *b,
-                     void *beta, ValueType betaType) = 0;
-  virtual void _symm(SideMode sideMode, FillMode fillMode, Mem *output,
-                     Mem *alpha, Mem *a, Mem *b, Mem *beta) = 0;
+  virtual void _symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
+                     T *beta) = 0;
+  virtual void _symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
+                     T *a, T *b, T *beta) = 0;
 
-  virtual void _add(Mem *output, Mem *a, Mem *b) = 0;
-  virtual void _subtract(Mem *output, Mem *a, Mem *b) = 0;
+  virtual void _add(T *output, T *a, T *b) = 0;
+  virtual void _subtract(T *output, T *a, T *b) = 0;
 
-  virtual void _scaleDiagonal(Mem *matrix, Mem *factor) = 0;
-  virtual void _scaleDiagonal(Mem *matrix, void *factor,
-                              ValueType factorType) = 0;
+  virtual void _scaleDiagonal(T *matrix, T *factor) = 0;
 
-  virtual void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) = 0;
-  virtual void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) = 0;
+  virtual void _tpttr(FillMode uplo, int n, T *AP, T *A, int lda) = 0;
+  virtual void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) = 0;
 
-  virtual bool _isUnit(Mem *mem, void *delta, ValueType deltaType) = 0;
-  virtual bool _isUnit(Mem *mem, Mem *delta) = 0;
+  virtual bool _isUnit(T *mem, T *delta) = 0;
 
-  virtual std::string _toStr(Mem *mem) = 0;
+  virtual std::string _toStr(T *mem) = 0;
 
 private:
-  std::vector<Mem *> m_mems;
-  std::map<const Mem *, std::tuple<size_t, size_t, ValueType>> m_matrices;
+  std::vector<T *> m_mems;
+  std::map<const T *, std::tuple<size_t, size_t, ValueType>> m_matrices;
 
-  void checkMem(const Mem *mem) const;
-  void checkMems(const Mems &mems) const;
+  void checkMem(const T *mem) const;
 };
-
-template <typename Toutput, typename Talpha, typename Ta, typename Tb,
-          typename Tbeta>
-void gemm(Blas &blas, Toutput *output, Talpha *alpha, Ta *a, Tb *b,
-          Tbeta *beta) {
-  blas.gemm(output, alpha, a, b, beta);
-}
 
 } // namespace mtrx
 

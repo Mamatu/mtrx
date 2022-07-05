@@ -17,34 +17,33 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_BLAS_GENERIC_IMPL_HPP
-#define MTRX_CORE_BLAS_GENERIC_IMPL_HPP
+#ifndef MTRX_CORE_BLAS_IMPL_HPP
+#define MTRX_CORE_BLAS_IMPL_HPP
 
 #include "mtrxCore/types.hpp"
 #include <algorithm>
 #include <sstream>
 
-#include <mtrxCore/blas_generic.hpp>
+#include <mtrxCore/blas.hpp>
 #include <mtrxCore/size_of.hpp>
 
 namespace mtrx {
 
-template <typename T> std::vector<int> BlasGeneric<T>::getDevices() const {
+template <typename T> std::vector<int> Blas<T>::getDevices() const {
   return _getDevices();
 }
 
-template <typename T> void BlasGeneric<T>::setDevice(int device) {
+template <typename T> void Blas<T>::setDevice(int device) {
   _setDevice(device);
 }
 
-template <typename T> T *BlasGeneric<T>::create(size_t count) {
+template <typename T> T *Blas<T>::create(size_t count) {
   T *mem = _createMem(count);
   m_mems.push_back(mem);
   return mem;
 }
 
-template <typename T>
-T *BlasGeneric<T>::createMatrix(size_t rows, size_t columns) {
+template <typename T> T *Blas<T>::createMatrix(size_t rows, size_t columns) {
   if (rows == 0 || columns == 0) {
     std::stringstream sstream;
     sstream << "Invalid dim for matrix: (" << rows << ", " << columns << ")";
@@ -58,7 +57,7 @@ T *BlasGeneric<T>::createMatrix(size_t rows, size_t columns) {
 }
 
 template <typename T>
-T *BlasGeneric<T>::createMatrix(size_t rows, size_t columns, T *mem) {
+T *Blas<T>::createMatrix(size_t rows, size_t columns, T *mem) {
   const size_t count = getCount(mem);
   auto valueType = getValueType(mem);
   if (count != rows * columns) {
@@ -74,32 +73,31 @@ T *BlasGeneric<T>::createMatrix(size_t rows, size_t columns, T *mem) {
 }
 
 template <typename T>
-T *BlasGeneric<T>::createIdentityMatrix(size_t rows, size_t columns) {
+T *Blas<T>::createIdentityMatrix(size_t rows, size_t columns) {
   return _createIdentityMatrix(rows, columns);
 }
 
-template <typename T> void BlasGeneric<T>::destroy(const T *mem) {
+template <typename T> void Blas<T>::destroy(const T *mem) {
   checkMem(mem);
   _destroy(mem);
 }
 
-template <typename T> bool BlasGeneric<T>::isAllocator(const T *mem) const {
+template <typename T> bool Blas<T>::isAllocator(const T *mem) const {
   auto it = std::find(m_mems.begin(), m_mems.end(), mem);
   return it != m_mems.end();
 }
 
-template <typename T> size_t BlasGeneric<T>::getCount(const T *mem) const {
+template <typename T> size_t Blas<T>::getCount(const T *mem) const {
   checkMem(mem);
   return _getCount(mem);
 }
 
-template <typename T>
-size_t BlasGeneric<T>::getSizeInBytes(const T *mem) const {
+template <typename T> size_t Blas<T>::getSizeInBytes(const T *mem) const {
   checkMem(mem);
   return _getSizeInBytes(mem);
 }
 
-template <typename T> size_t BlasGeneric<T>::getRows(const T *mem) const {
+template <typename T> size_t Blas<T>::getRows(const T *mem) const {
   const auto it = m_matrices.find(mem);
   if (it == m_matrices.end()) {
     return getCount(mem);
@@ -107,7 +105,7 @@ template <typename T> size_t BlasGeneric<T>::getRows(const T *mem) const {
   return std::get<0>(it->second);
 }
 
-template <typename T> size_t BlasGeneric<T>::getColumns(const T *mem) const {
+template <typename T> size_t Blas<T>::getColumns(const T *mem) const {
   const auto it = m_matrices.find(mem);
   if (it == m_matrices.end()) {
     return 1;
@@ -115,8 +113,7 @@ template <typename T> size_t BlasGeneric<T>::getColumns(const T *mem) const {
   return std::get<1>(it->second);
 }
 
-template <typename T>
-ValueType BlasGeneric<T>::getValueType(const T *mem) const {
+template <typename T> ValueType Blas<T>::getValueType(const T *mem) const {
   const auto it = m_matrices.find(mem);
   if (it == m_matrices.end()) {
     return ValueType::NOT_DEFINED;
@@ -125,39 +122,38 @@ ValueType BlasGeneric<T>::getValueType(const T *mem) const {
 }
 
 template <typename T>
-std::pair<size_t, size_t> BlasGeneric<T>::getDims(const T *mem) const {
+std::pair<size_t, size_t> Blas<T>::getDims(const T *mem) const {
   auto rows = getRows(mem);
   auto columns = getColumns(mem);
   return std::make_pair(rows, columns);
 }
 
-template <typename T> void BlasGeneric<T>::copyHostToKernel(T *mem, T *array) {
+template <typename T> void Blas<T>::copyHostToKernel(T *mem, T *array) {
   checkMem(mem);
   _copyHostToKernel(mem, array);
 }
 
-template <typename T>
-void BlasGeneric<T>::copyHostToKernel(T *mem, const T *array) {
+template <typename T> void Blas<T>::copyHostToKernel(T *mem, const T *array) {
   checkMem(mem);
   _copyHostToKernel(mem, array);
 }
 
-template <typename T> void BlasGeneric<T>::copyKernelToHost(T *array, T *mem) {
+template <typename T> void Blas<T>::copyKernelToHost(T *array, T *mem) {
   checkMem(mem);
   _copyKernelToHost(array, mem);
 }
 
-template <typename T> uintt BlasGeneric<T>::amax(const T *mem) {
+template <typename T> uintt Blas<T>::amax(const T *mem) {
   checkMem(mem);
   return _amax(mem);
 }
 
-template <typename T> uintt BlasGeneric<T>::amin(const T *mem) {
+template <typename T> uintt Blas<T>::amin(const T *mem) {
   checkMem(mem);
   return _amin(mem);
 }
 
-template <typename T> void BlasGeneric<T>::rot(T *x, T *y, T *c, T *s) {
+template <typename T> void Blas<T>::rot(T *x, T *y, T *c, T *s) {
   checkMem(x);
   checkMem(y);
   checkMem(c);
@@ -165,20 +161,20 @@ template <typename T> void BlasGeneric<T>::rot(T *x, T *y, T *c, T *s) {
   _rot(x, y, c, s);
 }
 
-template <typename T> void BlasGeneric<T>::rot(T *x, T *y, float c, float s) {
+template <typename T> void Blas<T>::rot(T *x, T *y, float c, float s) {
   checkMem(x);
   checkMem(y);
   rot(x, y, &c, ValueType::FLOAT, &s, ValueType::FLOAT);
 }
 
-template <typename T> void BlasGeneric<T>::rot(T *x, T *y, double c, double s) {
+template <typename T> void Blas<T>::rot(T *x, T *y, double c, double s) {
   checkMem(x);
   checkMem(y);
   rot(x, y, &c, ValueType::DOUBLE, &s, ValueType::DOUBLE);
 }
 
 template <typename T>
-void BlasGeneric<T>::syr(FillMode fillMode, T *output, T *alpha, T *x) {
+void Blas<T>::syr(FillMode fillMode, T *output, T *alpha, T *x) {
   checkMem(output);
   checkMem(x);
 
@@ -186,14 +182,14 @@ void BlasGeneric<T>::syr(FillMode fillMode, T *output, T *alpha, T *x) {
 }
 
 template <typename T>
-void BlasGeneric<T>::gemm(T *output, T *alpha, T *a, T *b, T *beta) {
+void Blas<T>::gemm(T *output, T *alpha, T *a, T *b, T *beta) {
   // Checking of matrix is redundant here
   gemm(output, alpha, Operation::OP_N, a, Operation::OP_N, b, beta);
 }
 
 template <typename T>
-void BlasGeneric<T>::gemm(T *output, T *alpha, Operation transa, T *a,
-                          Operation transb, T *b, T *beta) {
+void Blas<T>::gemm(T *output, T *alpha, Operation transa, T *a,
+                   Operation transb, T *b, T *beta) {
   checkMem(output);
   checkMem(alpha);
   checkMem(a);
@@ -204,8 +200,8 @@ void BlasGeneric<T>::gemm(T *output, T *alpha, Operation transa, T *a,
 }
 
 template <typename T>
-void BlasGeneric<T>::symm(SideMode sideMode, FillMode fillMode, T *output,
-                          T *alpha, T *a, T *b, T *beta) {
+void Blas<T>::symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
+                   T *a, T *b, T *beta) {
   checkMem(output);
   checkMem(a);
   checkMem(b);
@@ -216,24 +212,22 @@ void BlasGeneric<T>::symm(SideMode sideMode, FillMode fillMode, T *output,
   _symm(sideMode, fillMode, output, alpha, a, b, beta);
 }
 
-template <typename T> void BlasGeneric<T>::matrixMul(T *output, T *a, T *b) {
+template <typename T> void Blas<T>::matrixMul(T *output, T *a, T *b) {
   checkMem(output);
   checkMem(a);
   checkMem(b);
   _matrixMul(output, a, b);
 }
 
-template <typename T> void BlasGeneric<T>::geqrf(T *a, T *tau) {
+template <typename T> void Blas<T>::geqrf(T *a, T *tau) {
   checkMem(a);
   checkMem(tau);
   _geqrf(a, tau);
 }
 
-template <typename T> void BlasGeneric<T>::geqrf(Mems &a, Mems &tau) {
-  _geqrf(a, tau);
-}
+template <typename T> void Blas<T>::geqrf(Vec &a, Vec &tau) { _geqrf(a, tau); }
 
-template <typename T> void BlasGeneric<T>::qrDecomposition(T *q, T *r, T *a) {
+template <typename T> void Blas<T>::qrDecomposition(T *q, T *r, T *a) {
   checkMem(q);
   checkMem(r);
   checkMem(a);
@@ -241,85 +235,84 @@ template <typename T> void BlasGeneric<T>::qrDecomposition(T *q, T *r, T *a) {
   _qrDecomposition(q, r, a);
 }
 
-template <typename T>
-void BlasGeneric<T>::qrDecomposition(Mems &q, Mems &r, Mems &a) {
-  checkMems(q);
-  checkMems(r);
-  checkMems(a);
+template <typename T> void Blas<T>::qrDecomposition(Vec &q, Vec &r, Vec &a) {
+  checkVec(q);
+  checkVec(r);
+  checkVec(a);
 
   _qrDecomposition(q, r, a);
 }
 
-template <typename T> void BlasGeneric<T>::shiftQRIteration(T *H, T *Q) {
+template <typename T> void Blas<T>::shiftQRIteration(T *H, T *Q) {
   checkMem(H);
   checkMem(Q);
 
   _shiftQRIteration(H, Q);
 }
 
-template <typename T> bool BlasGeneric<T>::isUpperTriangular(T *m) {
+template <typename T> bool Blas<T>::isUpperTriangular(T *m) {
   checkMem(m);
   return _isUpperTriangular(m);
 }
 
-template <typename T> bool BlasGeneric<T>::isLowerTriangular(T *m) {
+template <typename T> bool Blas<T>::isLowerTriangular(T *m) {
   checkMem(m);
   return _isLowerTriangular(m);
 }
 
 template <typename T>
-void BlasGeneric<T>::geam(T *output, T *alpha, Operation transa, T *a, T *beta,
-                          Operation transb, T *b) {
+void Blas<T>::geam(T *output, T *alpha, Operation transa, T *a, T *beta,
+                   Operation transb, T *b) {
   checkMem(output);
   checkMem(a);
   checkMem(b);
   _geam(output, alpha, transa, a, beta, transb, b);
 }
 
-template <typename T> void BlasGeneric<T>::add(T *output, T *a, T *b) {
+template <typename T> void Blas<T>::add(T *output, T *a, T *b) {
   checkMem(output);
   checkMem(a);
   checkMem(b);
   _add(output, a, b);
 }
 
-template <typename T> void BlasGeneric<T>::subtract(T *output, T *a, T *b) {
+template <typename T> void Blas<T>::subtract(T *output, T *a, T *b) {
   checkMem(output);
   checkMem(a);
   checkMem(b);
   _subtract(output, a, b);
 }
 
-template <typename T> void BlasGeneric<T>::scaleDiagonal(T *matrix, T factor) {
+template <typename T> void Blas<T>::scaleDiagonal(T *matrix, T factor) {
   checkMem(matrix);
   _scaleDiagonal(matrix, factor);
 }
 
 template <typename T>
-void BlasGeneric<T>::tpttr(FillMode uplo, int n, T *AP, T *A, int lda) {
+void Blas<T>::tpttr(FillMode uplo, int n, T *AP, T *A, int lda) {
   checkMem(AP);
   checkMem(A);
   _tpttr(uplo, n, AP, A, lda);
 }
 
 template <typename T>
-void BlasGeneric<T>::trttp(FillMode uplo, int n, T *A, int lda, T *AP) {
+void Blas<T>::trttp(FillMode uplo, int n, T *A, int lda, T *AP) {
   checkMem(AP);
   checkMem(A);
   _trttp(uplo, n, A, lda, AP);
 }
 
-template <typename T> bool BlasGeneric<T>::isUnit(T *mem, T delta) {
+template <typename T> bool Blas<T>::isUnit(T *mem, T delta) {
   checkMem(mem);
   return _isUnit(mem, delta);
 }
 
-template <typename T> std::string BlasGeneric<T>::toStr(T *mem) {
+template <typename T> std::string Blas<T>::toStr(T *mem) {
   checkMem(mem);
   return _toStr(mem);
 }
 
-template <typename T> void BlasGeneric<T>::checkMem(const T *mem) const {
+template <typename T> void Blas<T>::checkMem(const T *mem) const {
   if (!isAllocator(mem)) {
     std::stringstream sstream;
     sstream << "Mem " << mem << " is not allocated in " << this;

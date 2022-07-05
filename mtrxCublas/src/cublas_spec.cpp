@@ -17,8 +17,9 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cublas.hpp"
 #include "cuComplex.h"
+#include "cublas.hpp"
+#include "cublas_v2.h"
 #include "driver_types.h"
 #include "mtrxCore/status_handler.hpp"
 #include "mtrxCore/types.hpp"
@@ -50,24 +51,6 @@
 #endif
 
 namespace mtrx {
-
-template <typename T> void *cublas_getOffset(Mem *mem, int idx) {
-  T *ptr = static_cast<T *>(mem->ptr);
-  return static_cast<void *>(&ptr[idx]);
-}
-
-void *cublas_getOffset(Mem *mem, int idx) {
-  if (mem->valueType == ValueType::FLOAT) {
-    return cublas_getOffset<float>(mem, idx);
-  } else if (mem->valueType == ValueType::DOUBLE) {
-    return cublas_getOffset<double>(mem, idx);
-  } else if (mem->valueType == ValueType::FLOAT_COMPLEX) {
-    return cublas_getOffset<cuComplex>(mem, idx);
-  } else if (mem->valueType == ValueType::DOUBLE_COMPLEX) {
-    return cublas_getOffset<cuDoubleComplex>(mem, idx);
-  }
-  return nullptr;
-}
 
 int SizeOf(ValueType valueType, int n = 1) {
   switch (valueType) {
@@ -163,9 +146,9 @@ template <typename T> void cublas_deallocCudaArray(T *array) {
   handleStatus(error);
 }
 
-Cublas::Cublas() { handleStatus(cublasCreate(&m_handle)); }
+CublasSpec::CublasSpec() { handleStatus(cublasCreate(&m_handle)); }
 
-Cublas::~Cublas() {
+CublasSpec::~CublasSpec() {
   try {
     handleStatus(cublasDestroy(m_handle));
   } catch (const std::exception &ex) {
@@ -174,7 +157,7 @@ Cublas::~Cublas() {
   }
 }
 
-std::vector<int> Cublas::_getDevices() const {
+std::vector<int> CublasSpec::getDevices() const {
   int count = 0;
   handleStatus(cudaGetDeviceCount(&count));
 
@@ -188,138 +171,47 @@ std::vector<int> Cublas::_getDevices() const {
   return devices;
 }
 
-void Cublas::_setDevice(int device) { handleStatus(cudaSetDevice(device)); }
+void CublasSpec::setDevice(int device) { handleStatus(cudaSetDevice(device)); }
 
-template <typename T, typename Vec>
-void cublas_setVec(Vec &&vec, size_t rows, size_t columns) {
-  vec.reserve(rows * columns);
-  for (size_t r = 0; r < rows; ++r) {
-    for (size_t c = 0; c < columns; ++c) {
-      if (r == c) {
-        vec.push_back(static_cast<T>(1));
-      } else {
-        vec.push_back(static_cast<T>(0));
-      }
-    }
-  }
-}
+void CublasSpec::dealloc(float *mem) { cublas_dealloc(mem); }
 
-template <typename T>
-Mem *cublas_createIdentity(Cublas *cublas, size_t rows, size_t columns,
-                           ValueType valueType) {
-  Mem *matrix = cublas->createMatrix(rows, columns, valueType);
-  std::vector<T> vec;
-  cublas_setVec<T>(vec, rows, columns);
-  cublas->copyHostToKernel(matrix, vec.data());
-  return matrix;
-}
+void CublasSpec::dealloc(double *mem) { cublas_dealloc(mem); }
 
-Mem *Cublas::_createIdentityMatrix(size_t rows, size_t columns,
-                                   ValueType valueType) {
-  if (valueType == ValueType::FLOAT) {
-    return cublas_createIdentity<float>(this, rows, columns, valueType);
-  } else if (valueType == ValueType::DOUBLE) {
-    return cublas_createIdentity<double>(this, rows, columns, valueType);
-  }
+void CublasSpec::dealloc(cuComplex *mem) { cublas_dealloc(mem); }
 
-  throw std::runtime_error("Not supported type");
-  return nullptr;
-}
+void CublasSpec::dealloc(cuDoubleComplex *mem) { cublas_dealloc(mem); }
 
-template <typename T> T *cublas_alloc(size_t count) {
-  if (count <= 0) {
-    std::stringstream sstream;
-    sstream << "Cannot created mem with count: " << count;
-    throw std::runtime_error(sstream.str());
-  }
+uintt CublasSpec::_getCount(const Mem *mem) const { return mem->count; }
 
-  T *ptr = nullptr;
-  try {
-    auto error = cudaMalloc(&ptr, SizeOf<T>(count));
-    handleStatus(error);
-    auto error1 = cudaMemset(ptr, 0, SizeOf<T>(count));
-    handleStatus(error1);
-  } catch (const std::exception &ex) {
-    cudaFree(ptr);
-    throw std::runtime_error(ex.what());
-  }
-  return ptr;
-}
-
-float *Cublas::allocS(size_t size) { return cublas_alloc<float>(size); }
-
-double *Cublas::allocD(size_t size) { return cublas_alloc<double>(size); }
-
-cuComplex *Cublas::allocC(size_t size) { return cublas_alloc<cuComplex>(size); }
-
-cuDoubleComplex *Cublas::allocZ(size_t size) {
-  return cublas_alloc<cuDoubleComplex>(size);
-}
-
-void cublas_dealloc(void *mem) {
-  auto status = cudaFree(mem);
-  handleStatus(status);
-}
-
-void Cublas::dealloc(float *mem) { cublas_dealloc(mem); }
-
-void Cublas::dealloc(double *mem) { cublas_dealloc(mem); }
-
-void Cublas::dealloc(cuComplex *mem) { cublas_dealloc(mem); }
-
-void Cublas::dealloc(cuDoubleComplex *mem) { cublas_dealloc(mem); }
-
-uintt Cublas::_getCount(const Mem *mem) const { return mem->count; }
-
-uintt Cublas::_getSizeInBytes(const Mem *mem) const {
+uintt CublasSpec::_getSizeInBytes(const Mem *mem) const {
   return SizeOf(mem->valueType, mem->count);
 }
 
-void Cublas::_copyHostToKernel(Mem *mem, void *array) {
+void CublasSpec::_copyHostToKernel(float *mem, float *array) {
+  auto status =
+      cublasSetVector(mem->count, SizeOf<float>(), array, 1, mem->ptr, 1);
+  handleStatus(status);
+}
+
+void CublasSpec::_copyHostToKernel(Mem *mem, const void *array) {
   auto status = cublasSetVector(mem->count, SizeOf(mem->valueType), array, 1,
                                 mem->ptr, 1);
   handleStatus(status);
 }
 
-void Cublas::_copyHostToKernel(Mem *mem, const void *array) {
-  auto status = cublasSetVector(mem->count, SizeOf(mem->valueType), array, 1,
-                                mem->ptr, 1);
-  handleStatus(status);
-}
-
-void Cublas::_copyKernelToHost(void *array, Mem *mem) {
+void CublasSpec::_copyKernelToHost(void *array, Mem *mem) {
   auto status = cublasGetVector(mem->count, SizeOf(mem->valueType), mem->ptr, 1,
                                 array, 1);
   handleStatus(status);
 }
 
-uintt Cublas::_amax(const Mem *mem) {
-  const uintt n = mem->count;
-
+template <typename H, typename T, typename CublasIamax>
+uintt cublas_amam(Hr &handler, const T *mem, CublasSpec &cublas,
+                  CublasIamax &&cublasIamam) {
+  const uintt n = cublas.getCount(mem);
   int resultIdx = -1;
-
   cublasStatus_t status = CUBLAS_STATUS_NOT_SUPPORTED;
-  switch (mem->valueType) {
-  case ValueType::FLOAT:
-    status = cublasIsamax(m_handle, n, static_cast<float *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::DOUBLE:
-    status = cublasIdamax(m_handle, n, static_cast<double *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::FLOAT_COMPLEX:
-    status = cublasIcamax(m_handle, n, static_cast<cuComplex *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::DOUBLE_COMPLEX:
-    status = cublasIzamax(m_handle, n, static_cast<cuDoubleComplex *>(mem->ptr),
-                          1, &resultIdx);
-    break;
-  case ValueType::NOT_DEFINED:
-    throw std::runtime_error("Not defined value type");
-  };
-
+  status = cublasIamam(handle, n, static_cast<T *>(mem), 1, &resultIdx);
   handleStatus(status);
 
   if (resultIdx == -1) {
@@ -329,70 +221,51 @@ uintt Cublas::_amax(const Mem *mem) {
   return resultIdx - 1;
 }
 
-uintt Cublas::_amin(const Mem *mem) {
-  const uintt n = mem->count;
-
-  int resultIdx = -1;
-
-  cublasStatus_t status = CUBLAS_STATUS_NOT_SUPPORTED;
-  switch (mem->valueType) {
-  case ValueType::FLOAT:
-    status = cublasIsamin(m_handle, n, static_cast<float *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::DOUBLE:
-    status = cublasIdamin(m_handle, n, static_cast<double *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::FLOAT_COMPLEX:
-    status = cublasIcamin(m_handle, n, static_cast<cuComplex *>(mem->ptr), 1,
-                          &resultIdx);
-    break;
-  case ValueType::DOUBLE_COMPLEX:
-    status = cublasIzamin(m_handle, n, static_cast<cuDoubleComplex *>(mem->ptr),
-                          1, &resultIdx);
-    break;
-  case ValueType::NOT_DEFINED:
-    throw std::runtime_error("Not defined value type");
-  };
-
-  handleStatus(status);
-
-  if (resultIdx == -1) {
-    throw std::runtime_error("resultIdx is -1");
-  }
-
-  return resultIdx - 1;
+uintt CublasSpec::_amax(const float *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIsamax);
 }
 
-void Cublas::_rot(Mem *x, Mem *y, void *c, ValueType cType, void *s,
-                  ValueType sType) {
-  if (cType == ValueType::DOUBLE_COMPLEX || cType == ValueType::FLOAT_COMPLEX) {
-    throw std::runtime_error(
-        "Not supported cType. Cannot be DOUBLE_MAX or FLOAT_COMPLEX");
-  }
+uintt CublasSpec::_amax(const double *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIdamax);
+}
 
-  if (x->valueType != y->valueType) {
-    std::stringstream sstream;
-    sstream << "Different type for x and y. x: " << toString(x->valueType)
-            << " y: " << toString(y->valueType);
-    throw std::runtime_error(sstream.str());
-  }
+uintt CublasSpec::_amax(const cuComplex *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIcamax);
+}
 
-  if (x->count != y->count) {
+uintt CublasSpec::_amax(const cuDoubleComplex *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIzamax);
+}
+
+uintt CublasSpec::_amin(const float *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIsamin);
+}
+
+uintt CublasSpec::_amin(const double *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIdamin);
+}
+
+uintt CublasSpec::_amin(const cuComplex *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIcamin);
+}
+
+uintt CublasSpec::_amin(const cuDoubleComplex *mem) {
+  return cublas_amam(m_handle, mem, *this, cublasIzamin);
+}
+
+template <typename H, typename T, CublasRot>
+void cublas_rot(H handle, T *x, T *y, T *c, T *s, CublasSpec &cublas,
+                CublasRot &&cublasrot) {
+  auto x_count = cublas.getCount(x);
+  auto y_count = cublas.getCount(y);
+  if (x_count != y_count) {
     std::stringstream sstream;
     sstream << "Different count for x and y. x: " << x->count
             << " y: " << y->count;
     throw std::runtime_error(sstream.str());
   }
 
-  const auto n = x->count;
-
-  auto _cublasSrot = [this, n](Mem *x, Mem *y, void *c, void *s) {
-    return cublasSrot(m_handle, n, static_cast<float *>(x->ptr), 1,
-                      static_cast<float *>(y->ptr), 1, static_cast<float *>(c),
-                      static_cast<float *>(s));
-  };
+  const auto n = x_count;
 
   auto _cublasDrot = [this, n](Mem *x, Mem *y, void *c, void *s) {
     return cublasDrot(m_handle, n, static_cast<double *>(x->ptr), 1,
@@ -422,16 +295,21 @@ void Cublas::_rot(Mem *x, Mem *y, void *c, ValueType cType, void *s,
     throw std::runtime_error(sstream.str());
   }
 
-  auto status = it->second(x, y, c, s);
+  auto status = cublasrot(handle, n, x, 1, y, 1, c, s);
   handleStatus(status);
 }
 
-void Cublas::_rot(Mem *x, Mem *y, Mem *c, Mem *s) {
-  _rot(x, y, c->ptr, c->valueType, s->ptr, s->valueType);
+void CublasSpec::_rot(float *x, float *y, float *c, float *s) {
+  cublas_rot(m_handle, x, y, c, s, *this, cublasSrot);
 }
 
-void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
-                  ValueType alphaType, Mem *x) {
+void CublasSpec::_rot(double *x, double *y, double *c, double *s) {
+  cublas_rot(m_handle, x, y, c, s, *this, cublasDrot);
+}
+
+template <typename H, typename T, typename CublasSyr>
+void cublas_syr(H handle, FillMode fillMode, T *output, T *alpha, T *x,
+                CublasSyr &&cublassyr) {
   int n = getRows(output);
   int m = getColumns(output);
   const int lda = n;
@@ -442,47 +320,8 @@ void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
     throw std::runtime_error(sstream.str());
   }
 
-  auto _cublasSsyr = [this, n, lda](FillMode fillMode, Mem *output, void *alpha,
-                                    Mem *x) {
-    auto *output_f = static_cast<float *>(output->ptr);
-    auto *alpha_f = static_cast<float *>(alpha);
-    auto *x_f = static_cast<float *>(x->ptr);
-
-    return cublasSsyr(m_handle, convert(fillMode), n, alpha_f, x_f, 1, output_f,
-                      lda);
-  };
-
-  auto _cublasDsyr = [this, n, lda](FillMode fillMode, Mem *output, void *alpha,
-                                    Mem *x) {
-    auto *output_f = static_cast<double *>(output->ptr);
-    auto *alpha_f = static_cast<double *>(alpha);
-    auto *x_f = static_cast<double *>(x->ptr);
-
-    return cublasDsyr(m_handle, convert(fillMode), n, alpha_f, x_f, 1, output_f,
-                      lda);
-  };
-
-  using Impl = std::function<cublasStatus_t(FillMode, Mem *, void *, Mem *)>;
-  const std::map<std::tuple<ValueType, ValueType, ValueType>, Impl> impls = {
-      {std::make_tuple(ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT),
-       std::move(_cublasSsyr)},
-      {std::make_tuple(ValueType::DOUBLE, ValueType::DOUBLE, ValueType::DOUBLE),
-       std::move(_cublasDsyr)}};
-
-  const auto it =
-      impls.find(std::make_tuple(output->valueType, alphaType, x->valueType));
-
-  if (it == impls.end()) {
-    std::stringstream sstream;
-    sstream << "Not supported overload: (";
-    sstream << toString(output->valueType) << ", ";
-    sstream << toString(alphaType) << ", ";
-    sstream << toString(x->valueType) << ")";
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto call = [it, output, alpha, x](FillMode fillMode) {
-    auto status = it->second(fillMode, output, alpha, x);
+  auto call = [&handle, it, output, alpha, x](FillMode fillMode) {
+    auto status = cublassyr(handle, fillMode, output, alpha, x);
     handleStatus(status);
   };
 
@@ -505,13 +344,18 @@ void Cublas::_syr(FillMode fillMode, Mem *output, void *alpha,
   }
 }
 
-void Cublas::_syr(FillMode fillMode, Mem *output, Mem *alpha, Mem *x) {
-  _syr(fillMode, output, alpha->ptr, alpha->valueType, x);
+void CublasSpec::_syr(FillMode fillMode, float *output, float alpha, float *x) {
+  cublas_syr(m_handle, fillMode, output, &alpha, x, cublasSsyr);
 }
 
-void Cublas::_gemm(Mem *output, void *alpha, ValueType alphaType,
-                   Operation transa, Mem *a, Operation transb, Mem *b,
-                   void *beta, ValueType betaType) {
+void CublasSpec::_syr(FillMode fillMode, double *output, double alpha,
+                      double *x) {
+  cublas_syr(m_handle, fillMode, output, &alpha, x, cublasDsyr);
+}
+
+template <typename H, typename T, typename CublasGemm>
+void cublas_gemm(H handle, T *output, T *alpha, Operation transa, T *a,
+                 Operation transb, T *b, T *beta, CublasGemm &&cublasgemm) {
   const auto m = getRows(a);
   const auto m1 = getRows(output);
 
@@ -548,91 +392,29 @@ void Cublas::_gemm(Mem *output, void *alpha, ValueType alphaType,
   auto cutransa = convert(transa);
   auto cutransb = convert(transb);
 
-  auto _cublasSgemm = [this, m, n, k, cutransa, cutransb](Mem *output,
-                                                          void *alpha, Mem *a,
-                                                          Mem *b, void *beta) {
-    auto *alpha_f = static_cast<float *>(alpha);
-    auto *output_f = static_cast<float *>(output->ptr);
-    auto *a_f = static_cast<float *>(a->ptr);
-    auto *b_f = static_cast<float *>(b->ptr);
-    auto *beta_f = static_cast<float *>(beta);
-    return cublasSgemm(m_handle, cutransa, cutransb, m, n, k, alpha_f, a_f, m,
-                       b_f, k, beta_f, output_f, m);
-  };
-
-  auto _cublasDgemm = [this, m, n, k, cutransa, cutransb](Mem *output,
-                                                          void *alpha, Mem *a,
-                                                          Mem *b, void *beta) {
-    auto *alpha_f = static_cast<double *>(alpha);
-    auto *output_f = static_cast<double *>(output->ptr);
-    auto *a_f = static_cast<double *>(a->ptr);
-    auto *b_f = static_cast<double *>(b->ptr);
-    auto *beta_f = static_cast<double *>(beta);
-    return cublasDgemm(m_handle, cutransa, cutransb, m, n, k, alpha_f, a_f, m,
-                       b_f, k, beta_f, output_f, m);
-  };
-
-  using Impl =
-      std::function<cublasStatus_t(Mem *, void *, Mem *, Mem *, void *)>;
-  const std::map<
-      std::tuple<ValueType, ValueType, ValueType, ValueType, ValueType>, Impl>
-      impls = {
-          {std::make_tuple(ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT,
-                           ValueType::FLOAT, ValueType::FLOAT),
-           std::move(_cublasSgemm)},
-          {std::make_tuple(ValueType::DOUBLE, ValueType::DOUBLE,
-                           ValueType::DOUBLE, ValueType::DOUBLE,
-                           ValueType::DOUBLE),
-           std::move(_cublasDgemm)}};
-
-  const auto it = impls.find(std::make_tuple(
-      output->valueType, alphaType, a->valueType, b->valueType, betaType));
-
-  if (it == impls.end()) {
-    std::stringstream sstream;
-    sstream << "Not supported overload: (";
-    sstream << toString(output->valueType) << ", ";
-    sstream << toString(alphaType) << ", ";
-    sstream << toString(a->valueType) << ", ";
-    sstream << toString(b->valueType) << ", ";
-    sstream << toString(betaType) << ")";
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto status = it->second(output, alpha, a, b, beta);
+  auto *alpha_f = static_cast<double *>(alpha);
+  auto *output_f = static_cast<double *>(output->ptr);
+  auto *a_f = static_cast<double *>(a->ptr);
+  auto *b_f = static_cast<double *>(b->ptr);
+  auto *beta_f = static_cast<double *>(beta);
+  auto status = cublasgemm(m_handle, cutransa, cutransb, m, n, k, alpha_f, a_f,
+                           m, b_f, k, beta_f, output_f, m);
   handleStatus(status);
 }
 
-void Cublas::_gemm(Mem *output, Mem *alpha, Operation transa, Mem *a,
-                   Operation transb, Mem *b, Mem *beta) {
-  _gemm(output, alpha->ptr, alpha->valueType, transa, a, transb, b, beta->ptr,
-        beta->valueType);
+void CublasSpec::_gemm(float *output, float *alpha, Operation transa, float *a,
+                       Operation transb, float *b, float *beta) {
+  cublas_gemm(m_handle, output, alpha, transa, a, transb, b, beta, *this);
 }
 
-void Cublas::_matrixMul(Mem *output, Mem *a, Mem *b) {
-  double alphaD = 1.;
-  float alphaF = 1.f;
-
-  double betaD = 0.;
-  float betaF = 0.f;
-
-  void *alpha = &alphaF;
-  void *beta = &betaF;
-  ValueType type = ValueType::FLOAT;
-
-  if (output->valueType == ValueType::DOUBLE) {
-    alpha = &alphaD;
-    beta = &betaD;
-    type = ValueType::DOUBLE;
-  }
-
-  _gemm(output, alpha, type, Operation::OP_N, a, Operation::OP_N, b, beta,
-        type);
+void CublasSpec::_gemm(double *output, double *alpha, Operation transa,
+                       double *a, Operation transb, double *b, double *beta) {
+  cublas_gemm(m_handle, output, alpha, transa, a, transb, b, beta, *this);
 }
 
-void Cublas::_symm(SideMode sideMode, FillMode fillMode, Mem *output,
-                   void *alpha, ValueType alphaType, Mem *a, Mem *b, void *beta,
-                   ValueType betaType) {
+void CublasSpec::_symm(SideMode sideMode, FillMode fillMode, Mem *output,
+                       void *alpha, ValueType alphaType, Mem *a, Mem *b,
+                       void *beta, ValueType betaType) {
   int m = getRows(output);
   int n = getColumns(output);
   int lda = m; // std::max(1, m);
@@ -694,19 +476,15 @@ void Cublas::_symm(SideMode sideMode, FillMode fillMode, Mem *output,
   handleStatus(status);
 }
 
-void Cublas::_symm(SideMode sideMode, FillMode fillMode, Mem *output,
-                   Mem *alpha, Mem *a, Mem *b, Mem *beta) {
+void CublasSpec::_symm(SideMode sideMode, FillMode fillMode, Mem *output,
+                       Mem *alpha, Mem *a, Mem *b, Mem *beta) {
   _symm(sideMode, fillMode, output, alpha->ptr, alpha->valueType, a, b,
         beta->ptr, beta->valueType);
 }
 
-void Cublas::_geqrf(Mem *a, Mem *tau) {
-  auto as = Mems{a};
-  auto taus = Mems{tau};
-  _geqrf(as, taus);
-}
-
-void Cublas::_geqrf(Mems &a, Mems &tau) {
+template <typename H, typename T, typename CublasgeqrfBatched>
+void cublas_geqrf(H handle, CublasSpec::Vec<T> &a, CublasSpec::Vec<T> &tau,
+                  CublasgeqrfBatched &&cublasgeqrfBatched) {
   if (a.size() != tau.size()) {
     std::stringstream sstream;
     sstream << "Invalid count of element between 'a' and 'tau'." << a.size()
@@ -747,18 +525,7 @@ void Cublas::_geqrf(Mems &a, Mems &tau) {
     }
   };
 
-  auto checkValueType = [](ValueType _valueType, ValueType valueType) {
-    if (_valueType != ValueType::NOT_DEFINED && _valueType != valueType) {
-      std::stringstream sstream;
-      sstream << "Invalid value type. ";
-      sstream << "Expected: " << toString(_valueType) << " ";
-      sstream << "Actual: " << toString(valueType);
-      throw std::runtime_error(sstream.str());
-    }
-  };
-
-  auto create = [this, &checkDim, &checkValueType](auto &array,
-                                                   const auto &input) {
+  auto create = [this, &checkDim](auto &array, const auto &input) {
     int m = -1;
     int n = -1;
 
@@ -766,7 +533,6 @@ void Cublas::_geqrf(Mems &a, Mems &tau) {
 
     int _rows = -1;
     int _columns = -1;
-    ValueType _valueType = ValueType::NOT_DEFINED;
 
     for (const auto *elem : input) {
       array.push_back(elem->ptr);
@@ -776,11 +542,9 @@ void Cublas::_geqrf(Mems &a, Mems &tau) {
       auto valueType = elem->valueType;
 
       checkDim(_rows, _columns, rows, columns);
-      checkValueType(_valueType, valueType);
 
       _rows = rows;
       _columns = columns;
-      _valueType = valueType;
     }
     m = _rows;
     n = _columns;
@@ -796,81 +560,43 @@ void Cublas::_geqrf(Mems &a, Mems &tau) {
   const int lda = m;
   int batchSize = a.size();
 
-  auto _cublasSgeqrfBatched = [this, m, n, lda,
-                               batchSize](std::vector<void *> &a,
-                                          std::vector<void *> &tau) {
-    int info = 0;
+  int info = 0;
 
-    static_assert(sizeof(float *) == sizeof(void *),
-                  "Mismatch beetwen size of float* and void*");
+  static_assert(sizeof(float *) == sizeof(void *),
+                "Mismatch beetwen size of float* and void*");
 
-    auto **a_f = reinterpret_cast<float **>(a.data());
-    auto **tau_f = reinterpret_cast<float **>(tau.data());
+  auto **a_t = reinterpret_cast<T **>(a.data());
+  auto **tau_t = reinterpret_cast<T **>(tau.data());
 
-    auto **d_a = cublas_allocCudaArrayCopy<float *>(a_f, a.size());
-    auto **d_tau = cublas_allocCudaArrayCopy<float *>(tau_f, tau.size());
+  auto **d_a = cublas_allocCudaArrayCopy<T *>(a_f, a.size());
+  auto **d_tau = cublas_allocCudaArrayCopy<T *>(tau_f, tau.size());
 
-    auto status =
-        cublasSgeqrfBatched(m_handle, m, n, d_a, lda, d_tau, &info, batchSize);
+  auto status =
+      cublasgeqrfBatched(handle, m, n, d_a, lda, d_tau, &info, batchSize);
 
-    cublas_deallocCudaArray(d_a);
-    cublas_deallocCudaArray(d_tau);
+  cublas_deallocCudaArray(d_a);
+  cublas_deallocCudaArray(d_tau);
 
-    return std::make_pair(status, info);
-  };
+  handleStatus(status);
 
-  auto _cublasDgeqrfBatched = [this, m, n, lda,
-                               batchSize](std::vector<void *> &a,
-                                          std::vector<void *> &tau) {
-    int info = 0;
-    double **a_f = reinterpret_cast<double **>(a.data());
-    double **tau_f = reinterpret_cast<double **>(tau.data());
-
-    auto **d_a = cublas_allocCudaArrayCopy<double *>(a_f, a.size());
-    auto **d_tau = cublas_allocCudaArrayCopy<double *>(tau_f, tau.size());
-
-    auto status =
-        cublasDgeqrfBatched(m_handle, m, n, d_a, lda, d_tau, &info, batchSize);
-
-    cublas_deallocCudaArray(d_a);
-    cublas_deallocCudaArray(d_tau);
-
-    return std::make_pair(status, info);
-  };
-
-  using Impl = std::function<std::pair<cublasStatus_t, int>(
-      std::vector<void *> &, std::vector<void *> &)>;
-  const std::map<std::tuple<ValueType, ValueType>, Impl> impls = {
-      {std::make_tuple(ValueType::FLOAT, ValueType::FLOAT),
-       std::move(_cublasSgeqrfBatched)},
-      {std::make_tuple(ValueType::DOUBLE, ValueType::DOUBLE),
-       std::move(_cublasDgeqrfBatched)}};
-
-  const auto it = impls.find(std::make_tuple(aValueType, tauValueType));
-
-  if (it == impls.end()) {
+  if (info < 0) {
     std::stringstream sstream;
-    sstream << "Not supported overload: (";
-    sstream << toString(aValueType) << ", ";
-    sstream << toString(tauValueType) << ")";
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto pairStatus = it->second(_a, _tau);
-
-  handleStatus(pairStatus.first);
-
-  if (pairStatus.second < 0) {
-    std::stringstream sstream;
-    sstream << "The parameters passed at " << -pairStatus.second
-            << " is invalid";
+    sstream << "The parameters passed at " << -info << " is invalid";
     throw std::runtime_error(sstream.str());
   }
 }
 
+void CublasSpec::_geqrf(Vec<float> &a, Vec<float> &tau) {
+  cublas_geqrf(m_handle, a, tau, cublasSgeqrfBatched);
+}
+
+void CublasSpec::_geqrf(Vec<double> &a, Vec<double> &tau) {
+  cublas_geqrf(m_handle, a, tau, cublasSgeqrfBatched);
+}
+
 template <typename T>
-void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
-                            Blas::Mems &a, ValueType valueType) {
+void cublas_qrDecomposition(CublasSpec *cublas, CublasSpec::Vec<T> &q,
+                            CublasSpec::Vec<T> &r, CublasSpec::Vec<T> &a) {
   auto m = cublas->getRows(a[0]);
   auto n = cublas->getColumns(a[0]);
   auto k = std::min(m, n);
@@ -890,7 +616,7 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
   Mem *Aux2 = cublas->createMatrix(m, m, valueType);
   Mem *v = cublas->create(m, valueType);
 
-  Blas::Mems aux3;
+  CublasSpec::Vec<T> aux3;
   for (auto *mema : a) {
     Mem *Aux3 = cublas->createMatrix(m, m, valueType);
     cublas->matrixMul(Aux3, I, mema);
@@ -899,7 +625,7 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
 
   auto dim = std::max(static_cast<size_t>(1), std::min(m, n));
 
-  Blas::Mems taus;
+  CublasSpec::Vec<T> taus;
   taus.reserve(a.size());
   for (size_t idx = 0; idx < a.size(); ++idx) {
     taus.push_back(cublas->create(dim, a[0]->valueType));
@@ -966,24 +692,16 @@ void cublas_qrDecomposition(Cublas *cublas, Blas::Mems &q, Blas::Mems &r,
   cublas->destroy(I);
 }
 
-void Cublas::_qrDecomposition(Mem *q, Mem *r, Mem *a) {
-  Mems qs{q};
-  Mems rs{r};
-  Mems as{a};
-
-  _qrDecomposition(qs, rs, as);
+void CublasSpec::_qrDecomposition(Vec<float> &q, Vec<float> &r, Vec<float> &a) {
+  cublas_qrDecomposition(this, q, r, a);
 }
 
-void Cublas::_qrDecomposition(Mems &q, Mems &r, Mems &a) {
-  auto valueType = a[0]->valueType;
-  if (valueType == ValueType::FLOAT) {
-    cublas_qrDecomposition<float>(this, q, r, a, valueType);
-  } else if (valueType == ValueType::DOUBLE) {
-    cublas_qrDecomposition<double>(this, q, r, a, valueType);
-  }
+void CublasSpec::_qrDecomposition(Vec<double> &q, Vec<double> &r,
+                                  Vec<double> &a) {
+  cublas_qrDecomposition(this, q, r, a);
 }
 
-void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
+template <typename T> void cublas_shiftQRIteration(T *H, T *Q) {
   bool status = false;
 
   const auto dims = getDims(H);
@@ -998,12 +716,12 @@ void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
   checkIfAllEqual(valueType, _valueType, "H", "Q");
   checkIfAllEqual(dims, _dims, "H", "Q");
 
-  Mem *aux_Q = createIdentityMatrix(rows, columns, valueType);
-  Mem *aux_Q1 = createMatrix(rows, columns, valueType);
+  T *aux_Q = createIdentityMatrix(rows, columns);
+  T *aux_Q1 = createMatrix(rows, columns);
 
-  Mem *aux_R = createMatrix(rows, columns, valueType);
+  T *aux_R = createMatrix(rows, columns);
 
-  Mem *ioQ = Q;
+  T *ioQ = Q;
 
   status = isUpperTriangular(H);
 
@@ -1017,137 +735,23 @@ void Cublas::_shiftQRIteration(Mem *H, Mem *Q) {
   }
 }
 
-void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix,
-                              size_t lda) {
-  auto rows = cublas->getRows(matrix);
-  auto columns = cublas->getColumns(matrix);
-
-  if (rows != columns) {
-    std::stringstream sstream;
-    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
-            << columns;
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto factorType = matrix->valueType;
-  CudaAlloc alloc;
-  Kernels kernels(0, &alloc);
-
-  switch (factorType) {
-  case ValueType::FLOAT:
-    result = kernels.isUpperTriangular(
-        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
-    break;
-  case ValueType::DOUBLE:
-    result = kernels.isUpperTriangular(
-        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
-    break;
-  case ValueType::FLOAT_COMPLEX:
-    result = kernels.isUpperTriangular(
-        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
-        cuComplex());
-    break;
-  case ValueType::DOUBLE_COMPLEX:
-    result = kernels.isUpperTriangular(
-        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
-        cuDoubleComplex());
-    break;
-  case ValueType::NOT_DEFINED:
-    throw std::runtime_error("Not defined value type");
-  };
+void CublasSpec::_shiftQRIteration(float *H, float *Q) {
+  cublas_shiftQRIteration(H, Q);
 }
 
-void cublas_isUpperTriangular(bool &result, Cublas *cublas, Mem *matrix) {
-
-  auto rows = cublas->getRows(matrix);
-  auto columns = cublas->getColumns(matrix);
-  if (rows != columns) {
-    std::stringstream sstream;
-    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
-            << columns;
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto lda = rows;
-  cublas_isUpperTriangular(result, cublas, matrix, lda);
+void CublasSpec::_shiftQRIteration(double *H, double *Q) {
+  cublas_shiftQRIteration(H, Q);
 }
 
-bool Cublas::_isUpperTriangular(Mem *m) {
-  bool result = false;
-  cublas_isUpperTriangular(result, this, m);
-  return result;
-}
-
-void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix,
-                              size_t lda) {
-  auto rows = cublas->getRows(matrix);
-  auto columns = cublas->getColumns(matrix);
-
-  if (rows != columns) {
-    std::stringstream sstream;
-    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
-            << columns;
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto factorType = matrix->valueType;
-  CudaAlloc alloc;
-  Kernels kernels(0, &alloc);
-
-  switch (factorType) {
-  case ValueType::FLOAT:
-    result = kernels.isLowerTriangular(
-        rows, columns, reinterpret_cast<float *>(matrix->ptr), lda, 0.f);
-    break;
-  case ValueType::DOUBLE:
-    result = kernels.isLowerTriangular(
-        rows, columns, reinterpret_cast<double *>(matrix->ptr), lda, 0.);
-    break;
-  case ValueType::FLOAT_COMPLEX:
-    result = kernels.isLowerTriangular(
-        rows, columns, reinterpret_cast<cuComplex *>(matrix->ptr), lda,
-        cuComplex());
-    break;
-  case ValueType::DOUBLE_COMPLEX:
-    result = kernels.isLowerTriangular(
-        rows, columns, reinterpret_cast<cuDoubleComplex *>(matrix->ptr), lda,
-        cuDoubleComplex());
-    break;
-  case ValueType::NOT_DEFINED:
-    throw std::runtime_error("Not defined value type");
-  };
-}
-
-void cublas_isLowerTriangular(bool &result, Cublas *cublas, Mem *matrix) {
-  auto rows = cublas->getRows(matrix);
-  auto columns = cublas->getColumns(matrix);
-
-  if (rows != columns) {
-    std::stringstream sstream;
-    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
-            << columns;
-    throw std::runtime_error(sstream.str());
-  }
-
-  auto lda = rows;
-  cublas_isLowerTriangular(result, cublas, matrix, lda);
-}
-
-bool Cublas::_isLowerTriangular(Mem *m) {
-  bool result = false;
-  cublas_isLowerTriangular(result, this, m);
-  return result;
-}
-
-void Cublas::_geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
-                   Operation transb, Mem *b) {
+void CublasSpec::_geam(Mem *output, Mem *alpha, Operation transa, Mem *a,
+                       Mem *beta, Operation transb, Mem *b) {
   _geam(output, alpha->ptr, alpha->valueType, transa, a, beta->ptr,
         beta->valueType, transb, b);
 }
 
-void Cublas::_geam(Mem *output, void *alpha, ValueType alphaType,
-                   Operation transa, Mem *a, void *beta, ValueType betaType,
-                   Operation transb, Mem *b) {
+void CublasSpec::_geam(Mem *output, void *alpha, ValueType alphaType,
+                       Operation transa, Mem *a, void *beta, ValueType betaType,
+                       Operation transb, Mem *b) {
   auto m = getRows(a);
   auto n = getColumns(b);
 
@@ -1215,7 +819,7 @@ void Cublas::_geam(Mem *output, void *alpha, ValueType alphaType,
   handleStatus(status);
 }
 
-void Cublas::_add(Mem *output, Mem *a, Mem *b) {
+void CublasSpec::_add(Mem *output, Mem *a, Mem *b) {
   float oneF = 1.f;
   double oneD = 1.;
 
@@ -1231,7 +835,7 @@ void Cublas::_add(Mem *output, Mem *a, Mem *b) {
         b);
 }
 
-void Cublas::_subtract(Mem *output, Mem *a, Mem *b) {
+void CublasSpec::_subtract(Mem *output, Mem *a, Mem *b) {
   float oneF = 1.f;
   double oneD = 1.;
 
@@ -1253,8 +857,8 @@ void Cublas::_subtract(Mem *output, Mem *a, Mem *b) {
 }
 
 template <typename T>
-cublasStatus_t cublas_scaleDiagonal(Cublas *cublas, Mem *matrix, void *factor,
-                                    ValueType factorType) {
+cublasStatus_t cublas_scaleDiagonal(CublasSpec *cublas, Mem *matrix,
+                                    void *factor, ValueType factorType) {
 
   auto rows = cublas->getRows(matrix);
   auto columns = cublas->getColumns(matrix);
@@ -1292,11 +896,12 @@ cublasStatus_t cublas_scaleDiagonal(Cublas *cublas, Mem *matrix, void *factor,
   return CUBLAS_STATUS_SUCCESS;
 }
 
-void Cublas::_scaleDiagonal(Mem *matrix, Mem *factor) {
+void CublasSpec::_scaleDiagonal(Mem *matrix, Mem *factor) {
   _scaleDiagonal(matrix, factor->ptr, factor->valueType);
 }
 
-void Cublas::_scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) {
+void CublasSpec::_scaleDiagonal(Mem *matrix, void *factor,
+                                ValueType factorType) {
   if (matrix->valueType != factorType) {
     throw std::runtime_error("None identical types");
   }
@@ -1323,7 +928,7 @@ void Cublas::_scaleDiagonal(Mem *matrix, void *factor, ValueType factorType) {
   handleStatus(status);
 }
 
-void Cublas::_tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
+void CublasSpec::_tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
   auto rows = getRows(A);
   auto columns = getColumns(A);
   if (rows != columns) {
@@ -1381,7 +986,7 @@ void Cublas::_tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) {
   handleStatus(status);
 }
 
-void Cublas::_trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
+void CublasSpec::_trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
   auto rows = getRows(A);
   auto columns = getColumns(A);
   if (rows != columns) {
@@ -1439,7 +1044,8 @@ void Cublas::_trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) {
   handleStatus(status);
 }
 
-template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
+template <typename T>
+std::string cublas_toString(CublasSpec *cublas, Mem *mem) {
   std::vector<T> vec;
   vec.resize(mem->count);
 
@@ -1458,7 +1064,7 @@ template <typename T> std::string cublas_toString(Cublas *cublas, Mem *mem) {
   return sstream.str();
 }
 
-bool Cublas::_isUnit(Mem *mem, void *delta, ValueType deltaType) {
+bool CublasSpec::_isUnit(Mem *mem, void *delta, ValueType deltaType) {
   CudaAlloc alloc;
   Kernels kernels(0, &alloc);
 
@@ -1510,11 +1116,11 @@ bool Cublas::_isUnit(Mem *mem, void *delta, ValueType deltaType) {
   return it->second(mem, delta);
 }
 
-bool Cublas::_isUnit(Mem *mem, Mem *delta) {
+bool CublasSpec::_isUnit(Mem *mem, Mem *delta) {
   return _isUnit(m, n, mem, lda, delta->ptr, delta->valueType);
 }
 
-std::string Cublas::_toStr(Mem *mem) {
+std::string CublasSpec::_toStr(Mem *mem) {
   if (mem->valueType == ValueType::FLOAT) {
     return cublas_toString<float>(this, mem);
   } else if (mem->valueType == ValueType::DOUBLE) {
@@ -1524,7 +1130,7 @@ std::string Cublas::_toStr(Mem *mem) {
   return "";
 }
 
-void Cublas::swap(Mem **a, Mem **b) {
+void CublasSpec::swap(Mem **a, Mem **b) {
   Mem *temp = *a;
   *a = *b;
   *b = temp;
