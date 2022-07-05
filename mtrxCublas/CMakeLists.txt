@@ -33,7 +33,7 @@ if(${MTRX_CUBLAS_BUILD_DEVICE})
   enable_language(CUDA)
   # cubin mtrxCublas
   set (CUBIN_TARGET "libmtrxCuda.cubin")
-  add_custom_command(OUTPUT ${CUBIN_TARGET} COMMAND ${CMAKE_CUDA_COMPILER} ${NVCC_COMPILATION_OPTIONS} ${CUDA_DEFINITIONS} ${CUDA_INCLUDE_DIRS} --cubin ${CU_SRC} -o ${CUBIN_TARGET} DEPENDS ${CU_SRC})
+  add_custom_command(OUTPUT ${CUBIN_TARGET} COMMAND ${CMAKE_CUDA_COMPILER} ${NVCC_COMPILATION_OPTIONS} ${CUDA_DEFINITIONS} ${CUDA_INCLUDE_DIRS} "../mtrxCore/include" --cubin ${CU_SRC} -o ${CUBIN_TARGET} DEPENDS ${CU_SRC})
   add_custom_target(CU_MTRX_CUDA ALL DEPENDS ${CUBIN_TARGET})
 
   # mtrxCublas library

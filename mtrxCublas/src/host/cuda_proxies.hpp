@@ -22,10 +22,10 @@
 
 #include <cuComplex.h>
 
-void proxy_HostKernel_SF_scaleTrace(const void **params);
-void proxy_HostKernel_SD_scaleTrace(const void **params);
-void proxy_HostKernel_CF_scaleTrace(const void **params);
-void proxy_HostKernel_CD_scaleTrace(const void **params);
+void proxy_HostKernel_SF_scaleDiagonal(const void **params);
+void proxy_HostKernel_SD_scaleDiagonal(const void **params);
+void proxy_HostKernel_CF_scaleDiagonal(const void **params);
+void proxy_HostKernel_CD_scaleDiagonal(const void **params);
 
 void proxy_HostKernel_SF_isUpperTriangular(const void **params);
 void proxy_HostKernel_SD_isUpperTriangular(const void **params);

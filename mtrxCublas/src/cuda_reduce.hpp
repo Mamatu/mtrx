@@ -23,18 +23,41 @@
 #include "cuda_core.hpp"
 #include <cuComplex.h>
 
+#include <mtrxCore/types.hpp>
+
 template <typename T>
-__device__ void oper_plus_equal(T *array, int idx, int idx1) {
+__device__ void oper_plus_equal(
+    T *array, int idx, int idx1,
+    mtrx::AccumulationMode accMode = mtrx::AccumulationMode::NORMAL) {
+  if (accMode == mtrx::AccumulationMode::POWER_OF_2) {
+    array[idx] = array[idx] * array[idx];
+    array[idx] += array[idx1] * array[idx1];
+    return;
+  }
   array[idx] += array[idx1];
 }
 
-__device__ __inline__ void oper_plus_equal(cuComplex *array, int idx,
-                                           int idx1) {
+__device__ __inline__ void oper_plus_equal(
+    cuComplex *array, int idx, int idx1,
+    mtrx::AccumulationMode accMode = mtrx::AccumulationMode::NORMAL) {
+  if (accMode == mtrx::AccumulationMode::POWER_OF_2) {
+    array[idx] = cuCmulf(array[idx], array[idx]);
+    array[idx1] = cuCmulf(array[idx1], array[idx1]);
+    array[idx] = cuCaddf(array[idx], array[idx1]);
+    return;
+  }
   array[idx] = cuCaddf(array[idx], array[idx1]);
 }
 
-__device__ __inline__ void oper_plus_equal(cuDoubleComplex *array, int idx,
-                                           int idx1) {
+__device__ __inline__ void oper_plus_equal(
+    cuDoubleComplex *array, int idx, int idx1,
+    mtrx::AccumulationMode accMode = mtrx::AccumulationMode::NORMAL) {
+  if (accMode == mtrx::AccumulationMode::POWER_OF_2) {
+    array[idx] = cuCmul(array[idx], array[idx]);
+    array[idx1] = cuCmul(array[idx1], array[idx1]);
+    array[idx] = cuCadd(array[idx], array[idx1]);
+    return;
+  }
   array[idx] = cuCadd(array[idx], array[idx1]);
 }
 
@@ -71,7 +94,8 @@ __device__ __inline__ void init_with_zeros(cuDoubleComplex *array) {
  * @return reduced value of one threads block.
  */
 template <typename T>
-__device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
+__device__ T cuda_reduce_shm_single_block(T *array_shm, int length,
+                                          mtrx::AccumulationMode mode) {
   HOST_INIT();
 
   const int x = threadIdx.x;
@@ -80,12 +104,14 @@ __device__ T cuda_reduce_shm_single_block(T *array_shm, int length) {
 
   int idx = y + rows * x;
   int dim = length;
+  mtrx::AccumulationMode accMode = mode;
 
   while (dim > 1) {
     if (idx < length) {
       int next_dim = dim / 2;
       if (idx < next_dim) {
-        oper_plus_equal(array_shm, idx, idx + next_dim);
+        oper_plus_equal(array_shm, idx, idx + next_dim, accMode);
+        accMode = mtrx::AccumulationMode::NORMAL;
         if (next_dim * 2 < dim && idx == next_dim - 1) {
           oper_plus_equal(array_shm, idx, idx + next_dim + 1);
         }
@@ -123,11 +149,12 @@ __device__ T cuda_reduce_shm_single_block_sync(T *array_shm, int length) {
  * @param length - length of array_shm
  */
 template <typename T>
-__device__ void cuda_reduce_shm_multi_blocks(T *array_shm, int length,
-                                             T *reductionResults) {
+__device__ void cuda_reduce_shm_multi_blocks(
+    T *array_shm, int length, T *reductionResults,
+    mtrx::AccumulationMode mode = mtrx::AccumulationMode::NORMAL) {
   HOST_INIT();
 
-  T v = cuda_reduce_shm_single_block(array_shm, length);
+  T v = cuda_reduce_shm_single_block(array_shm, length, mode);
   if (threadIdx.x == 0 && threadIdx.y == 0) {
     reductionResults[blockIdx.x * gridDim.y + blockIdx.y] = v;
   }
@@ -143,21 +170,24 @@ __device__ void cuda_reduce_shm_multi_blocks(T *array_shm, int length,
  * @param length - length of array_shm
  */
 template <typename T>
-__device__ void cuda_reduce_shm_multi_blocks_sync(T *array_shm, int length,
-                                                  T *reductionResults) {
+__device__ void cuda_reduce_shm_multi_blocks_sync(
+    T *array_shm, int length, T *reductionResults,
+    mtrx::AccumulationMode mode = mtrx::AccumulationMode::NORMAL) {
   HOST_INIT();
 
   __syncthreads();
-  cuda_reduce_shm_multi_blocks(array_shm, length, reductionResults);
+  cuda_reduce_shm_multi_blocks(array_shm, length, reductionResults, mode);
 }
 
 /**
- * @brief Calculate reduction of 2d array.
+ * @brief Calculate reduction of 2d array with using a shared memory.
  * WARNING! It requires shared memory!
+ * As the first is prepared reduceBuffer which is buffer in a shared memory.
  */
 template <typename T>
-__device__ void cuda_reduce_shm(int m, int n, T *array, int lda,
-                                T *reductionResults) {
+__device__ void
+cuda_reduce_shm(int m, int n, T *array, int lda, T *reductionResults,
+                mtrx::AccumulationMode mode = mtrx::AccumulationMode::NORMAL) {
   HOST_INIT();
 
   const int tbx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -175,7 +205,7 @@ __device__ void cuda_reduce_shm(int m, int n, T *array, int lda,
     reduceBuffer[ty + trow * tx] = array[tby + lda * tbx];
     const int reduceBufferLen = blockDim.x * blockDim.y;
     cuda_reduce_shm_multi_blocks_sync(reduceBuffer, reduceBufferLen,
-                                 reductionResults);
+                                      reductionResults, mode);
   }
 }
 

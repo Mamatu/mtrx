@@ -19,8 +19,8 @@
 
 #include "thread_idx.hpp"
 #include "../dim3_parser.hpp"
-#include "../uint3_parser.hpp"
 #include "../thread_id_parser.hpp"
+#include "../uint3_parser.hpp"
 #include "dim3_utils.hpp"
 #include <mutex>
 #include <sstream>

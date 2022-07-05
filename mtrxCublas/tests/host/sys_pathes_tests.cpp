@@ -4,8 +4,7 @@
 #include "../src/sys_pathes_parser.hpp"
 
 namespace mtrx {
-class SysPathesTests : public Test {
-};
+class SysPathesTests : public Test {};
 
 TEST_F(SysPathesTests, parse_empty) {
   EXPECT_EQ(Pathes({}), mtrx::parseSysPathes(""));

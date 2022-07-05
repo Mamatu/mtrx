@@ -17,44 +17,24 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_TYPES_HPP
-#define MTRX_CORE_TYPES_HPP
+#include "checkers.hpp"
 
-#include <cstdint>
-#include <sched.h>
-#include <type_traits>
+#include <stdexcept>
 
 namespace mtrx {
-using intt = int;
-using uintt = uint64_t;
 
-enum class ValueType {
-  FLOAT,
-  DOUBLE,
-  FLOAT_COMPLEX,
-  DOUBLE_COMPLEX,
-  NOT_DEFINED
-};
-
-inline bool isComplex(ValueType valueType) {
-  if (valueType == ValueType::DOUBLE_COMPLEX ||
-      valueType == ValueType::FLOAT_COMPLEX) {
-    return true;
+void checkSortFunction(const mtrx::Iram::Sort &sort) {
+  if (!sort) {
+    throw std::runtime_error("Sort function was not initialized");
   }
-  return false;
 }
 
-enum class Operation { OP_N, OP_T, OP_C };
+void checkAFLength(int afLength) {
+  if (afLength == 0) {
+    throw std::runtime_error("Arnoldi Factorization Length is not initialized "
+                             "properly (cannot be 0)");
+  }
+}
 
-using Oper = Operation;
-
-enum class AccumulationMode { NORMAL, POWER_OF_2 };
-
-enum class FillMode { LOWER, UPPER, FULL };
-
-enum class SideMode { LEFT, RIGHT };
-
-struct Mem;
+void checkInitVector(Mem * /*initVector*/, MemoryType /*type*/) {}
 } // namespace mtrx
-
-#endif

@@ -8,8 +8,7 @@
 #include "../src/kernels.hpp"
 
 namespace mtrx {
-class IsULTriangularTests : public Test {
-};
+class IsULTriangularTests : public Test {};
 
 TEST_F(IsULTriangularTests,
        is_upper_triangular_matrixDim_2x2_blockDim_2x2_gridDim_1x1) {

@@ -20,6 +20,7 @@
 #ifndef MTRX_CORE_CHECKERS_HPP
 #define MTRX_CORE_CHECKERS_HPP
 
+#include "to_string.hpp"
 #include "types.hpp"
 #include <sstream>
 #include <string>
@@ -38,7 +39,8 @@ template <typename T> void checkIfNotNull(T *t, const std::string_view &label) {
 #define MTRX_CHECK_IF_NOT_NULL(a) checkIfNotNull(a, MTRX_TO_STRING(a))
 
 template <typename T>
-void check(const std::vector<T> &data, const std::vector<std::string> &labels) {
+void checkIfAllEqual(const std::vector<T> &data,
+                     const std::vector<std::string> &labels) {
   if (data.size() != labels.size()) {
     std::stringstream sstream;
     sstream << "All argument containers must have the same size!";
@@ -50,29 +52,32 @@ void check(const std::vector<T> &data, const std::vector<std::string> &labels) {
       if (data[idx] != data[idx1]) {
         std::stringstream sstream;
         sstream << labels[idx] << " and " << labels[idx1];
-        sstream << " have different dims";
+        sstream << " are not equal";
+        // sstream << " (" << toString(data[idx]) << " != " <<
+        // toString(data[idx1]) << ")";
         throw std::runtime_error(sstream.str());
       }
     }
   }
 }
 
-void check(const std::vector<ValueType> &valueTypes,
-           const std::vector<std::string> &labels);
-void check(ValueType valueType1, ValueType valueType2,
-           const std::string &label1, const std::string &label2);
+void checkIfAllEqual(const std::vector<ValueType> &valueTypes,
+                     const std::vector<std::string> &labels);
+
+void checkIfAllEqual(ValueType valueType1, ValueType valueType2,
+                     const std::string &label1, const std::string &label2);
 
 template <typename T>
-void check(const std::vector<std::pair<T, T>> &dims,
-           const std::vector<std::string> &labels) {
-  check<std::pair<T, T>>(dims, labels);
+void checkIfAllEqual(const std::vector<std::pair<T, T>> &dims,
+                     const std::vector<std::string> &labels) {
+  checkIfAllEqual<std::pair<T, T>>(dims, labels);
 }
 
 template <typename T>
-void check(const std::pair<T, T> &dims1, const std::pair<T, T> &dims2,
-           const std::string &label1, const std::string &label2) {
-  check(std::vector<std::pair<T, T>>({dims1, dims2}),
-        std::vector<std::string>({label1, label2}));
+void checkIfAllEqual(const std::pair<T, T> &dims1, const std::pair<T, T> &dims2,
+                     const std::string &label1, const std::string &label2) {
+  checkIfAllEqual(std::vector<std::pair<T, T>>({dims1, dims2}),
+                  std::vector<std::string>({label1, label2}));
 }
 
 } // namespace mtrx
