@@ -1,5 +1,5 @@
-#include "host_alloc.hpp"
 #include "mtrxCublas/status_handler.hpp"
+#include <mtrxCublas/impl/host_alloc.hpp>
 
 namespace mtrx {
 

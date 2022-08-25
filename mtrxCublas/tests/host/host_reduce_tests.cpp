@@ -1,11 +1,12 @@
 #include <array>
 #include <mtrxCublas/test.hpp>
 
+#include <mtrxCublas/impl/host_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
+
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
 #include "../src/host/device_properties_provider.hpp"
-#include "../src/host_alloc.hpp"
-#include "../src/kernels.hpp"
 #include <numeric>
 
 namespace mtrx {

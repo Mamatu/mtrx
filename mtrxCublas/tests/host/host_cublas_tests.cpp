@@ -2,8 +2,8 @@
 #include <mtrxCublas/test.hpp>
 
 #include "../src/host/device_properties_provider.hpp"
-#include "../src/host_alloc.hpp"
-#include "../src/kernels.hpp"
+#include <mtrxCublas/impl/host_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
 
 namespace mtrx {
 class HostCublasTests : public Test {

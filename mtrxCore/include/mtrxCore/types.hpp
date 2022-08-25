@@ -53,8 +53,6 @@ enum class AccumulationMode { NORMAL, POWER_OF_2 };
 enum class FillMode { LOWER, UPPER, FULL };
 
 enum class SideMode { LEFT, RIGHT };
-
-struct Mem;
 } // namespace mtrx
 
 #endif

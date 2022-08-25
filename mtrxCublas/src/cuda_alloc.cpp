@@ -1,6 +1,6 @@
-#include "cuda_alloc.hpp"
 #include "mtrxCublas/status_handler.hpp"
 #include <cuda.h>
+#include <mtrxCublas/impl/cuda_alloc.hpp>
 
 namespace mtrx {
 

@@ -23,8 +23,9 @@
 #include "mtrxCore/types.hpp"
 #include <algorithm>
 #include <sstream>
+#include <tuple>
 
-#include <mtrxCore/blas.hpp>
+#include <mtrxCore/blas_decl.hpp>
 #include <mtrxCore/size_of.hpp>
 
 namespace mtrx {
@@ -37,13 +38,13 @@ template <typename T> void Blas<T>::setDevice(int device) {
   _setDevice(device);
 }
 
-template <typename T> T *Blas<T>::create(size_t count) {
-  T *mem = _createMem(count);
+template <typename T> T *Blas<T>::create(int count) {
+  T *mem = _create(count);
   m_mems.push_back(mem);
   return mem;
 }
 
-template <typename T> T *Blas<T>::createMatrix(size_t rows, size_t columns) {
+template <typename T> T *Blas<T>::createMatrix(int rows, int columns) {
   if (rows == 0 || columns == 0) {
     std::stringstream sstream;
     sstream << "Invalid dim for matrix: (" << rows << ", " << columns << ")";
@@ -56,10 +57,8 @@ template <typename T> T *Blas<T>::createMatrix(size_t rows, size_t columns) {
   return mem;
 }
 
-template <typename T>
-T *Blas<T>::createMatrix(size_t rows, size_t columns, T *mem) {
-  const size_t count = getCount(mem);
-  auto valueType = getValueType(mem);
+template <typename T> T *Blas<T>::createMatrix(int rows, int columns, T *mem) {
+  const int count = getCount(mem);
   if (count != rows * columns) {
     std::stringstream sstream;
     sstream << "Matrix dim is not equal to count. Dim:(";
@@ -68,12 +67,11 @@ T *Blas<T>::createMatrix(size_t rows, size_t columns, T *mem) {
     throw std::runtime_error(sstream.str());
   }
 
-  m_matrices[mem] = std::make_tuple(rows, columns, valueType);
+  m_matrices[mem] = std::make_tuple(rows, columns);
   return mem;
 }
 
-template <typename T>
-T *Blas<T>::createIdentityMatrix(size_t rows, size_t columns) {
+template <typename T> T *Blas<T>::createIdentityMatrix(int rows, int columns) {
   return _createIdentityMatrix(rows, columns);
 }
 
@@ -87,17 +85,17 @@ template <typename T> bool Blas<T>::isAllocator(const T *mem) const {
   return it != m_mems.end();
 }
 
-template <typename T> size_t Blas<T>::getCount(const T *mem) const {
+template <typename T> int Blas<T>::getCount(const T *mem) const {
   checkMem(mem);
   return _getCount(mem);
 }
 
-template <typename T> size_t Blas<T>::getSizeInBytes(const T *mem) const {
+template <typename T> int Blas<T>::getSizeInBytes(const T *mem) const {
   checkMem(mem);
   return _getSizeInBytes(mem);
 }
 
-template <typename T> size_t Blas<T>::getRows(const T *mem) const {
+template <typename T> int Blas<T>::getRows(const T *mem) const {
   const auto it = m_matrices.find(mem);
   if (it == m_matrices.end()) {
     return getCount(mem);
@@ -105,7 +103,7 @@ template <typename T> size_t Blas<T>::getRows(const T *mem) const {
   return std::get<0>(it->second);
 }
 
-template <typename T> size_t Blas<T>::getColumns(const T *mem) const {
+template <typename T> int Blas<T>::getColumns(const T *mem) const {
   const auto it = m_matrices.find(mem);
   if (it == m_matrices.end()) {
     return 1;
@@ -113,34 +111,34 @@ template <typename T> size_t Blas<T>::getColumns(const T *mem) const {
   return std::get<1>(it->second);
 }
 
-template <typename T> ValueType Blas<T>::getValueType(const T *mem) const {
-  const auto it = m_matrices.find(mem);
-  if (it == m_matrices.end()) {
-    return ValueType::NOT_DEFINED;
-  }
-  return std::get<2>(it->second);
-}
-
-template <typename T>
-std::pair<size_t, size_t> Blas<T>::getDims(const T *mem) const {
+template <typename T> std::pair<int, int> Blas<T>::getDims(const T *mem) const {
   auto rows = getRows(mem);
   auto columns = getColumns(mem);
   return std::make_pair(rows, columns);
 }
 
-template <typename T> void Blas<T>::copyHostToKernel(T *mem, T *array) {
-  checkMem(mem);
-  _copyHostToKernel(mem, array);
-}
-
 template <typename T> void Blas<T>::copyHostToKernel(T *mem, const T *array) {
   checkMem(mem);
-  _copyHostToKernel(mem, array);
+  auto count = getCount(mem);
+  _copyHostToKernel(mem, array, count);
 }
 
-template <typename T> void Blas<T>::copyKernelToHost(T *array, T *mem) {
+template <typename T> void Blas<T>::copyKernelToHost(T *array, const T *mem) {
   checkMem(mem);
-  _copyKernelToHost(array, mem);
+  auto count = getCount(mem);
+  _copyKernelToHost(array, mem, count);
+}
+
+template <typename T>
+void Blas<T>::copyHostToKernel(T *mem, const T *array, int count) {
+  checkMem(mem);
+  _copyHostToKernel(mem, array, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToHost(T *array, const T *mem, int count) {
+  checkMem(mem);
+  _copyKernelToHost(array, mem, count);
 }
 
 template <typename T> uintt Blas<T>::amax(const T *mem) {
@@ -153,24 +151,10 @@ template <typename T> uintt Blas<T>::amin(const T *mem) {
   return _amin(mem);
 }
 
-template <typename T> void Blas<T>::rot(T *x, T *y, T *c, T *s) {
+template <typename T> void Blas<T>::rot(T *x, T *y, T &&c, T &&s) {
   checkMem(x);
   checkMem(y);
-  checkMem(c);
-  checkMem(s);
-  _rot(x, y, c, s);
-}
-
-template <typename T> void Blas<T>::rot(T *x, T *y, float c, float s) {
-  checkMem(x);
-  checkMem(y);
-  rot(x, y, &c, ValueType::FLOAT, &s, ValueType::FLOAT);
-}
-
-template <typename T> void Blas<T>::rot(T *x, T *y, double c, double s) {
-  checkMem(x);
-  checkMem(y);
-  rot(x, y, &c, ValueType::DOUBLE, &s, ValueType::DOUBLE);
+  _rot(x, y, std::forward<T>(c), std::forward<T>(s));
 }
 
 template <typename T>
@@ -268,6 +252,11 @@ void Blas<T>::geam(T *output, T *alpha, Operation transa, T *a, T *beta,
   checkMem(b);
   _geam(output, alpha, transa, a, beta, transb, b);
 }
+template <typename T>
+void Blas<T>::geam(T *output, T alpha, Operation transa, T *a, T beta,
+                   Operation transb, T *b) {
+  this->geam(output, &alpha, transa, a, &beta, transb, b);
+}
 
 template <typename T> void Blas<T>::add(T *output, T *a, T *b) {
   checkMem(output);
@@ -285,7 +274,7 @@ template <typename T> void Blas<T>::subtract(T *output, T *a, T *b) {
 
 template <typename T> void Blas<T>::scaleDiagonal(T *matrix, T factor) {
   checkMem(matrix);
-  _scaleDiagonal(matrix, factor);
+  _scaleDiagonal(matrix, &factor);
 }
 
 template <typename T>

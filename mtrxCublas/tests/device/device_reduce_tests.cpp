@@ -13,8 +13,8 @@
 #include "cuda_profiler.hpp"
 #endif
 
-#include "../src/cuda_alloc.hpp"
-#include "../src/kernels.hpp"
+#include <mtrxCublas/impl/cuda_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
 
 namespace mtrx {
 class DeviceReduceTests : public Test {};

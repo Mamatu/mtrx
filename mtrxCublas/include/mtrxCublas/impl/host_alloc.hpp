@@ -1,8 +1,8 @@
 #ifndef MTRX_CUBLAS_HOST_ALLOC_HPP
 #define MTRX_CUBLAS_HOST_ALLOC_HPP
 
-#include "alloc.hpp"
 #include <cuda.h>
+#include <mtrxCublas/impl/alloc.hpp>
 
 namespace mtrx {
 
