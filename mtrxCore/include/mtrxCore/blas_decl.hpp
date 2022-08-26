@@ -86,8 +86,8 @@ public:
   void geqrf(typename Blas<T>::Vec &a, typename Blas<T>::Vec &tau);
 
   void qrDecomposition(T *q, T *r, T *a);
-  void qrDecomposition(typename Blas<T>::Vec &q, typename Blas<T>::Vec &r,
-                       typename Blas<T>::Vec &a);
+  void qrDecomposition(const typename Blas<T>::Vec &q, const typename Blas<T>::Vec &r,
+                       const typename Blas<T>::Vec &a);
 
   void shiftQRIteration(T *H, T *Q);
 
@@ -147,9 +147,9 @@ protected:
   virtual void _geqrf(typename Blas<T>::Vec &a, typename Blas<T>::Vec &tau) = 0;
 
   virtual void _qrDecomposition(T *q, T *r, T *a) = 0;
-  virtual void _qrDecomposition(typename Blas<T>::Vec &q,
-                                typename Blas<T>::Vec &r,
-                                typename Blas<T>::Vec &a) = 0;
+  virtual void _qrDecomposition(const typename Blas<T>::Vec &q,
+                                const typename Blas<T>::Vec &r,
+                                const typename Blas<T>::Vec &a) = 0;
 
   virtual void _shiftQRIteration(T *H, T *Q) = 0;
 

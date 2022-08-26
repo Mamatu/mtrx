@@ -175,10 +175,8 @@ template <typename T>
 void Blas<T>::gemm(T *output, T *alpha, Operation transa, T *a,
                    Operation transb, T *b, T *beta) {
   checkMem(output);
-  checkMem(alpha);
   checkMem(a);
   checkMem(b);
-  checkMem(beta);
 
   _gemm(output, alpha, transa, a, transb, b, beta);
 }
@@ -219,7 +217,7 @@ template <typename T> void Blas<T>::qrDecomposition(T *q, T *r, T *a) {
   _qrDecomposition(q, r, a);
 }
 
-template <typename T> void Blas<T>::qrDecomposition(Vec &q, Vec &r, Vec &a) {
+template <typename T> void Blas<T>::qrDecomposition(const Vec &q, const Vec &r, const Vec &a) {
   checkVec(q);
   checkVec(r);
   checkVec(a);
