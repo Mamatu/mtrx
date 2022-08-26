@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2021 - 2022 Marcin Matula
  *
@@ -17,19 +18,23 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_IRAM_API_HPP
-#define MTRX_CORE_IRAM_API_HPP
+#ifndef MTRX_IRAM_IRAM_ROUTINES_HPP
+#define MTRX_IRAM_IRAM_ROUTINES_HPP
 
-#include <map>
-#include <vector>
-
+#include <mtrxCore/blas.hpp>
 #include <mtrxCore/types.hpp>
+#include <mtrxCublas/cublas_types.hpp>
+#include <mtrxIram/iram_types.hpp>
+
+#include <memory>
 
 namespace mtrx {
 
-class Iram {
-public:
-};
+using BlasPtr = std::shared_ptr<mtrx::Blas>;
+void createRandomUnitVector(const BlasPtr &blasPtr, int length,
+                            ValueType valueType);
+void createUnitVector(const BlasPtr &blasPtr, int length, ValueType valueType);
+void checkCustomInitVector(const BlasPtr &blasPtr, Mem *mem);
 
 } // namespace mtrx
 

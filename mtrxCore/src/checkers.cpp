@@ -21,15 +21,15 @@
 
 namespace mtrx {
 
-void check(const std::vector<ValueType> &valueTypes,
-           const std::vector<std::string> &labels) {
-  check<ValueType>(valueTypes, labels);
+void checkIfAllEqual(const std::vector<ValueType> &valueTypes,
+                     const std::vector<std::string> &labels) {
+  checkIfAllEqual<ValueType>(valueTypes, labels);
 }
 
-void check(ValueType valueType1, ValueType valueType2,
-           const std::string &label1, const std::string &label2) {
-  check(std::vector<ValueType>({valueType1, valueType2}),
-        std::vector<std::string>({label1, label2}));
+void checkIfAllEqual(ValueType valueType1, ValueType valueType2,
+                     const std::string &label1, const std::string &label2) {
+  checkIfAllEqual(std::vector<ValueType>({valueType1, valueType2}),
+                  std::vector<std::string>({label1, label2}));
 }
 
 } // namespace mtrx

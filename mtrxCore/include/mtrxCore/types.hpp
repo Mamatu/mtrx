@@ -21,6 +21,8 @@
 #define MTRX_CORE_TYPES_HPP
 
 #include <cstdint>
+#include <sched.h>
+#include <type_traits>
 
 namespace mtrx {
 using intt = int;
@@ -34,15 +36,23 @@ enum class ValueType {
   NOT_DEFINED
 };
 
+inline bool isComplex(ValueType valueType) {
+  if (valueType == ValueType::DOUBLE_COMPLEX ||
+      valueType == ValueType::FLOAT_COMPLEX) {
+    return true;
+  }
+  return false;
+}
+
 enum class Operation { OP_N, OP_T, OP_C };
 
 using Oper = Operation;
 
+enum class AccumulationMode { NORMAL, POWER_OF_2 };
+
 enum class FillMode { LOWER, UPPER, FULL };
 
 enum class SideMode { LEFT, RIGHT };
-
-struct Mem;
 } // namespace mtrx
 
 #endif

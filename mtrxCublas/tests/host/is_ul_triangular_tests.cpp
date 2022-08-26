@@ -1,15 +1,15 @@
 #include <array>
 #include <mtrxCublas/test.hpp>
 
+#include <mtrxCublas/impl/host_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
+
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
 #include "../src/host/device_properties_provider.hpp"
-#include "../src/host_alloc.hpp"
-#include "../src/kernels.hpp"
 
 namespace mtrx {
-class IsULTriangularTests : public Test {
-};
+class IsULTriangularTests : public Test {};
 
 TEST_F(IsULTriangularTests,
        is_upper_triangular_matrixDim_2x2_blockDim_2x2_gridDim_1x1) {

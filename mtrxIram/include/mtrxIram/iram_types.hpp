@@ -17,9 +17,27 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_BLAS_HPP
-#define MTRX_CORE_BLAS_HPP
+#ifndef MTRX_IRAM_IRAM_TYPES_HPP
+#define MTRX_IRAM_IRAM_TYPES_HPP
 
-#include <mtrxCore/blas_impl.hpp>
+#include <functional>
+#include <map>
+#include <memory>
+#include <vector>
+
+#include <mtrxCore/blas.hpp>
+#include <mtrxCore/types.hpp>
+
+namespace mtrx {
+enum class CalculationDevice { CUDA, NONE };
+enum class MemoryType { CUDA, HOST, NONE };
+enum class InitVectorType {
+  CUSTOM_VECTOR,
+  UNIT_VECTOR,
+  RANDOM_UNIT_VECTOR,
+  NONE
+};
+
+} // namespace mtrx
 
 #endif

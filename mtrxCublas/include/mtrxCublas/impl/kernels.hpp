@@ -20,6 +20,8 @@
 #ifndef MTRX_CUBLAS_KERNELS_H
 #define MTRX_CUBLAS_KERNELS_H
 
+#include <mtrxCore/types.hpp>
+
 #include "alloc.hpp"
 #include <cuComplex.h>
 
@@ -30,11 +32,17 @@ public:
   Kernels(int device, Alloc *alloc);
   ~Kernels() = default;
 
-  void scaleTrace(int dim, float *matrix, int lda, float factor);
-  void scaleTrace(int dim, double *matrix, int lda, double factor);
-  void scaleTrace(int dim, cuComplex *matrix, int lda, cuComplex factor);
-  void scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
-                  cuDoubleComplex factor);
+  void scaleDiagonal(int dim, float *matrix, int lda, float factor);
+  void scaleDiagonal(int dim, double *matrix, int lda, double factor);
+  void scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex factor);
+  void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                     cuDoubleComplex factor);
+
+  void scaleDiagonal(int dim, float *matrix, int lda, float *factor);
+  void scaleDiagonal(int dim, double *matrix, int lda, double *factor);
+  void scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex *factor);
+  void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                     cuDoubleComplex *factor);
 
   bool isUpperTriangular(int rows, int columns, float *matrix, int lda,
                          float delta);
@@ -57,27 +65,40 @@ public:
   /**
    * @brief Reduction by using shared memory.
    */
-  int reduceShm(int m, int n, int *array, int lda);
+  int reduceShm(int m, int n, int *array, int lda,
+                AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  float reduceShm(int m, int n, float *array, int lda);
+  float reduceShm(int m, int n, float *array, int lda,
+                  AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  double reduceShm(int m, int n, double *array, int lda);
+  double reduceShm(int m, int n, double *array, int lda,
+                   AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  cuComplex reduceShm(int m, int n, cuComplex *array, int lda);
+  cuComplex reduceShm(int m, int n, cuComplex *array, int lda,
+                      AccumulationMode mode = AccumulationMode::NORMAL);
 
   /**
    * @brief Reduction by using shared memory.
    */
-  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda);
+  cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda,
+                            AccumulationMode mode = AccumulationMode::NORMAL);
+
+  bool isUnit(int m, int n, float *matrix, int lda, float delta);
+
+  bool isUnit(int m, int n, double *matrix, int lda, double delta);
+
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, float delta);
+
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda, double delta);
 
 private:
   int m_device;

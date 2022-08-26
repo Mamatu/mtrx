@@ -1,8 +1,8 @@
-#ifndef MTRX_CUBLAS_CUDA_ALLOC_HPP
-#define MTRX_CUBLAS_CUDA_ALLOC_HPP
+#ifndef MTRX_CUBLAS_HOST_ALLOC_HPP
+#define MTRX_CUBLAS_HOST_ALLOC_HPP
 
-#include "alloc.hpp"
 #include <cuda.h>
+#include <mtrxCublas/impl/alloc.hpp>
 
 namespace mtrx {
 
@@ -10,7 +10,7 @@ namespace mtrx {
  * @brief Abstract interface for alloc/dealloc/memcpy primitives.
  * It is used in code which can be compiled into device/host form
  */
-class CudaAlloc : public Alloc {
+class HostAlloc : public Alloc {
 public:
   void malloc(void **devPtr, size_t size) override;
 

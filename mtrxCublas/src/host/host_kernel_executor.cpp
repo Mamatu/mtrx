@@ -32,10 +32,10 @@
 namespace mtrx {
 
 std::map<std::string, std::function<void(const void **)>> g_kernelsList = {
-    {"CudaKernel_SF_scaleTrace", proxy_HostKernel_SF_scaleTrace},
-    {"CudaKernel_SD_scaleTrace", proxy_HostKernel_SD_scaleTrace},
-    {"CudaKernel_CF_scaleTrace", proxy_HostKernel_CF_scaleTrace},
-    {"CudaKernel_CD_scaleTrace", proxy_HostKernel_CD_scaleTrace},
+    {"CudaKernel_SF_scaleDiagonal", proxy_HostKernel_SF_scaleDiagonal},
+    {"CudaKernel_SD_scaleDiagonal", proxy_HostKernel_SD_scaleDiagonal},
+    {"CudaKernel_CF_scaleDiagonal", proxy_HostKernel_CF_scaleDiagonal},
+    {"CudaKernel_CD_scaleDiagonal", proxy_HostKernel_CD_scaleDiagonal},
     {"CudaKernel_SF_isUpperTriangular", proxy_HostKernel_SF_isUpperTriangular},
     {"CudaKernel_SD_isUpperTriangular", proxy_HostKernel_SD_isUpperTriangular},
     {"CudaKernel_CF_isUpperTriangular", proxy_HostKernel_CF_isUpperTriangular},

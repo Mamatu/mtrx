@@ -15,7 +15,7 @@ namespace mtrx {
 using ::testing::Matcher;
 
 template <typename T, typename Blas>
-Matcher<Mem *> MemValuesAreEqualTo(T value, Blas *blas, T delta) {
+Matcher<T *> MemValuesAreEqualTo(T value, Blas *blas, T delta) {
   return MakeMatcher(
       new MemValuesAreEqualToValueMatcher<T, Blas>(value, blas, delta));
 }
@@ -35,37 +35,37 @@ struct is_array_specialization<Ref<T, N>, Ref> : std::true_type {};
 
 class MemIsEqualToMemFactory {
 public:
-  template <typename Blas, typename T>
-  MemIsEqualToMemMatcher<Blas, T> *create(Mem *mem, Blas *blas, T delta) {
-    return new MemIsEqualToMemMatcher<Blas, T>(mem, blas, delta);
+  template <typename T, typename Blas>
+  MemIsEqualToMemMatcher<T, Blas> *create(T *mem, Blas *blas, T delta) {
+    return new MemIsEqualToMemMatcher<T, Blas>(mem, blas, delta);
   }
 };
 
 class ContainerIsEqualToMemFactory {
 public:
-  template <typename Container, typename Blas, typename T>
-  ContainerIsEqualToMemMatcher<Container, Blas, T> *
+  template <typename T, typename Container, typename Blas>
+  ContainerIsEqualToMemMatcher<T, Container, Blas> *
   create(Container &&container, Blas *blas, T delta) {
-    return new ContainerIsEqualToMemMatcher<Container, Blas, T>(
+    return new ContainerIsEqualToMemMatcher<T, Container, Blas>(
         std::forward<Container>(container), blas, delta);
   }
 };
 
 class MemIsEqualToContainerFactory {
 public:
-  template <typename Container, typename Blas, typename T>
-  MemIsEqualToContainerMatcher<Container, Blas, T> *
+  template <typename T, typename Container, typename Blas>
+  MemIsEqualToContainerMatcher<T, Container, Blas> *
   create(Container &&container, Blas *blas, T delta) {
-    return new MemIsEqualToContainerMatcher<Container, Blas, T>(
+    return new MemIsEqualToContainerMatcher<T, Container, Blas>(
         std::forward<Container>(container), blas, delta);
   }
 };
 
-template <typename CT2, typename Blas, typename T>
-Matcher<Mem *> MemIsEqualTo(CT2 &&ct2, Blas *blas, T delta) {
+template <typename T, typename CT2, typename Blas>
+Matcher<T *> IsEqualTo(CT2 &&ct2, Blas *blas, T delta) {
 
   using CT2_is_Mem_Ptr =
-      std::is_same<typename std::remove_reference<CT2>::type, Mem *>;
+      std::is_same<typename std::remove_reference<CT2>::type, T *>;
   using CT2_is_vector =
       is_specialization<typename std::remove_reference<CT2>::type, std::vector>;
   using CT2_is_array =

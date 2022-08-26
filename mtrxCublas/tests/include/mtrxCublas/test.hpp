@@ -10,16 +10,13 @@
 #include "cuda_profiler.hpp"
 #endif
 
-namespace mtrx
-{
+namespace mtrx {
 
 class Test : public testing::Test {
 public:
-  virtual void setUp()
-  {}
+  virtual void setUp() {}
 
-  virtual void tearDown()
-  {}
+  virtual void tearDown() {}
 
   void SetUp() override {
 #ifdef CUBLAS_NVPROF_TESTS
@@ -56,5 +53,5 @@ public:
   }
 };
 
-}
+} // namespace mtrx
 #endif

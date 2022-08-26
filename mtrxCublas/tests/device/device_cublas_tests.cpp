@@ -1,8 +1,8 @@
-#include <mtrxCublas/test.hpp>
 #include <math.h>
 #include <mtrxCore/types.hpp>
 #include <mtrxCublas/cublas.hpp>
 #include <mtrxCublas/matchers.hpp>
+#include <mtrxCublas/test.hpp>
 
 #include <array>
 #include <cuda.h>
@@ -25,8 +25,8 @@ public:
 
 TEST_F(DeviceCublasTests, create_destroy) {
   try {
-    mtrx::Cublas cublas;
-    auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+    mtrx::Cublas<float> cublas;
+    auto *mem = cublas.create(4 * 5);
     cublas.destroy(mem);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
@@ -35,10 +35,10 @@ TEST_F(DeviceCublasTests, create_destroy) {
 
 TEST_F(DeviceCublasTests, create_checkvalues_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
     std::vector<float> h_mem(4 * 5, -1.f);
 
-    auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+    auto *mem = cublas.create(4 * 5);
 
     for (size_t idx = 0; idx < h_mem.size(); ++idx) {
       EXPECT_EQ(-1.f, h_mem[idx]);
@@ -58,9 +58,9 @@ TEST_F(DeviceCublasTests, create_checkvalues_destroy) {
 
 TEST_F(DeviceCublasTests, create_copyHostToKernel_copyKernelToHost_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
     constexpr auto count = 20;
-    auto *mem = cublas.create(count, ValueType::FLOAT);
+    auto *mem = cublas.create(count);
     std::array<float, count> array;
     std::array<float, count> array1;
     std::vector<float> vec1;
@@ -86,11 +86,11 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_copyKernelToHost_destroy) {
 
 TEST_F(DeviceCublasTests, createIdentityMatrix) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
     int columns = 5;
     int rows = 5;
-    auto *mem = cublas.createIdentityMatrix(columns, rows, ValueType::FLOAT);
+    auto *mem = cublas.createIdentityMatrix(columns, rows);
 
     std::vector<float> h_matrix(columns * rows, -1.f);
     cublas.copyKernelToHost(h_matrix.data(), mem);
@@ -109,15 +109,16 @@ TEST_F(DeviceCublasTests, createIdentityMatrix) {
 
     cublas.destroy(mem);
   } catch (const std::exception &ex) {
-    FAIL() << ex.what();
+    //FAIL() << ex.what();
+    throw ex;
   }
 }
 
 TEST_F(DeviceCublasTests, create_getCount_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+    auto *mem = cublas.create(4 * 5);
     auto count = cublas.getCount(mem);
 
     EXPECT_EQ(4 * 5, count);
@@ -130,9 +131,9 @@ TEST_F(DeviceCublasTests, create_getCount_destroy) {
 
 TEST_F(DeviceCublasTests, create_copyHostToKernel_amax_amin_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *mem = cublas.create(4 * 5, ValueType::FLOAT);
+    auto *mem = cublas.create(4 * 5);
 
     auto count = cublas.getCount(mem);
 
@@ -141,7 +142,7 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_amax_amin_destroy) {
     std::vector<float> array;
     array.reserve(count);
 
-    for (size_t idx = 0; idx < count; ++idx) {
+    for (int idx = 0; idx < count; ++idx) {
       array.push_back(idx + 2);
     }
 
@@ -162,10 +163,10 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_amax_amin_destroy) {
 
 TEST_F(DeviceCublasTests, create_copyHostToKernel_rot_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *x = cublas.create(2, ValueType::FLOAT);
-    auto *y = cublas.create(2, ValueType::FLOAT);
+    auto *x = cublas.create(2);
+    auto *y = cublas.create(2);
 
     auto countx = cublas.getCount(x);
     auto county = cublas.getCount(y);
@@ -206,11 +207,11 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_rot_destroy) {
 TEST_F(DeviceCublasTests,
        create_copyHostToKernel_add_copyKernelToHost_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *a = cublas.createMatrix(3, 2, ValueType::FLOAT);
-    auto *b = cublas.createMatrix(3, 2, ValueType::FLOAT);
-    auto *output = cublas.createMatrix(3, 2, ValueType::FLOAT);
+    auto *a = cublas.createMatrix(3, 2);
+    auto *b = cublas.createMatrix(3, 2);
+    auto *output = cublas.createMatrix(3, 2);
 
     auto counta = cublas.getCount(a);
     auto countb = cublas.getCount(b);
@@ -247,10 +248,10 @@ TEST_F(DeviceCublasTests,
 TEST_F(DeviceCublasTests,
        create_copyHostToKernel_subtract_copyKernelToHost_destroy) {
   try {
-    Cublas cublas;
-    auto *a = cublas.createMatrix(3, 2, ValueType::FLOAT);
-    auto *b = cublas.createMatrix(3, 2, ValueType::FLOAT);
-    auto *output = cublas.createMatrix(3, 2, ValueType::FLOAT);
+    Cublas<float> cublas;
+    auto *a = cublas.createMatrix(3, 2);
+    auto *b = cublas.createMatrix(3, 2);
+    auto *output = cublas.createMatrix(3, 2);
 
     auto counta = cublas.getCount(a);
     auto countb = cublas.getCount(b);
@@ -280,18 +281,19 @@ TEST_F(DeviceCublasTests,
     cublas.destroy(b);
     cublas.destroy(output);
   } catch (const std::exception &ex) {
-    FAIL() << ex.what();
+    //FAIL() << ex.what();
+    throw ex;
   }
 }
 
 TEST_F(DeviceCublasTests,
        create_copyHostToKernel_matrixMul_copyKernelToHost_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *a = cublas.createMatrix(2, 3, ValueType::FLOAT);
-    auto *b = cublas.createMatrix(3, 2, ValueType::FLOAT);
-    auto *output = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    auto *a = cublas.createMatrix(2, 3);
+    auto *b = cublas.createMatrix(3, 2);
+    auto *output = cublas.createMatrix(2, 2);
 
     auto counta = cublas.getCount(a);
     auto countb = cublas.getCount(b);
@@ -326,12 +328,12 @@ TEST_F(DeviceCublasTests,
 TEST_F(DeviceCublasTests,
        create_copyHostToKernel_syr_copyKernelToHost_destroy) {
   try {
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    auto *v = cublas.create(3, ValueType::FLOAT);
-    auto *outputUpper = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    auto *outputLower = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    auto *outputFull = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    auto *v = cublas.create(3);
+    auto *outputUpper = cublas.createMatrix(3, 3);
+    auto *outputLower = cublas.createMatrix(3, 3);
+    auto *outputFull = cublas.createMatrix(3, 3);
     float alpha = 1.f;
 
     std::vector<float> h_v = {1, 2, 3};
@@ -351,10 +353,10 @@ TEST_F(DeviceCublasTests,
     cublas.copyHostToKernel(outputLower, h_outputLower.data());
     cublas.copyHostToKernel(outputFull, h_outputFull.data());
 
-    cublas.syr(FillMode::UPPER, outputUpper, &alpha, ValueType::FLOAT, v);
-    cublas.syr(FillMode::LOWER, outputLower, &alpha, ValueType::FLOAT, v);
+    cublas.syr(FillMode::UPPER, outputUpper, &alpha, v);
+    cublas.syr(FillMode::LOWER, outputLower, &alpha, v);
 
-    cublas.syr(FillMode::FULL, outputFull, &alpha, ValueType::FLOAT, v);
+    cublas.syr(FillMode::FULL, outputFull, &alpha, v);
 
     cublas.copyKernelToHost(h_outputUpper.data(), outputUpper);
     cublas.copyKernelToHost(h_outputLower.data(), outputLower);
@@ -388,13 +390,13 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
   std::array<float, 4> h_I = {-1, -1, -1, -1};
   try {
     constexpr auto delta = 0.000001f;
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    Mem *a = cublas.createMatrix(2, 2, ValueType::FLOAT);
-    Mem *a1 = cublas.createMatrix(2, 2, ValueType::FLOAT);
-    Mem *q = cublas.createMatrix(2, 2, ValueType::FLOAT);
-    Mem *r = cublas.createMatrix(2, 2, ValueType::FLOAT);
-    Mem *I = cublas.createMatrix(2, 2, ValueType::FLOAT);
+    float *a = cublas.createMatrix(2, 2);
+    float *a1 = cublas.createMatrix(2, 2);
+    float *q = cublas.createMatrix(2, 2);
+    float *r = cublas.createMatrix(2, 2);
+    float *I = cublas.createMatrix(2, 2);
 
     cublas.copyHostToKernel(a, h_a.data());
     cublas.copyHostToKernel(r, h_r.data());
@@ -405,16 +407,15 @@ TEST_F(DeviceCublasTests, qrDecomposition2x2) {
 
     float alpha = 1.f;
     float beta = 0.f;
-    cublas.gemm(I, &alpha, ValueType::FLOAT, Operation::OP_T, q,
-                Operation::OP_N, q, &beta, ValueType::FLOAT);
+    cublas.gemm(I, &alpha, Operation::OP_T, q, Operation::OP_N, q, &beta);
 
     cublas.matrixMul(a1, q, r);
     cublas.copyKernelToHost(h_a_1.data(), a1);
     cublas.copyKernelToHost(h_I.data(), I);
 
-    EXPECT_THAT(a, MemIsEqualTo(a1, &cublas, delta));
-    EXPECT_THAT(r, MemIsEqualTo(expected_r, &cublas, delta));
-    EXPECT_THAT(q, MemIsEqualTo(expected_q, &cublas, delta));
+    EXPECT_THAT(a, IsEqualTo(a1, &cublas, delta));
+    EXPECT_THAT(r, IsEqualTo(expected_r, &cublas, delta));
+    EXPECT_THAT(q, IsEqualTo(expected_q, &cublas, delta));
 
     cublas.destroy(a);
     cublas.destroy(a1);
@@ -441,20 +442,20 @@ TEST_F(DeviceCublasTests, qrDecomposition3x3) {
                                58.f / 175.f, -6.f / 175.f,   33.f / 35.f};
   try {
     constexpr auto delta = 0.0001f;
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    Mem *a = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    Mem *a1 = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    Mem *q = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    Mem *r = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    float *a = cublas.createMatrix(3, 3);
+    float *a1 = cublas.createMatrix(3, 3);
+    float *q = cublas.createMatrix(3, 3);
+    float *r = cublas.createMatrix(3, 3);
 
     cublas.copyHostToKernel(a, h_a.data());
     cublas.qrDecomposition(q, r, a);
     cublas.matrixMul(a1, q, r);
 
-    EXPECT_THAT(r, MemIsEqualTo(he_r, &cublas, delta));
-    EXPECT_THAT(q, MemIsEqualTo(he_q, &cublas, delta));
-    EXPECT_THAT(a1, MemIsEqualTo(a, &cublas, delta));
+    EXPECT_THAT(r, IsEqualTo(he_r, &cublas, delta));
+    EXPECT_THAT(q, IsEqualTo(he_q, &cublas, delta));
+    EXPECT_THAT(a1, IsEqualTo(a, &cublas, delta));
 
     cublas.destroy(a);
     cublas.destroy(a1);
@@ -471,13 +472,13 @@ TEST_F(DeviceCublasTests, copyKernelToKernel) {
     std::array<float, 9> h_b = {0, 0, 0, 0, 0, 0, 0, 0, 0};
     std::array<float, 9> h_c = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    mtrx::Cublas cublas;
+    mtrx::Cublas<float> cublas;
 
-    Mem *a = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    Mem *b = cublas.createMatrix(3, 3, ValueType::FLOAT);
-    Mem *c = cublas.createMatrix(3, 3, ValueType::FLOAT);
+    float *a = cublas.createMatrix(3, 3);
+    float *b = cublas.createMatrix(3, 3);
+    float *c = cublas.createMatrix(3, 3);
 
-    auto *I = cublas.createIdentityMatrix(3, 3, ValueType::FLOAT);
+    auto *I = cublas.createIdentityMatrix(3, 3);
 
     cublas.copyHostToKernel(a, h_a.data());
 

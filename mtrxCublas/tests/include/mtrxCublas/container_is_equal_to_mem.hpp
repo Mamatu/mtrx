@@ -11,16 +11,16 @@ namespace mtrx {
 using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 
-template <typename Container, typename Blas, typename T>
-class ContainerIsEqualToMemMatcher : public MatcherInterface<Mem *> {
+template <typename T, typename Container, typename Blas>
+class ContainerIsEqualToMemMatcher : public MatcherInterface<T *> {
 
 protected:
-  Mem *m_mem = nullptr;
+  T *m_mem = nullptr;
   Blas *m_blas = nullptr;
   T m_delta = 0;
 
 public:
-  ContainerIsEqualToMemMatcher(Mem *mem, Blas *blas, T delta)
+  ContainerIsEqualToMemMatcher(T *mem, Blas *blas, T delta)
       : m_mem(mem), m_blas(blas), m_delta(delta) {}
 
   virtual bool MatchAndExplain(Container &&container,

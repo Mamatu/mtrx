@@ -17,9 +17,24 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CORE_BLAS_HPP
-#define MTRX_CORE_BLAS_HPP
+#include "checkers.hpp"
 
-#include <mtrxCore/blas_impl.hpp>
+#include <stdexcept>
 
-#endif
+namespace mtrx {
+
+void checkSortFunction(const mtrx::Iram::Sort &sort) {
+  if (!sort) {
+    throw std::runtime_error("Sort function was not initialized");
+  }
+}
+
+void checkAFLength(int afLength) {
+  if (afLength == 0) {
+    throw std::runtime_error("Arnoldi Factorization Length is not initialized "
+                             "properly (cannot be 0)");
+  }
+}
+
+void checkInitVector(Mem * /*initVector*/, MemoryType /*type*/) {}
+} // namespace mtrx

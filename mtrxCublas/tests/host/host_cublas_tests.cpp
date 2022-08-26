@@ -2,8 +2,8 @@
 #include <mtrxCublas/test.hpp>
 
 #include "../src/host/device_properties_provider.hpp"
-#include "../src/host_alloc.hpp"
-#include "../src/kernels.hpp"
+#include <mtrxCublas/impl/host_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
 
 namespace mtrx {
 class HostCublasTests : public Test {
@@ -22,7 +22,7 @@ public:
   }
 };
 
-TEST_F(HostCublasTests, Kernel_SF_scaleTrace) {
+TEST_F(HostCublasTests, Kernel_SF_scaleDiagonal) {
   try {
     int dim = 10;
 
@@ -46,7 +46,7 @@ TEST_F(HostCublasTests, Kernel_SF_scaleTrace) {
     HostAlloc hostAlloc;
     Kernels kernels(0, &hostAlloc);
 
-    kernels.scaleTrace(dim, matrix, lda, factor);
+    kernels.scaleDiagonal(dim, matrix, lda, factor);
 
     for (int x = 0; x < dim; ++x) {
       for (int y = 0; y < dim; y++) {

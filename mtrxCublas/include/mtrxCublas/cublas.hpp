@@ -17,92 +17,987 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CUBLAS_MATRIX_API_HPP
-#define MTRX_CUBLAS_MATRIX_API_HPP
+#ifndef MTRX_CUBLAS_HPP
+#define MTRX_CUBLAS_HPP
 
+#include "mtrxCublas/status_handler.hpp"
+#include <cstdint>
 #include <cublas_v2.h>
+#include <sstream>
+
 #include <mtrxCore/blas.hpp>
+#include <mtrxCore/size_of.hpp>
 #include <mtrxCore/types.hpp>
 
+#include <mtrxCublas/impl/cuda_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
+
 namespace mtrx {
-class Cublas : public Blas {
+
+namespace {
+template <typename T> void swap(T **a, T **b) {
+  T *temp = *a;
+  *a = *b;
+  *b = temp;
+}
+
+template <typename T> T *cublas_getOffset(T *ptr, int idx) { return &ptr[idx]; }
+
+template <typename T, typename Vec>
+void cublas_setVec(Vec &&vec, int rows, int columns) {
+  vec.reserve(rows * columns);
+  for (int r = 0; r < rows; ++r) {
+    for (int c = 0; c < columns; ++c) {
+      if (r == c) {
+        vec.push_back(static_cast<T>(1));
+      } else {
+        vec.push_back(static_cast<T>(0));
+      }
+    }
+  }
+}
+
+
+} // namespace
+
+template <typename T> class Cublas : public Blas<T> {
 public:
-  Cublas();
-  ~Cublas() override;
+  using Vec = typename Blas<T>::Vec;
+
+  Cublas() { handleStatus(cublasCreate(&m_handle)); }
+  ~Cublas() override {}
 
 protected:
   std::vector<int> _getDevices() const override;
   void _setDevice(int device) override;
 
-  Mem *_createMem(size_t size, ValueType valueType) override;
-  void _destroy(const Mem *mem) override;
+  T *_create(int size) override;
+  void _destroy(const T *mem) override;
 
-  Mem *_createIdentityMatrix(size_t rows, size_t columns,
-                             ValueType valueType) override;
+  T *_createIdentityMatrix(int rows, int columns) override;
 
-  uintt _getCount(const Mem *mem) const override;
-  uintt _getSizeInBytes(const Mem *mem) const override;
+  int _getCount(const T *mem) const override;
+  int _getSizeInBytes(const T *mem) const override;
 
-  void _copyHostToKernel(Mem *mem, void *array) override;
-  void _copyKernelToHost(void *array, Mem *mem) override;
+  void _copyHostToKernel(T *mem, const T *array, int count) override;
+  void _copyKernelToHost(T *array, const T *mem, int count) override;
 
-  uintt _amax(const Mem *mem) override;
-  uintt _amin(const Mem *mem) override;
+  uintt _amax(const T *mem) override;
+  uintt _amin(const T *mem) override;
 
-  void _rot(Mem *x, Mem *y, void *c, ValueType cType, void *s,
-            ValueType sType) override;
-  void _rot(Mem *x, Mem *y, Mem *c, Mem *s) override;
+  void _rot(T *x, T *y, T &&c, T &&s) override;
 
-  void _syr(FillMode fillMode, Mem *output, void *alpha, ValueType alphaType,
-            Mem *x) override;
-  void _syr(FillMode fillMode, Mem *output, Mem *alpha, Mem *x) override;
+  void _syr(FillMode fillMode, T *output, T *alpha, T *x) override;
 
-  void _gemm(Mem *output, void *alpha, ValueType alphaType, Operation transa,
-             Mem *a, Operation transb, Mem *b, void *beta,
-             ValueType betaType) override;
-  void _gemm(Mem *output, Mem *alpha, Operation transa, Mem *a,
-             Operation transb, Mem *b, Mem *beta) override;
+  void _gemm(T *output, T *alpha, Operation transa, T *a, Operation transb,
+             T *b, T *beta) override;
 
-  void _symm(SideMode sideMode, FillMode fillMode, Mem *output, void *alpha,
-             ValueType alphaType, Mem *a, Mem *b, void *beta,
-             ValueType betaType) override;
-  void _symm(SideMode sideMode, FillMode fillMode, Mem *output, Mem *alpha,
-             Mem *a, Mem *b, Mem *beta) override;
+  void _symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha, T *a,
+             T *b, T *beta) override;
 
-  void _matrixMul(Mem *output, Mem *a, Mem *b) override;
+  void _matrixMul(T *output, T *a, T *b) override;
 
-  void _geqrf(Mem *a, Mem *tau) override;
-  void _geqrf(Mems &a, Mems &tau) override;
+  void _geqrf(T *a, T *tau) override;
+  void _geqrf(Vec &a, Vec &tau) override;
 
-  void _qrDecomposition(Mem *q, Mem *r, Mem *a) override;
-  void _qrDecomposition(Mems &q, Mems &r, Mems &a) override;
+  void _qrDecomposition(T *q, T *r, T *a) override;
+  void _qrDecomposition(const Vec &q, const Vec &r, const Vec &a) override;
 
-  void _shiftQRIteration(Mem *H, Mem *Q) override;
+  void _shiftQRIteration(T *H, T *Q) override;
 
-  bool _isUpperTriangular(Mem *m) override;
-  bool _isLowerTriangular(Mem *m) override;
+  bool _isUpperTriangular(T *m) override;
+  bool _isLowerTriangular(T *m) override;
 
-  void _geam(Mem *output, Mem *alpha, Operation transa, Mem *a, Mem *beta,
-             Operation transb, Mem *b) override;
-  void _geam(Mem *output, void *alpha, ValueType alphaType, Operation transa,
-             Mem *a, void *beta, ValueType betaType, Operation transb,
-             Mem *b) override;
+  void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
+             Operation transb, T *b) override;
 
-  void _add(Mem *output, Mem *a, Mem *b) override;
-  void _subtract(Mem *output, Mem *a, Mem *b) override;
+  void _add(T *output, T *a, T *b) override;
+  void _subtract(T *output, T *a, T *b) override;
 
-  void _scaleTrace(Mem *matrix, Mem *factor) override;
-  void _scaleTrace(Mem *matrix, void *factor, ValueType factorType) override;
+  void _scaleDiagonal(T *matrix, T *factor) override;
 
-  void _tpttr(FillMode uplo, int n, Mem *AP, Mem *A, int lda) override;
-  void _trttp(FillMode uplo, int n, Mem *A, int lda, Mem *AP) override;
+  void _tpttr(FillMode uplo, int n, T *AP, T *A, int lda) override;
+  void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) override;
 
-  std::string _toStr(Mem *mem) override;
+  bool _isUnit(T *mem, T *delta) override;
+
+  std::string _toStr(T *mem) override;
 
 private:
   cublasHandle_t m_handle;
-  void swap(Mem **a, Mem **b);
+  std::unordered_map<uintptr_t, uint> m_counts;
+
+  T *alloc(int count);
+  void dealloc(T *mem);
+
+  template <typename H, typename CublasIamax>
+  uintt _amam(H &handler, const T *mem, CublasIamax &&cublasIamam);
+
+  std::pair<int, int> checkForTriangular(T *matrix) {
+    auto rows = this->getRows(matrix);
+    auto columns = this->getColumns(matrix);
+
+    if (rows != columns) {
+      std::stringstream sstream;
+      sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+              << columns;
+      throw std::runtime_error(sstream.str());
+    }
+    return std::make_pair(rows, columns);
+  }
 };
+} // namespace mtrx
+
+namespace mtrx {
+
+namespace {
+
+template <typename T> T *cublas_allocCudaArrayCopy(const T *array, int count) {
+  T *d_array = nullptr;
+  auto error = cudaMalloc(&d_array, sizeof(T) * count);
+  handleStatus(error);
+
+  auto error1 =
+      cudaMemcpy(d_array, array, sizeof(T) * count, cudaMemcpyHostToDevice);
+  handleStatus(error1);
+
+  return d_array;
+}
+
+template <typename T> T *cublas_allocCudaArrayCopy(const std::vector<T> &vec) {
+  return cublas_allocCudaArrayCopy(vec.data(), vec.size());
+}
+
+template <typename T> void cublas_deallocCudaArray(T *array) {
+  auto error = cudaFree(array);
+  handleStatus(error);
+}
+
+inline cublasOperation_t convert(Operation operation) {
+  switch (operation) {
+  case Operation::OP_N:
+    return CUBLAS_OP_N;
+  case Operation::OP_T:
+    return CUBLAS_OP_T;
+  case Operation::OP_C:
+    return CUBLAS_OP_C;
+  };
+
+  throw std::runtime_error("Not defined side mode");
+  return CUBLAS_OP_N;
+}
+
+inline cublasSideMode_t convert(SideMode sideMode) {
+  switch (sideMode) {
+  case SideMode::LEFT:
+    return CUBLAS_SIDE_LEFT;
+  case SideMode::RIGHT:
+    return CUBLAS_SIDE_RIGHT;
+  };
+
+  throw std::runtime_error("Not defined side mode");
+  return CUBLAS_SIDE_LEFT;
+}
+
+inline cublasFillMode_t convert(FillMode fillMode) {
+  switch (fillMode) {
+  case FillMode::FULL:
+    return CUBLAS_FILL_MODE_FULL;
+  case FillMode::LOWER:
+    return CUBLAS_FILL_MODE_LOWER;
+  case FillMode::UPPER:
+    return CUBLAS_FILL_MODE_UPPER;
+  }
+
+  throw std::runtime_error("Not defined fill mode");
+  return CUBLAS_FILL_MODE_UPPER;
+}
+
+} // namespace
+
+template <typename T> std::vector<int> Cublas<T>::_getDevices() const {
+  int count = 0;
+  handleStatus(cudaGetDeviceCount(&count));
+
+  std::vector<int> devices;
+  devices.reserve(count);
+
+  for (int i = 0; i < count; ++i) {
+    devices.push_back(i);
+  }
+  return devices;
+}
+
+template <typename T> void Cublas<T>::_setDevice(int device) {
+  handleStatus(cudaSetDevice(device));
+}
+
+template <typename T> T *Cublas<T>::_create(int count) {
+  T *d_mem = nullptr;
+  const auto sizeInBytes = count * sizeof(T);
+  auto status = cudaMalloc(&d_mem, sizeInBytes);
+  cudaMemset(d_mem, 0, sizeInBytes);
+  m_counts[reinterpret_cast<uintptr_t>(d_mem)] = count;
+  handleStatus(status);
+  return d_mem;
+}
+
+template <typename T> void Cublas<T>::_destroy(const T *mem) {
+  auto error = cudaFree(const_cast<T *>(mem));
+  handleStatus(error);
+}
+
+template <typename T>
+T *Cublas<T>::_createIdentityMatrix(int rows, int columns) {
+  T *matrix = Blas<T>::createMatrix(rows, columns);
+  std::vector<T> vec;
+  cublas_setVec<T>(vec, rows, columns);
+  this->copyHostToKernel(matrix, vec.data());
+  return matrix;
+}
+
+template <typename T> int Cublas<T>::_getCount(const T *mem) const {
+  uintptr_t handler = reinterpret_cast<uintptr_t>(mem);
+  auto it = m_counts.find(handler);
+  if (it == m_counts.end()) {
+    std::stringstream sstream;
+    sstream << "FATAL: Not found count for " << mem;
+    throw std::runtime_error(sstream.str());
+  }
+  return it->second;
+}
+
+template <typename T> int Cublas<T>::_getSizeInBytes(const T *mem) const {
+  auto count = this->getCount(mem);
+  return SizeOf<T>(count);
+}
+
+template <typename T>
+void Cublas<T>::_copyHostToKernel(T *dst, const T *src, int count) {
+  auto status = cublasSetVector(count, SizeOf<T>(), src, 1, dst, 1);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToHost(T *dst, const T *src, int count) {
+  auto status = cublasGetVector(count, SizeOf<T>(), src, 1, dst, 1);
+  handleStatus(status);
+}
+
+template <typename T>
+template <typename H, typename CublasIamax>
+uintt Cublas<T>::_amam(H &handler, const T *m, CublasIamax &&cublasIamam) {
+  const auto n = _getCount(m);
+  int resultIdx = -1;
+  cublasStatus_t status = CUBLAS_STATUS_NOT_SUPPORTED;
+  status = cublasIamam(handler, n, const_cast<T *>(m), 1, &resultIdx);
+  handleStatus(status);
+
+  if (resultIdx == -1) {
+    throw std::runtime_error("resultIdx is -1");
+  }
+
+  return resultIdx - 1;
+}
+
+template <typename T> uintt Cublas<T>::_amax(const T *m) {
+  return _amam(m_handle, m, cublasIsamax);
+}
+
+template <typename T> uintt Cublas<T>::_amin(const T *m) {
+  return _amam(m_handle, m, cublasIsamin);
+}
+
+template <typename T> void Cublas<T>::_rot(T *x, T *y, T &&c, T &&s) {
+  struct Spec {
+    cublasHandle_t handle;
+    int n;
+
+    cublasStatus_t cublasRot(float *x, float *y, float c, float s) {
+      return cublasSrot(handle, n, x, 1, y, 1, &c, &s);
+    }
+
+    cublasStatus_t cublasRot(float *x, float *y, float *c, float *s) {
+      return cublasSrot(handle, n, x, 1, y, 1, c, s);
+    }
+
+    cublasStatus_t cublasRot(double *x, double *y, double c, double s) {
+      return cublasDrot(handle, n, x, 1, y, 1, &c, &s);
+    }
+
+    cublasStatus_t cublasRot(double *x, double *y, double *c, double *s) {
+      return cublasDrot(handle, n, x, 1, y, 1, c, s);
+    }
+  };
+
+  auto x_count = this->getCount(x);
+  auto y_count = this->getCount(y);
+  if (x_count != y_count) {
+    std::stringstream sstream;
+    sstream << "Different count for x and y. x: " << x_count
+            << " y: " << y_count;
+    throw std::runtime_error(sstream.str());
+  }
+
+  const auto n = x_count;
+  Spec spec = {m_handle, n};
+
+  auto status = spec.cublasRot(x, y, c, s);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
+  class Spec {
+  public:
+    cublasHandle_t handle;
+    int n;
+    void syr(uint lda, FillMode fillMode, float *output, float *alpha,
+             float *x) {
+      auto status =
+          cublasSsyr(handle, convert(fillMode), n, alpha, x, 1, output, lda);
+      handleStatus(status);
+    }
+
+    void syr(uint lda, FillMode fillMode, double *output, double *alpha,
+             double *x) {
+      auto status =
+          cublasDsyr(handle, convert(fillMode), n, alpha, x, 1, output, lda);
+      handleStatus(status);
+    }
+  };
+
+  int n = this->getRows(output);
+  int m = this->getColumns(output);
+  const int lda = n;
+
+  if (n != m) {
+    std::stringstream sstream;
+    sstream << "Matrix 'output' must be square not " << n << "x" << m;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto handle = m_handle;
+
+  auto call = [&handle, n, lda, output, alpha, x](FillMode fillMode) {
+    Spec spec = {handle, n};
+    spec.syr(lda, fillMode, output, alpha, x);
+  };
+
+  if (fillMode != FillMode::FULL) {
+    call(fillMode);
+  } else {
+    call(FillMode::LOWER);
+    call(FillMode::UPPER);
+    auto scaleFactor = static_cast<T>(0.5);
+    this->scaleDiagonal(output, scaleFactor);
+  }
+}
+
+template <typename T>
+void Cublas<T>::_gemm(T *output, T *alpha, Operation transa, T *a,
+                      Operation transb, T *b, T *beta) {
+  class Spec {
+  public:
+    Spec(cublasHandle_t _handle, int _m, int _n, int _k, Operation _transa,
+         Operation _transb)
+        : handle(_handle), m(_m), n(_n), k(_k), transa(_transa),
+          transb(_transb) {}
+
+    auto gemm(float *output, float *alpha, float *a, float *b, float *beta) {
+      return cublasSgemm(handle, convert(transa), convert(transb), m, n, k,
+                         alpha, a, m, b, k, beta, output, m);
+    }
+
+    auto gemm(float *output, float alpha, float *a, float *b, float beta) {
+      return cublasSgemm(handle, convert(transa), convert(transb), m, n, k,
+                         &alpha, a, m, b, k, &beta, output, m);
+    }
+
+    auto gemm(double *output, double *alpha, double *a, double *b,
+              double *beta) {
+      return cublasDgemm(handle, convert(transa), convert(transb), m, n, k,
+                         alpha, a, m, b, k, beta, output, m);
+    }
+
+    auto gemm(double *output, double alpha, double *a, double *b, double beta) {
+      return cublasDgemm(handle, convert(transa), convert(transb), m, n, k,
+                         &alpha, a, m, b, k, &beta, output, m);
+    }
+
+  private:
+    cublasHandle_t handle;
+    int m, n, k;
+    Operation transa, transb;
+  };
+
+  const auto m = this->getRows(a);
+  const auto m1 = this->getRows(output);
+
+  if (m != m1) {
+    std::stringstream sstream;
+    sstream
+        << "Rows of 'a' matrix is not equal to rows of 'output'. Rows('a'): "
+        << m << " Rows('output'): " << m1;
+    throw std::runtime_error(sstream.str());
+  }
+
+  const auto n = this->getColumns(b);
+  const auto n1 = this->getColumns(output);
+
+  if (n != n1) {
+    std::stringstream sstream;
+    sstream << "Columns of 'b' matrix is not equal to columns of 'output'. "
+               "Columns('b'): "
+            << n << " Columns('output'): " << n1;
+    throw std::runtime_error(sstream.str());
+  }
+
+  const auto k = this->getColumns(a);
+  const auto k1 = this->getRows(b);
+
+  if (k != k1) {
+    std::stringstream sstream;
+    sstream << "Columns of 'a' matrix is not equal to rows of 'b' matrix. "
+               "Columns('a'): "
+            << k << " Rows('b'): " << k1;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto handle = m_handle;
+
+  Spec spec(handle, m, n, k, transa, transb);
+  auto status = spec.gemm(output, alpha, a, b, beta);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
+                      T *a, T *b, T *beta) {
+  class Spec {
+  public:
+    Spec(cublasHandle_t _handle, SideMode _sideMode, FillMode _fillMode, int _m,
+         int _n, int _lda, int _ldb, int _ldc)
+        : handle(_handle), sideMode(_sideMode), fillMode(_fillMode), m(_m),
+          n(_n), lda(_lda), ldb(_ldb), ldc(_ldc) {}
+
+    auto symm(float *output, float *alpha, float *a, float *b, float *beta) {
+      return cublasSsymm(handle, convert(sideMode), convert(fillMode), m, n,
+                         alpha, a, lda, b, ldb, beta, output, ldc);
+    }
+
+    auto symm(float *output, float alpha, float *a, float *b, float beta) {
+      return cublasSsymm(handle, convert(sideMode), convert(fillMode), m, n,
+                         &alpha, a, lda, b, ldb, &beta, output, ldc);
+    }
+
+    auto symm(double *output, double *alpha, double *a, double *b,
+              double *beta) {
+      return cublasDsymm(handle, convert(sideMode), convert(fillMode), m, n,
+                         alpha, a, lda, b, ldb, beta, output, ldc);
+    }
+
+    auto symm(double *output, double alpha, double *a, double *b, double beta) {
+      return cublasDsymm(handle, convert(sideMode), convert(fillMode), m, n,
+                         &alpha, a, lda, b, ldb, &beta, output, ldc);
+    }
+
+  private:
+    cublasHandle_t handle;
+    SideMode sideMode;
+    FillMode fillMode;
+    int m, n, lda, ldb, ldc;
+  };
+
+  int m = this->getRows(output);
+  int n = this->getColumns(output);
+  int lda = m; // std::max(1, m);
+  int ldb = m; // std::max(1, m);
+  int ldc = m;
+  auto handle = m_handle;
+
+  Spec spec(handle, sideMode, fillMode, m, n, lda, ldb, ldc);
+  auto status = spec.symm(output, alpha, a, b, beta);
+  handleStatus(status);
+}
+
+template <typename T> void Cublas<T>::_matrixMul(T *output, T *a, T *b) {
+  auto alpha = static_cast<T>(1.);
+  auto beta = static_cast<T>(0.);
+
+  _gemm(output, &alpha, Operation::OP_N, a, Operation::OP_N, b, &beta);
+}
+
+template <typename T> void Cublas<T>::_geqrf(T *a, T *tau) {
+  auto as = std::vector<T *>{a};
+  auto taus = std::vector<T *>{tau};
+  _geqrf(as, taus);
+}
+
+template <typename T>
+void Cublas<T>::_geqrf(Cublas<T>::Vec &a, Cublas<T>::Vec &tau) {
+  if (a.size() != tau.size()) {
+    std::stringstream sstream;
+    sstream << "Invalid count of element between 'a' and 'tau'." << a.size()
+            << " != " << tau.size();
+    throw std::runtime_error(sstream.str());
+  }
+
+  if (a.size() == 0) {
+    throw std::runtime_error("Array of martices 'a' is empty");
+  }
+
+  if (tau.size() == 0) {
+    throw std::runtime_error("Array of martices 'tau' is empty");
+  }
+
+  struct Spec {
+    cublasHandle_t handle;
+    int m, n, lda;
+    int *info;
+    int batchSize;
+
+    cublasStatus_t geqrfBatched(float **a, float **tau) {
+      return cublasSgeqrfBatched(handle, m, n, a, lda, tau, info, batchSize);
+    }
+
+    cublasStatus_t geqrfBatched(double **a, double **tau) {
+      return cublasDgeqrfBatched(handle, m, n, a, lda, tau, info, batchSize);
+    }
+  };
+
+  auto checkDim = [](int _rows, int _columns, int rows, int columns) {
+    if (_rows != -1 && (rows != _rows || columns != _columns)) {
+      std::stringstream sstream;
+      sstream << "Invalid dim. ";
+      sstream << "Expected: ";
+      sstream << "(" << _rows << ", " << _columns << ") ";
+      sstream << "Actual: ";
+      sstream << "(" << rows << ", " << columns << ")";
+      throw std::runtime_error(sstream.str());
+    }
+  };
+
+  auto getDim = [this, &checkDim](const auto &input) {
+    int m = -1;
+    int n = -1;
+
+    int _rows = -1;
+    int _columns = -1;
+
+    for (const auto *elem : input) {
+
+      auto rows = this->getRows(elem);
+      auto columns = this->getColumns(elem);
+
+      checkDim(_rows, _columns, rows, columns);
+
+      _rows = rows;
+      _columns = columns;
+    }
+    m = _rows;
+    n = _columns;
+    return std::make_pair(m, n);
+  };
+
+  auto pair = getDim(a);
+  getDim(tau);
+
+  int m = pair.first;
+  int n = pair.second;
+
+  const int lda = m;
+  int batchSize = a.size();
+
+  int info = 0;
+
+  static_assert(sizeof(float *) == sizeof(void *),
+                "Mismatch beetwen size of float* and void*");
+
+  auto **a_t = static_cast<T **>(a.data());
+  auto **tau_t = static_cast<T **>(tau.data());
+
+  auto **d_a = cublas_allocCudaArrayCopy<T *>(a_t, a.size());
+  auto **d_tau = cublas_allocCudaArrayCopy<T *>(tau_t, tau.size());
+
+  auto handle = m_handle;
+
+  Spec spec = {handle, m, n, lda, &info, batchSize};
+  auto status = spec.geqrfBatched(d_a, d_tau);
+
+  cublas_deallocCudaArray(d_a);
+  cublas_deallocCudaArray(d_tau);
+
+  handleStatus(status);
+
+  if (info < 0) {
+    std::stringstream sstream;
+    sstream << "The parameters passed at " << -info << " is invalid";
+    throw std::runtime_error(sstream.str());
+  }
+}
+
+template <typename T> void Cublas<T>::_qrDecomposition(T *q, T *r, T *a) {
+  _qrDecomposition(Cublas<T>::Vec({q}), Cublas<T>::Vec({r}), Cublas<T>::Vec({a}));
+}
+
+template <typename T>
+void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q, const Cublas<T>::Vec &r,
+                                 const Cublas<T>::Vec &a) {
+  auto m = this->getRows(a[0]);
+  auto n = this->getColumns(a[0]);
+  auto k = std::min(m, n);
+
+  if (m != n) {
+    std::stringstream sstream;
+    sstream << "Matrix is not square! It is " << m << "x" << n;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto m2 = m * n;
+  std::vector<T> h_zeros(m2, static_cast<T>(0));
+
+  T *I = this->createIdentityMatrix(m, m);
+  T *H = this->createMatrix(m, m);
+  T *Aux1 = this->createMatrix(m, m);
+  T *Aux2 = this->createMatrix(m, m);
+  T *v = this->create(m);
+
+  Cublas<T>::Vec aux3;
+  for (auto *mema : a) {
+    T *Aux3 = this->createMatrix(m, m);
+    this->matrixMul(Aux3, I, mema);
+    aux3.push_back(Aux3);
+  }
+
+  auto dim = std::max(static_cast<int>(1), std::min(m, n));
+
+  Cublas<T>::Vec taus;
+  taus.reserve(a.size());
+  for (size_t idx = 0; idx < a.size(); ++idx) {
+    taus.push_back(this->create(dim));
+  }
+
+  this->geqrf(aux3, taus);
+  std::vector<T> h_taus;
+  h_taus.resize(dim);
+
+  for (size_t j = 0; j < aux3.size(); ++j) {
+    this->copyKernelToHost(h_taus.data(), taus[j]);
+    for (int i = 0; i < k; ++i) {
+
+      auto *d_array = aux3[j];
+      auto rows = this->getRows(d_array);
+
+      int idx1 = (i + 1) + rows * i;
+      int idx2 = (m) + rows * i;
+      int offset = idx2 - idx1;
+      T *Aux4 = cublas_getOffset(d_array, idx1);
+      auto Aux4_size = offset;
+
+      std::vector<T> h_v(m, 0);
+      h_v[i] = 1;
+      auto status = cudaMemcpy(h_v.data() + i + 1, Aux4, SizeOf<T>(Aux4_size),
+                               cudaMemcpyDeviceToHost);
+      handleStatus(status);
+
+      this->copyHostToKernel(v, h_v.data());
+
+      T tau = h_taus[i];
+      this->copyHostToKernel(Aux1, h_zeros.data());
+      this->syr(FillMode::FULL, Aux1, &tau, v);
+
+      this->subtract(Aux2, I, Aux1);
+      if (i > 0) {
+        this->matrixMul(Aux1, I, H);
+        this->matrixMul(H, Aux1, Aux2);
+      } else {
+        this->matrixMul(H, I, Aux2);
+      }
+    }
+
+    this->matrixMul(q[j], I, H);
+#if 0
+    auto status = cudaMemcpy(q[j]->ptr, H->ptr, SizeOf<T>(H->count),
+                             cudaMemcpyDeviceToDevice);
+    handleStatus(status);
+#endif
+
+    T alpha = static_cast<T>(1);
+    T beta = static_cast<T>(0);
+    this->gemm(r[j], &alpha, Operation::OP_T, q[j], Operation::OP_N, a[j],
+               &beta);
+  }
+
+  for (const auto *tau : taus) {
+    this->destroy(tau);
+  }
+
+  this->destroy(v);
+  this->destroy(Aux2);
+  this->destroy(Aux1);
+  this->destroy(H);
+  this->destroy(I);
+}
+
+template <typename T> void Cublas<T>::_shiftQRIteration(T *H, T *Q) {
+  bool status = false;
+
+  const auto dims = this->getDims(H);
+
+  auto rows = dims.first;
+  auto columns = dims.second;
+
+  T *aux_Q = this->createIdentityMatrix(rows, columns);
+  T *aux_Q1 = this->createMatrix(rows, columns);
+
+  T *aux_R = this->createMatrix(rows, columns);
+
+  T *ioQ = Q;
+
+  status = this->isUpperTriangular(H);
+
+  while (status == false) {
+    this->qrDecomposition(ioQ, aux_R, H);
+
+    this->matrixMul(H, aux_R, ioQ);
+    this->matrixMul(aux_Q1, ioQ, aux_Q);
+    swap(&aux_Q1, &aux_Q);
+    status = this->isUpperTriangular(H);
+  }
+}
+
+template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
+
+  const auto &dim = checkForTriangular(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  return kernels.isUpperTriangular(dim.first, dim.second, m, lda, 0.);
+}
+
+template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
+
+  const auto &dim = checkForTriangular(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  return kernels.isLowerTriangular(dim.first, dim.second, m, lda, 0.);
+}
+
+template <typename T>
+void Cublas<T>::_geam(T *output, T *alpha, Operation transa, T *a, T *beta,
+                      Operation transb, T *b) {
+  struct Spec {
+    cublasHandle_t handle;
+    int m, n, lda, ldb, ldc;
+    Operation transa, transb;
+
+    auto geam(float *output, float alpha, float *a, float beta, float *b) {
+      auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
+                                &alpha, a, lda, &beta, b, ldb, output, ldc);
+      return status;
+    }
+
+    auto geam(float *output, float *alpha, float *a, float *beta, float *b) {
+      auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
+                                alpha, a, lda, beta, b, ldb, output, ldc);
+      return status;
+    }
+
+    auto geam(double *output, double alpha, double *a, double beta, double *b) {
+      auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
+                                &alpha, a, lda, &beta, b, ldb, output, ldc);
+      return status;
+    }
+
+    auto geam(double *output, double *alpha, double *a, double *beta,
+              double *b) {
+      auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
+                                alpha, a, lda, beta, b, ldb, output, ldc);
+      return status;
+    }
+  };
+
+  auto m = this->getRows(a);
+  auto n = this->getColumns(b);
+
+  auto lda = m;
+  auto ldb = this->getRows(b);
+  auto ldc = this->getRows(output);
+
+  Spec spec = {m_handle, m, n, lda, ldb, ldc, transa, transb};
+  auto status = spec.geam(output, alpha, a, beta, b);
+  handleStatus(status);
+}
+
+template <typename T> void Cublas<T>::_add(T *output, T *a, T *b) {
+  this->geam(output, static_cast<T>(1), Operation::OP_N, a, static_cast<T>(1),
+             Operation::OP_N, b);
+}
+
+template <typename T> void Cublas<T>::_subtract(T *output, T *a, T *b) {
+  this->geam(output, static_cast<T>(1), Operation::OP_N, a, static_cast<T>(-1),
+             Operation::OP_N, b);
+}
+
+template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
+  auto rows = this->getRows(matrix);
+  auto columns = this->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  CudaAlloc cudaAlloc;
+  Kernels kernels(0, &cudaAlloc);
+
+  kernels.scaleDiagonal(rows, matrix, rows, factor);
+}
+
+template <typename T>
+void Cublas<T>::_tpttr(FillMode uplo, int n, T *AP, T *A, int lda) {
+  struct Spec {
+    cublasHandle_t handle;
+    FillMode uplo;
+    int n;
+    int lda;
+
+    cublasStatus_t tpttr(float *AP, float *A) {
+      return cublasStpttr(handle, convert(uplo), n, AP, A, lda);
+    };
+    cublasStatus_t tpttr(double *AP, double *A) {
+      return cublasDtpttr(handle, convert(uplo), n, AP, A, lda);
+    };
+
+    cublasStatus_t tpttr(cuComplex *AP, cuComplex *A) {
+      return cublasCtpttr(handle, convert(uplo), n, AP, A, lda);
+    };
+
+    cublasStatus_t tpttr(cuDoubleComplex *AP, cuDoubleComplex *A) {
+      return cublasZtpttr(handle, convert(uplo), n, AP, A, lda);
+    };
+  };
+
+  auto rows = this->getRows(A);
+  auto columns = this->getColumns(A);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto handle = m_handle;
+  Spec spec = {handle, uplo, n, lda};
+  auto status = spec.tpttr(AP, A);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_trttp(FillMode uplo, int n, T *A, int lda, T *AP) {
+
+  struct Spec {
+    cublasHandle_t handle;
+    FillMode uplo;
+    int n;
+    int lda;
+
+    cublasStatus_t trttp(float *AP, float *A) {
+      return cublasStrttp(handle, convert(uplo), n, A, lda, AP);
+    };
+    cublasStatus_t trttp(double *AP, double *A) {
+      return cublasDtrttp(handle, convert(uplo), n, A, lda, AP);
+    };
+
+    cublasStatus_t trttp(cuComplex *AP, cuComplex *A) {
+      return cublasCtrttp(handle, convert(uplo), n, A, lda, AP);
+    };
+
+    cublasStatus_t trttp(cuDoubleComplex *AP, cuDoubleComplex *A) {
+      return cublasZtrttp(handle, convert(uplo), n, A, lda, AP);
+    };
+  };
+
+  auto rows = this->getRows(A);
+  auto columns = this->getColumns(A);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  auto handle = m_handle;
+  Spec spec = {handle, uplo, n, lda};
+  auto status = spec.trttp(AP, A);
+  handleStatus(status);
+}
+
+template <typename T> bool Cublas<T>::_isUnit(T *mem, T *delta) {
+  CudaAlloc alloc;
+  Kernels kernels(0, &alloc);
+
+  auto m = this->getRows(mem);
+  auto n = this->getColumns(mem);
+  auto lda = m;
+
+  return kernels.isUnit(m, n, mem, lda, *delta);
+}
+
+template <typename T> std::string Cublas<T>::_toStr(T *m) {
+  auto count = _getCount(m);
+
+  std::vector<T> vec;
+  vec.resize(count);
+
+  this->copyKernelToHost(vec.data(), m);
+  std::stringstream sstream;
+
+  sstream << "[";
+  for (int idx = 0; idx < count; ++idx) {
+    sstream << vec[idx];
+    if (idx < count - 1) {
+      sstream << ", ";
+    }
+  }
+
+  sstream << "]";
+  return sstream.str();
+}
+
+template <typename T> T Cublas<T>::*alloc(int count) {
+  if (count <= 0) {
+    std::stringstream sstream;
+    sstream << "Cannot created mem with count: " << count;
+    throw std::runtime_error(sstream.str());
+  }
+
+  T *ptr = nullptr;
+  try {
+    auto error = cudaMalloc(&ptr, SizeOf<T>(count));
+    handleStatus(error);
+    auto error1 = cudaMemset(ptr, 0, SizeOf<T>(count));
+    handleStatus(error1);
+  } catch (const std::exception &ex) {
+    cudaFree(ptr);
+    throw std::runtime_error(ex.what());
+  }
+  return ptr;
+}
+
+template <typename T> void Cublas<T>::dealloc(T *mem) {
+  auto status = cudaFree(mem);
+  handleStatus(status);
+}
 } // namespace mtrx
 
 #endif

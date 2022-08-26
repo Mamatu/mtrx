@@ -17,14 +17,16 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "kernels.hpp"
+#include <mtrxCublas/impl/kernels.hpp>
 
+#include <cstdlib>
 #include <mtrxCore/checkers.hpp>
 #include <mtrxCore/to_string.hpp>
 
 #include "calc_dim.hpp"
 #include "driver_types.h"
 #include "ikernel_executor.hpp"
+#include "mtrxCore/types.hpp"
 #include "mtrxCublas/status_handler.hpp"
 #include <memory>
 #include <numeric>
@@ -62,8 +64,8 @@ std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor(int device) {
 }
 
 template <typename T>
-void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
-                       int lda, T factor, int device) {
+void Kernel_scaleDiagonal(const std::string &kernelName, int dim, T *matrix,
+                          int lda, T *factor, int device) {
   auto ke = GetKernelExecutor(device);
   const auto &dp = ke->getDeviceProperties();
 
@@ -75,7 +77,7 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
   ke->setThreadsCount(threads);
   ke->setBlocksCount(blocks);
 
-  void *params[] = {&dim, &dim, &matrix, &lda, &factor};
+  void *params[] = {&dim, &dim, &matrix, &lda, factor};
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
@@ -87,42 +89,59 @@ void Kernel_scaleTrace(const std::string &kernelName, int dim, T *matrix,
   }
 }
 
-void Kernel_SF_scaleTrace(int dim, float *matrix, int lda, float factor,
-                          int device) {
-  Kernel_scaleTrace(__func__, dim, matrix, lda, factor, device);
+void Kernel_SF_scaleDiagonal(int dim, float *matrix, int lda, float *factor,
+                             int device) {
+  Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernel_SD_scaleTrace(int dim, double *matrix, int lda, double factor,
-                          int device) {
-  Kernel_scaleTrace(__func__, dim, matrix, lda, factor, device);
+void Kernel_SD_scaleDiagonal(int dim, double *matrix, int lda, double *factor,
+                             int device) {
+  Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernel_CF_scaleTrace(int dim, cuComplex *matrix, int lda, cuComplex factor,
-                          int device) {
-  Kernel_scaleTrace(__func__, dim, matrix, lda, factor, device);
+void Kernel_CF_scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                             cuComplex *factor, int device) {
+  Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernel_CD_scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
-                          cuDoubleComplex factor, int device) {
-  Kernel_scaleTrace(__func__, dim, matrix, lda, factor, device);
+void Kernel_CD_scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                             cuDoubleComplex *factor, int device) {
+  Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernels::scaleTrace(int dim, float *matrix, int lda, float factor) {
-  Kernel_SF_scaleTrace(dim, matrix, lda, factor, m_device);
+void Kernels::scaleDiagonal(int dim, float *matrix, int lda, float factor) {
+  Kernel_SF_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleTrace(int dim, double *matrix, int lda, double factor) {
-  Kernel_SD_scaleTrace(dim, matrix, lda, factor, m_device);
+void Kernels::scaleDiagonal(int dim, double *matrix, int lda, double factor) {
+  Kernel_SD_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleTrace(int dim, cuComplex *matrix, int lda,
-                         cuComplex factor) {
-  Kernel_CF_scaleTrace(dim, matrix, lda, factor, m_device);
+void Kernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                            cuComplex factor) {
+  Kernel_CF_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleTrace(int dim, cuDoubleComplex *matrix, int lda,
-                         cuDoubleComplex factor) {
-  Kernel_CD_scaleTrace(dim, matrix, lda, factor, m_device);
+void Kernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                            cuDoubleComplex factor) {
+  Kernel_CD_scaleDiagonal(dim, matrix, lda, &factor, m_device);
+}
+
+void Kernels::scaleDiagonal(int dim, float *matrix, int lda, float *factor) {
+  Kernel_SF_scaleDiagonal(dim, matrix, lda, factor, m_device);
+}
+
+void Kernels::scaleDiagonal(int dim, double *matrix, int lda, double *factor) {
+  Kernel_SD_scaleDiagonal(dim, matrix, lda, factor, m_device);
+}
+
+void Kernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                            cuComplex *factor) {
+  Kernel_CF_scaleDiagonal(dim, matrix, lda, factor, m_device);
+}
+void Kernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                            cuDoubleComplex *factor) {
+  Kernel_CD_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
 
 template <typename T>
@@ -305,7 +324,7 @@ template <typename T,
           typename BinaryOperation = std::function<T(const T &, const T &)>>
 T Kernel_reduceShm(
     Alloc *alloc, const std::string &kernelName, int m, int n, T *array,
-    int lda, CUdevice device,
+    int lda, AccumulationMode mode, CUdevice device,
     BinaryOperation &&boper = [](const T &t1, const T &t2) {
       return t1 + t2;
     }) {
@@ -340,7 +359,7 @@ T Kernel_reduceShm(
   ke->setBlocksCount(blocks);
   ke->setSharedMemory(sharedMem);
 
-  void *params[] = {&m, &n, &array, &lda, &d_reductionResults};
+  void *params[] = {&m, &n, &array, &lda, &d_reductionResults, &mode};
   ke->setParams(const_cast<const void **>(params));
 
   std::stringstream cukernelName;
@@ -358,29 +377,55 @@ T Kernel_reduceShm(
                          T(), std::forward<BinaryOperation>(boper));
 }
 
-int Kernels::reduceShm(int m, int n, int *array, int lda) {
+int Kernels::reduceShm(int m, int n, int *array, int lda,
+                       AccumulationMode mode) {
   return Kernel_reduceShm<int>(m_alloc, "Kernel_SI_reduceShm", m, n, array, lda,
-                               m_device);
+                               mode, m_device);
 }
 
-float Kernels::reduceShm(int m, int n, float *array, int lda) {
+float Kernels::reduceShm(int m, int n, float *array, int lda,
+                         AccumulationMode mode) {
   return Kernel_reduceShm<float>(m_alloc, "Kernel_SF_reduceShm", m, n, array,
-                                 lda, m_device);
+                                 lda, mode, m_device);
 }
 
-double Kernels::reduceShm(int m, int n, double *array, int lda) {
+double Kernels::reduceShm(int m, int n, double *array, int lda,
+                          AccumulationMode mode) {
   return Kernel_reduceShm<double>(m_alloc, "Kernel_SD_reduceShm", m, n, array,
-                                  lda, m_device);
+                                  lda, mode, m_device);
 }
 
-cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda) {
+cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda,
+                             AccumulationMode mode) {
   return Kernel_reduceShm<cuComplex>(m_alloc, "Kernel_CF_reduceShm", m, n,
-                                     array, lda, m_device, cuCaddf);
+                                     array, lda, mode, m_device, cuCaddf);
 }
 
 cuDoubleComplex Kernels::reduceShm(int m, int n, cuDoubleComplex *array,
-                                   int lda) {
+                                   int lda, AccumulationMode mode) {
   return Kernel_reduceShm<cuDoubleComplex>(m_alloc, "Kernel_CD_reduceShm", m, n,
-                                           array, lda, m_device, cuCadd);
+                                           array, lda, mode, m_device, cuCadd);
 }
+
+bool Kernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, double *matrix, int lda, double delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, cuComplex *matrix, int lda, float delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum.x - sum.y - 1) < delta;
+}
+
+bool Kernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+                     double delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum.x - sum.y - 1) < delta;
+}
+
 } // namespace mtrx

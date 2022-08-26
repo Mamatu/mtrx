@@ -11,8 +11,8 @@ namespace mtrx {
 using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 
-template <typename Container, typename Blas, typename T>
-class MemIsEqualToContainerMatcher : public MatcherInterface<Mem *> {
+template <typename T, typename Container, typename Blas>
+class MemIsEqualToContainerMatcher : public MatcherInterface<T *> {
 
 protected:
   Container m_container;
@@ -24,7 +24,7 @@ public:
       : m_container(std::forward<Container>(container)), m_blas(blas),
         m_delta(delta) {}
 
-  virtual bool MatchAndExplain(Mem *mem, MatchResultListener *listener) const {
+  virtual bool MatchAndExplain(T *mem, MatchResultListener *listener) const {
 
     std::string container_str = toString(std::forward<Container>(m_container));
     std::string mem_str = m_blas->toStr(mem);

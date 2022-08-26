@@ -1,16 +1,16 @@
 #include <array>
 #include <mtrxCublas/test.hpp>
 
+#include <mtrxCublas/impl/host_alloc.hpp>
+#include <mtrxCublas/impl/kernels.hpp>
+
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
 #include "../src/host/device_properties_provider.hpp"
-#include "../src/host_alloc.hpp"
-#include "../src/kernels.hpp"
 #include <numeric>
 
 namespace mtrx {
-class HostReduceTests : public Test {
-};
+class HostReduceTests : public Test {};
 
 TEST_F(HostReduceTests, constant) {
   DeviceProperties dp;
@@ -132,6 +132,26 @@ TEST_F(HostReduceTests, reduce_size_2x2) {
   EXPECT_EQ(expected, reduction);
 }
 
+TEST_F(HostReduceTests, reduce_size_2x2_submatrox_1x2_lda_2) {
+  DeviceProperties dp;
+  dp.blockDim = {2, 2, 1};
+  dp.gridDim = {1, 1, 1};
+  dp.maxRegistersPerBlock = 1;
+  dp.maxThreadsPerBlock = 4;
+  dp.sharedMemPerBlock = sizeof(float) * 100;
+
+  DevicePropertiesProvider::set(0, dp);
+
+  HostAlloc hostAlloc;
+  Kernels kernels(0, &hostAlloc);
+  std::array<int, 4> h_array = {5, 6, 7, 8};
+
+  auto reduction = kernels.reduceShm(1, 2, h_array.data() + 1, 2);
+
+  int expected = 6 + 8;
+  EXPECT_EQ(expected, reduction);
+}
+
 TEST_F(HostReduceTests, reduce_size_3x3) {
   DeviceProperties dp;
   dp.blockDim = {10, 10, 1};
@@ -150,6 +170,26 @@ TEST_F(HostReduceTests, reduce_size_3x3) {
 
   int expected =
       std::accumulate(h_array.begin(), h_array.end(), static_cast<int>(0));
+  EXPECT_EQ(expected, reduction);
+}
+
+TEST_F(HostReduceTests, reduce_size_3x3_submatrix_2x2_lda_3) {
+  DeviceProperties dp;
+  dp.blockDim = {10, 10, 1};
+  dp.gridDim = {1, 1, 1};
+  dp.maxRegistersPerBlock = 10;
+  dp.maxThreadsPerBlock = 100;
+  dp.sharedMemPerBlock = sizeof(float) * 100;
+
+  DevicePropertiesProvider::set(0, dp);
+
+  HostAlloc hostAlloc;
+  Kernels kernels(0, &hostAlloc);
+  std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+  auto reduction = kernels.reduceShm(2, 3, h_array.data() + 1, 3);
+
+  int expected = 2 + 3 + 5 + 6 + 8 + 9;
   EXPECT_EQ(expected, reduction);
 }
 
