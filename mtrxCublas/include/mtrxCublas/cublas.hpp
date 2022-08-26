@@ -101,7 +101,7 @@ protected:
   void _geqrf(Vec &a, Vec &tau) override;
 
   void _qrDecomposition(T *q, T *r, T *a) override;
-  void _qrDecomposition(Vec &q, Vec &r, Vec &a) override;
+  void _qrDecomposition(const Vec &q, const Vec &r, const Vec &a) override;
 
   void _shiftQRIteration(T *H, T *Q) override;
 
@@ -232,10 +232,12 @@ template <typename T> void Cublas<T>::_setDevice(int device) {
   handleStatus(cudaSetDevice(device));
 }
 
-template <typename T> T *Cublas<T>::_create(int size) {
+template <typename T> T *Cublas<T>::_create(int count) {
   T *d_mem = nullptr;
-  auto status = cudaMalloc(&d_mem, size);
-  m_counts[reinterpret_cast<uintptr_t>(d_mem)] = size;
+  const auto sizeInBytes = count * sizeof(T);
+  auto status = cudaMalloc(&d_mem, sizeInBytes);
+  cudaMemset(d_mem, 0, sizeInBytes);
+  m_counts[reinterpret_cast<uintptr_t>(d_mem)] = count;
   handleStatus(status);
   return d_mem;
 }
@@ -636,12 +638,12 @@ void Cublas<T>::_geqrf(Cublas<T>::Vec &a, Cublas<T>::Vec &tau) {
 }
 
 template <typename T> void Cublas<T>::_qrDecomposition(T *q, T *r, T *a) {
-  _qrDecomposition({q}, {r}, {a});
+  _qrDecomposition(Cublas<T>::Vec({q}), Cublas<T>::Vec({r}), Cublas<T>::Vec({a}));
 }
 
 template <typename T>
-void Cublas<T>::_qrDecomposition(Cublas<T>::Vec &q, Cublas<T>::Vec &r,
-                                 Cublas<T>::Vec &a) {
+void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q, const Cublas<T>::Vec &r,
+                                 const Cublas<T>::Vec &a) {
   auto m = this->getRows(a[0]);
   auto n = this->getColumns(a[0]);
   auto k = std::min(m, n);
