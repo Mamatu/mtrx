@@ -47,6 +47,7 @@ public:
   void destroy(const T *mem);
 
   bool isAllocator(const T *mem) const;
+  bool isComplex() const;
 
   int getCount(const T *mem) const;
   int getSizeInBytes(const T *mem) const;
@@ -86,7 +87,8 @@ public:
   void geqrf(typename Blas<T>::Vec &a, typename Blas<T>::Vec &tau);
 
   void qrDecomposition(T *q, T *r, T *a);
-  void qrDecomposition(const typename Blas<T>::Vec &q, const typename Blas<T>::Vec &r,
+  void qrDecomposition(const typename Blas<T>::Vec &q,
+                       const typename Blas<T>::Vec &r,
                        const typename Blas<T>::Vec &a);
 
   void shiftQRIteration(T *H, T *Q);
@@ -124,6 +126,7 @@ protected:
   virtual void _destroy(const T *mem) = 0;
 
   virtual T *_createIdentityMatrix(int rows, int columns) = 0;
+  virtual bool _isComplex() const = 0;
 
   virtual int _getCount(const T *mem) const = 0;
   virtual int _getSizeInBytes(const T *mem) const = 0;

@@ -217,7 +217,8 @@ template <typename T> void Blas<T>::qrDecomposition(T *q, T *r, T *a) {
   _qrDecomposition(q, r, a);
 }
 
-template <typename T> void Blas<T>::qrDecomposition(const Vec &q, const Vec &r, const Vec &a) {
+template <typename T>
+void Blas<T>::qrDecomposition(const Vec &q, const Vec &r, const Vec &a) {
   checkVec(q);
   checkVec(r);
   checkVec(a);

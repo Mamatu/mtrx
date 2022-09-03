@@ -17,8 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CUBLAS_KERNELS_H
-#define MTRX_CUBLAS_KERNELS_H
+#ifndef MTRX_CUBLAS_CUDA_KERNELS_H
+#define MTRX_CUBLAS_CUDA_KERNELS_H
 
 #include <mtrxCore/types.hpp>
 
@@ -27,10 +27,10 @@
 
 namespace mtrx {
 
-class Kernels final {
+class CudaKernels final {
 public:
-  Kernels(int device, Alloc *alloc);
-  ~Kernels() = default;
+  CudaKernels(int device, Alloc *alloc);
+  ~CudaKernels() = default;
 
   void scaleDiagonal(int dim, float *matrix, int lda, float factor);
   void scaleDiagonal(int dim, double *matrix, int lda, double factor);

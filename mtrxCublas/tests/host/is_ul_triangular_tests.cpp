@@ -1,8 +1,8 @@
 #include <array>
 #include <mtrxCublas/test.hpp>
 
+#include <mtrxCublas/impl/cuda_kernels.hpp>
 #include <mtrxCublas/impl/host_alloc.hpp>
-#include <mtrxCublas/impl/kernels.hpp>
 
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
@@ -23,7 +23,7 @@ TEST_F(IsULTriangularTests,
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 4> matrix = {1, 0, 1, 1};
 
@@ -43,7 +43,7 @@ TEST_F(IsULTriangularTests,
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 4> matrix = {1, 0, 1, 1};
 
@@ -63,7 +63,7 @@ TEST_F(IsULTriangularTests,
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 4> matrix = {1, 1, 0, 1};
 
@@ -83,7 +83,7 @@ TEST_F(IsULTriangularTests,
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 4> matrix = {1, 1, 0, 1};
 

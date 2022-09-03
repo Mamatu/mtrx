@@ -1,8 +1,8 @@
 #include <array>
 #include <mtrxCublas/test.hpp>
 
+#include <mtrxCublas/impl/cuda_kernels.hpp>
 #include <mtrxCublas/impl/host_alloc.hpp>
-#include <mtrxCublas/impl/kernels.hpp>
 
 #include "../src/calc_dim.hpp"
 #include "../src/device_properties.hpp"
@@ -23,7 +23,7 @@ TEST_F(HostReduceTests, constant) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 1> matrix = {1};
 
@@ -42,7 +42,7 @@ TEST_F(HostReduceTests, multi_blocks) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<float, 4> matrix = {1, 2, 3, 4};
 
@@ -61,7 +61,7 @@ TEST_F(HostReduceTests, reduce_size_1x1) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
 
   std::array<int, 1> h_array = {5};
 
@@ -83,7 +83,7 @@ TEST_F(HostReduceTests, reduce_size_2x1) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 2> h_array = {5, 6};
 
   auto reduction = kernels.reduceShm(2, 1, h_array.data(), 2);
@@ -101,7 +101,7 @@ TEST_F(HostReduceTests, reduce_size_1x2) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 2> h_array = {5, 6};
 
   auto reduction = kernels.reduceShm(1, 2, h_array.data(), 1);
@@ -122,7 +122,7 @@ TEST_F(HostReduceTests, reduce_size_2x2) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 4> h_array = {5, 6, 7, 8};
 
   auto reduction = kernels.reduceShm(2, 2, h_array.data(), 2);
@@ -143,7 +143,7 @@ TEST_F(HostReduceTests, reduce_size_2x2_submatrox_1x2_lda_2) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 4> h_array = {5, 6, 7, 8};
 
   auto reduction = kernels.reduceShm(1, 2, h_array.data() + 1, 2);
@@ -163,7 +163,7 @@ TEST_F(HostReduceTests, reduce_size_3x3) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   auto reduction = kernels.reduceShm(3, 3, h_array.data(), 3);
@@ -184,7 +184,7 @@ TEST_F(HostReduceTests, reduce_size_3x3_submatrix_2x2_lda_3) {
   DevicePropertiesProvider::set(0, dp);
 
   HostAlloc hostAlloc;
-  Kernels kernels(0, &hostAlloc);
+  CudaKernels kernels(0, &hostAlloc);
   std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   auto reduction = kernels.reduceShm(2, 3, h_array.data() + 1, 3);

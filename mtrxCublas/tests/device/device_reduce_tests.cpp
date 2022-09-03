@@ -14,14 +14,14 @@
 #endif
 
 #include <mtrxCublas/impl/cuda_alloc.hpp>
-#include <mtrxCublas/impl/kernels.hpp>
+#include <mtrxCublas/impl/cuda_kernels.hpp>
 
 namespace mtrx {
 class DeviceReduceTests : public Test {};
 
 TEST_F(DeviceReduceTests, reduce_size_1x1) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
 
   std::array<int, 1> h_array = {5};
 
@@ -41,7 +41,7 @@ TEST_F(DeviceReduceTests, reduce_size_1x1) {
 
 TEST_F(DeviceReduceTests, reduce_size_2x1) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
 
   std::array<int, 2> h_array = {5, 6};
 
@@ -58,7 +58,7 @@ TEST_F(DeviceReduceTests, reduce_size_2x1) {
 
 TEST_F(DeviceReduceTests, reduce_size_1x2) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
 
   std::array<int, 2> h_array = {5, 6};
 
@@ -78,7 +78,7 @@ TEST_F(DeviceReduceTests, reduce_size_1x2) {
 
 TEST_F(DeviceReduceTests, reduce_size_2x2) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
 
   std::array<int, 4> h_array = {5, 6, 7, 8};
 
@@ -98,7 +98,7 @@ TEST_F(DeviceReduceTests, reduce_size_2x2) {
 
 TEST_F(DeviceReduceTests, reduce_size_3x3) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
 
   std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
@@ -118,7 +118,7 @@ TEST_F(DeviceReduceTests, reduce_size_3x3) {
 
 TEST_F(DeviceReduceTests, reduce_size_2x2_submatrox_1x2_lda_2) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
   std::array<int, 4> h_array = {5, 6, 7, 8};
 
   int *d_array = nullptr;
@@ -136,7 +136,7 @@ TEST_F(DeviceReduceTests, reduce_size_2x2_submatrox_1x2_lda_2) {
 
 TEST_F(DeviceReduceTests, reduce_size_3x3_submatrix_2x2_lda_3) {
   CudaAlloc cudaAlloc;
-  Kernels kernels(0, &cudaAlloc);
+  CudaKernels kernels(0, &cudaAlloc);
   std::array<int, 9> h_array = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   int *d_array = nullptr;
