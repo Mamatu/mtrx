@@ -29,6 +29,7 @@
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCore/types.hpp>
 
+#include <mtrxCublas/impl/cu_convert.hpp>
 #include <mtrxCublas/impl/cublas_kernels.hpp>
 #include <mtrxCublas/impl/cuda_alloc.hpp>
 #include <mtrxCublas/impl/cuda_kernels.hpp>
@@ -95,6 +96,9 @@ protected:
   void _gemm(T *output, T *alpha, Operation transa, T *a, Operation transb,
              T *b, T *beta) override;
 
+  void _gemm(T *output, T alpha, Operation transa, T *a, Operation transb, T *b,
+             T beta);
+
   void _symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha, T *a,
              T *b, T *beta) override;
 
@@ -118,6 +122,9 @@ protected:
   void _subtract(T *output, T *a, T *b) override;
 
   void _scaleDiagonal(T *matrix, T *factor) override;
+
+  template <typename T1> void __scaleDiagonal(T *matrix, T1 *factor);
+  template <typename T1> void __scaleDiagonal(T *matrix, T1 factor);
 
   void _tpttr(FillMode uplo, int n, T *AP, T *A, int lda) override;
   void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) override;
@@ -314,27 +321,6 @@ template <typename T> uintt Cublas<T>::_amin(const T *mem) {
 }
 
 template <typename T> void Cublas<T>::_rot(T *x, T *y, T &&c, T &&s) {
-  struct Spec {
-    cublasHandle_t handle;
-    int n;
-
-    cublasStatus_t cublasRot(float *x, float *y, float c, float s) {
-      return cublasSrot(handle, n, x, 1, y, 1, &c, &s);
-    }
-
-    cublasStatus_t cublasRot(float *x, float *y, float *c, float *s) {
-      return cublasSrot(handle, n, x, 1, y, 1, c, s);
-    }
-
-    cublasStatus_t cublasRot(double *x, double *y, double c, double s) {
-      return cublasDrot(handle, n, x, 1, y, 1, &c, &s);
-    }
-
-    cublasStatus_t cublasRot(double *x, double *y, double *c, double *s) {
-      return cublasDrot(handle, n, x, 1, y, 1, c, s);
-    }
-  };
-
   auto x_count = this->getCount(x);
   auto y_count = this->getCount(y);
   if (x_count != y_count) {
@@ -344,34 +330,12 @@ template <typename T> void Cublas<T>::_rot(T *x, T *y, T &&c, T &&s) {
     throw std::runtime_error(sstream.str());
   }
 
-  const auto n = x_count;
-  Spec spec = {m_cublasKernels, n};
-
-  auto status = spec.cublasRot(x, y, c, s);
-  handleStatus(status);
+  const auto &n = x_count;
+  m_cublasKernels.rot(n, x, y, std::forward<T>(c), std::forward<T>(s));
 }
 
 template <typename T>
 void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
-  class Spec {
-  public:
-    cublasHandle_t handle;
-    int n;
-    void syr(uint lda, FillMode fillMode, float *output, float *alpha,
-             float *x) {
-      auto status =
-          cublasSsyr(handle, convert(fillMode), n, alpha, x, 1, output, lda);
-      handleStatus(status);
-    }
-
-    void syr(uint lda, FillMode fillMode, double *output, double *alpha,
-             double *x) {
-      auto status =
-          cublasDsyr(handle, convert(fillMode), n, alpha, x, 1, output, lda);
-      handleStatus(status);
-    }
-  };
-
   int n = this->getRows(output);
   int m = this->getColumns(output);
   const int lda = n;
@@ -384,9 +348,8 @@ void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
 
   auto handle = m_cublasKernels;
 
-  auto call = [&handle, n, lda, output, alpha, x](FillMode fillMode) {
-    Spec spec = {handle, n};
-    spec.syr(lda, fillMode, output, alpha, x);
+  auto call = [this, &handle, n, lda, output, alpha, x](FillMode fillMode) {
+    m_cublasKernels.syr(lda, fillMode, n, output, alpha, x);
   };
 
   if (fillMode != FillMode::FULL) {
@@ -394,48 +357,13 @@ void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
   } else {
     call(FillMode::LOWER);
     call(FillMode::UPPER);
-    auto scaleFactor = static_cast<T>(0.5);
-    this->scaleDiagonal(output, scaleFactor);
+    this->__scaleDiagonal(output, 0.5);
   }
 }
 
 template <typename T>
 void Cublas<T>::_gemm(T *output, T *alpha, Operation transa, T *a,
                       Operation transb, T *b, T *beta) {
-  class Spec {
-  public:
-    Spec(cublasHandle_t _handle, int _m, int _n, int _k, Operation _transa,
-         Operation _transb)
-        : handle(_handle), m(_m), n(_n), k(_k), transa(_transa),
-          transb(_transb) {}
-
-    auto gemm(float *output, float *alpha, float *a, float *b, float *beta) {
-      return cublasSgemm(handle, convert(transa), convert(transb), m, n, k,
-                         alpha, a, m, b, k, beta, output, m);
-    }
-
-    auto gemm(float *output, float alpha, float *a, float *b, float beta) {
-      return cublasSgemm(handle, convert(transa), convert(transb), m, n, k,
-                         &alpha, a, m, b, k, &beta, output, m);
-    }
-
-    auto gemm(double *output, double *alpha, double *a, double *b,
-              double *beta) {
-      return cublasDgemm(handle, convert(transa), convert(transb), m, n, k,
-                         alpha, a, m, b, k, beta, output, m);
-    }
-
-    auto gemm(double *output, double alpha, double *a, double *b, double beta) {
-      return cublasDgemm(handle, convert(transa), convert(transb), m, n, k,
-                         &alpha, a, m, b, k, &beta, output, m);
-    }
-
-  private:
-    cublasHandle_t handle;
-    int m, n, k;
-    Operation transa, transb;
-  };
-
   const auto m = this->getRows(a);
   const auto m1 = this->getRows(output);
 
@@ -469,68 +397,28 @@ void Cublas<T>::_gemm(T *output, T *alpha, Operation transa, T *a,
     throw std::runtime_error(sstream.str());
   }
 
-  auto handle = m_cublasKernels;
+  m_cublasKernels.gemm(output, m, n, k, alpha, transa, a, transb, b, beta);
+}
 
-  Spec spec(handle, m, n, k, transa, transb);
-  auto status = spec.gemm(output, alpha, a, b, beta);
-  handleStatus(status);
+template <typename T>
+void Cublas<T>::_gemm(T *output, T alpha, Operation transa, T *a,
+                      Operation transb, T *b, T beta) {
+  _gemm(output, &alpha, transa, a, transb, b, &beta);
 }
 
 template <typename T>
 void Cublas<T>::_symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
                       T *a, T *b, T *beta) {
-  class Spec {
-  public:
-    Spec(cublasHandle_t _handle, SideMode _sideMode, FillMode _fillMode, int _m,
-         int _n, int _lda, int _ldb, int _ldc)
-        : handle(_handle), sideMode(_sideMode), fillMode(_fillMode), m(_m),
-          n(_n), lda(_lda), ldb(_ldb), ldc(_ldc) {}
-
-    auto symm(float *output, float *alpha, float *a, float *b, float *beta) {
-      return cublasSsymm(handle, convert(sideMode), convert(fillMode), m, n,
-                         alpha, a, lda, b, ldb, beta, output, ldc);
-    }
-
-    auto symm(float *output, float alpha, float *a, float *b, float beta) {
-      return cublasSsymm(handle, convert(sideMode), convert(fillMode), m, n,
-                         &alpha, a, lda, b, ldb, &beta, output, ldc);
-    }
-
-    auto symm(double *output, double *alpha, double *a, double *b,
-              double *beta) {
-      return cublasDsymm(handle, convert(sideMode), convert(fillMode), m, n,
-                         alpha, a, lda, b, ldb, beta, output, ldc);
-    }
-
-    auto symm(double *output, double alpha, double *a, double *b, double beta) {
-      return cublasDsymm(handle, convert(sideMode), convert(fillMode), m, n,
-                         &alpha, a, lda, b, ldb, &beta, output, ldc);
-    }
-
-  private:
-    cublasHandle_t handle;
-    SideMode sideMode;
-    FillMode fillMode;
-    int m, n, lda, ldb, ldc;
-  };
 
   int m = this->getRows(output);
   int n = this->getColumns(output);
-  int lda = m; // std::max(1, m);
-  int ldb = m; // std::max(1, m);
-  int ldc = m;
-  auto handle = m_cublasKernels;
 
-  Spec spec(handle, sideMode, fillMode, m, n, lda, ldb, ldc);
-  auto status = spec.symm(output, alpha, a, b, beta);
-  handleStatus(status);
+  m_cublasKernels.symm(output, sideMode, fillMode, m, n, alpha, a, b, beta);
 }
 
 template <typename T> void Cublas<T>::_matrixMul(T *output, T *a, T *b) {
-  auto alpha = static_cast<T>(1.);
-  auto beta = static_cast<T>(0.);
-
-  _gemm(output, &alpha, Operation::OP_N, a, Operation::OP_N, b, &beta);
+  _gemm(output, cu_convert<T>(1), Operation::OP_N, a, Operation::OP_N, b,
+        cu_convert<T>(0));
 }
 
 template <typename T> void Cublas<T>::_geqrf(T *a, T *tau) {
@@ -625,15 +513,10 @@ void Cublas<T>::_geqrf(Cublas<T>::Vec &a, Cublas<T>::Vec &tau) {
   auto **d_a = cublas_allocCudaArrayCopy<T *>(a_t, a.size());
   auto **d_tau = cublas_allocCudaArrayCopy<T *>(tau_t, tau.size());
 
-  auto handle = m_cublasKernels;
-
-  Spec spec = {handle, m, n, lda, &info, batchSize};
-  auto status = spec.geqrfBatched(d_a, d_tau);
+  m_cublasKernels.geqrfBatched(m, n, d_a, lda, d_tau, &info, batchSize);
 
   cublas_deallocCudaArray(d_a);
   cublas_deallocCudaArray(d_tau);
-
-  handleStatus(status);
 
   if (info < 0) {
     std::stringstream sstream;
@@ -662,7 +545,7 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
   }
 
   auto m2 = m * n;
-  std::vector<T> h_zeros(m2, static_cast<T>(0));
+  std::vector<T> h_zeros(m2, cu_convert<T>(0));
 
   T *I = this->createIdentityMatrix(m, m);
   T *H = this->createMatrix(m, m);
@@ -702,8 +585,8 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
       T *Aux4 = cublas_getOffset(d_array, idx1);
       auto Aux4_size = offset;
 
-      std::vector<T> h_v(m, 0);
-      h_v[i] = 1;
+      std::vector<T> h_v(m, cu_convert<T>(0));
+      h_v[i] = cu_convert<T>(1);
       auto status = cudaMemcpy(h_v.data() + i + 1, Aux4, SizeOf<T>(Aux4_size),
                                cudaMemcpyDeviceToHost);
       handleStatus(status);
@@ -730,8 +613,8 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
     handleStatus(status);
 #endif
 
-    T alpha = static_cast<T>(1);
-    T beta = static_cast<T>(0);
+    T alpha = cu_convert<T>(1);
+    T beta = cu_convert<T>(0);
     this->gemm(r[j], &alpha, Operation::OP_T, q[j], Operation::OP_N, a[j],
                &beta);
   }
@@ -783,7 +666,8 @@ template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
   CudaAlloc alloc;
   CudaKernels kernels(0, &alloc);
 
-  return kernels.isUpperTriangular(dim.first, dim.second, m, lda, 0.);
+  return kernels.isUpperTriangular(dim.first, dim.second, m, lda,
+                                   cu_convert<T>(0.));
 }
 
 template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
@@ -795,7 +679,8 @@ template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
   CudaAlloc alloc;
   CudaKernels kernels(0, &alloc);
 
-  return kernels.isLowerTriangular(dim.first, dim.second, m, lda, 0.);
+  return kernels.isLowerTriangular(dim.first, dim.second, m, lda,
+                                   cu_convert<T>(0.));
 }
 
 template <typename T>
@@ -855,6 +740,12 @@ template <typename T> void Cublas<T>::_subtract(T *output, T *a, T *b) {
 }
 
 template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
+  __scaleDiagonal(matrix, factor);
+}
+
+template <typename T>
+template <typename T1>
+void Cublas<T>::__scaleDiagonal(T *matrix, T1 *factor) {
   auto rows = this->getRows(matrix);
   auto columns = this->getColumns(matrix);
   if (rows != columns) {
@@ -868,6 +759,12 @@ template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
   CudaKernels kernels(0, &cudaAlloc);
 
   kernels.scaleDiagonal(rows, matrix, rows, factor);
+}
+
+template <typename T>
+template <typename T1>
+void Cublas<T>::__scaleDiagonal(T *matrix, T1 factor) {
+  this->__scaleDiagonal(matrix, &factor);
 }
 
 template <typename T>

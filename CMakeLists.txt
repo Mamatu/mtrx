@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.17)
 
 project(mtrx CXX)
 option(MTRX_BUILD_CUBLAS "Enable cublas compilation" ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
@@ -13,4 +15,4 @@ if(MTRX_BUILD_CUBLAS)
   add_subdirectory(mtrxCublas)
 endif()
 
-#add_subdirectory(mtrxIram)
+add_subdirectory(mtrxIram)

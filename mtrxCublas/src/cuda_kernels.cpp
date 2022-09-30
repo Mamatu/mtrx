@@ -142,9 +142,22 @@ void CudaKernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
                                 cuComplex *factor) {
   Kernel_CF_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
+
 void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
                                 cuDoubleComplex *factor) {
   Kernel_CD_scaleDiagonal(dim, matrix, lda, factor, m_device);
+}
+
+void CudaKernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                                float factor) {
+  cuComplex complexFactor = {factor, 0};
+  scaleDiagonal(dim, matrix, lda, complexFactor);
+}
+
+void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                                double factor) {
+  cuDoubleComplex complexFactor = {factor, 0};
+  scaleDiagonal(dim, matrix, lda, complexFactor);
 }
 
 template <typename T>

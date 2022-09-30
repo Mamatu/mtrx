@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2021 - 2022 Marcin Matula
  *
@@ -18,24 +17,24 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_IRAM_IRAM_ROUTINES_HPP
-#define MTRX_IRAM_IRAM_ROUTINES_HPP
+#ifndef MTRX_IRAM_IRAM_IMPL_CHECKERS_HPP
+#define MTRX_IRAM_IRAM_IMPL_CHECKERS_HPP
 
-#include <mtrxCore/blas.hpp>
-#include <mtrxCore/types.hpp>
-#include <mtrxCublas/cublas_types.hpp>
-#include <mtrxIram/iram_types.hpp>
-
-#include <memory>
+#include <mtrxIram/iram_decl.hpp>
 
 namespace mtrx {
 
-using BlasPtr = std::shared_ptr<mtrx::Blas>;
-void createRandomUnitVector(const BlasPtr &blasPtr, int length,
-                            ValueType valueType);
-void createUnitVector(const BlasPtr &blasPtr, int length, ValueType valueType);
-void checkCustomInitVector(const BlasPtr &blasPtr, Mem *mem);
+template <typename T>
+void checkSortFunction(const typename mtrx::Iram<T>::Sort &sort) {
+  if (!sort) {
+    throw std::runtime_error("Sort function was not initialized");
+  }
+}
 
+template <typename T>
+void checkInitVector(T * /*initVector*/, MemoryType /*type*/) {}
+
+void checkAFLength(int afLength);
 } // namespace mtrx
 
 #endif

@@ -46,6 +46,85 @@ public:
   uintt amin(const cuComplex *mem, int n);
   uintt amin(const cuDoubleComplex *mem, int n);
 
+  void rot(int n, float *x, float *y, float c, float s);
+  void rot(int n, float *x, float *y, float *c, float *s);
+  void rot(int n, double *x, double *y, double c, double s);
+  void rot(int n, double *x, double *y, double *c, double *s);
+  void rot(int n, cuComplex *x, cuComplex *y, cuComplex c, cuComplex s);
+  void rot(int n, cuComplex *x, cuComplex *y, cuComplex *c, cuComplex *s);
+  void rot(int n, cuDoubleComplex *x, cuDoubleComplex *y, cuDoubleComplex c,
+           cuDoubleComplex s);
+  void rot(int n, cuDoubleComplex *x, cuDoubleComplex *y, cuDoubleComplex *c,
+           cuDoubleComplex *s);
+
+  void syr(uint lda, FillMode fillMode, int n, float *output, float *alpha,
+           float *x);
+  void syr(uint lda, FillMode fillMode, int n, double *output, double *alpha,
+           double *x);
+  void syr(uint lda, FillMode fillMode, int n, cuComplex *output,
+           cuComplex *alpha, cuComplex *x);
+  void syr(uint lda, FillMode fillMode, int n, cuDoubleComplex *output,
+           cuDoubleComplex *alpha, cuDoubleComplex *x);
+
+  void gemm(float *output, int m, int n, int k, float *alpha, Operation transa,
+            float *a, Operation transb, float *b, float *beta);
+  void gemm(float *output, int m, int n, int k, float alpha, Operation transa,
+            float *a, Operation transb, float *b, float beta);
+
+  void gemm(double *output, int m, int n, int k, double *alpha,
+            Operation transa, double *a, Operation transb, double *b,
+            double *beta);
+  void gemm(double *output, int m, int n, int k, double alpha, Operation transa,
+            double *a, Operation transb, double *b, double beta);
+
+  void gemm(cuComplex *output, int m, int n, int k, cuComplex *alpha,
+            Operation transa, cuComplex *a, Operation transb, cuComplex *b,
+            cuComplex *beta);
+  void gemm(cuComplex *output, int m, int n, int k, cuComplex alpha,
+            Operation transa, cuComplex *a, Operation transb, cuComplex *b,
+            cuComplex beta);
+
+  void gemm(cuDoubleComplex *output, int m, int n, int k,
+            cuDoubleComplex *alpha, Operation transa, cuDoubleComplex *a,
+            Operation transb, cuDoubleComplex *b, cuDoubleComplex *beta);
+  void gemm(cuDoubleComplex *output, int m, int n, int k, cuDoubleComplex alpha,
+            Operation transa, cuDoubleComplex *a, Operation transb,
+            cuDoubleComplex *b, cuDoubleComplex beta);
+
+  void symm(float *output, SideMode sideMode, FillMode fillMode, int m, int n,
+            float *alpha, float *a, float *b, float *beta);
+  void symm(float *output, SideMode sideMode, FillMode fillMode, int m, int n,
+            float alpha, float *a, float *b, float beta);
+
+  void symm(double *output, SideMode sideMode, FillMode fillMode, int m, int n,
+            double *alpha, double *a, double *b, double *beta);
+  void symm(double *output, SideMode sideMode, FillMode fillMode, int m, int n,
+            double alpha, double *a, double *b, double beta);
+
+  void symm(cuComplex *output, SideMode sideMode, FillMode fillMode, int m,
+            int n, cuComplex *alpha, cuComplex *a, cuComplex *b,
+            cuComplex *beta);
+  void symm(cuComplex *output, SideMode sideMode, FillMode fillMode, int m,
+            int n, cuComplex alpha, cuComplex *a, cuComplex *b, cuComplex beta);
+
+  void symm(cuDoubleComplex *output, SideMode sideMode, FillMode fillMode,
+            int m, int n, cuDoubleComplex *alpha, cuDoubleComplex *a,
+            cuDoubleComplex *b, cuDoubleComplex *beta);
+  void symm(cuDoubleComplex *output, SideMode sideMode, FillMode fillMode,
+            int m, int n, cuDoubleComplex alpha, cuDoubleComplex *a,
+            cuDoubleComplex *b, cuDoubleComplex beta);
+
+  void geqrfBatched(int m, int n, float **a, int lda, float **tau, int *info,
+                    int batchSize);
+  void geqrfBatched(int m, int n, double **a, int lda, double **tau, int *info,
+                    int batchSize);
+  void geqrfBatched(int m, int n, cuComplex **a, int lda, cuComplex **tau,
+                    int *info, int batchSize);
+  void geqrfBatched(int m, int n, cuDoubleComplex **a, int lda,
+                    cuDoubleComplex **tau, int *info, int batchSize);
+
+  void geam(float *output, float alpha, Operation transa, float *a, float beta, Operation transb, float *b);
+
 private:
   cublasHandle_t m_handle;
 };

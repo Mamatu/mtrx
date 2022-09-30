@@ -501,21 +501,21 @@ TEST_F(DeviceCublasTests, copyKernelToKernel) {
 }
 
 TEST_F(DeviceCublasTests, isComplex) {
-  //{
-  //  mtrx::Cublas<float> cublas;
-  //  EXPECT_FALSE(cublas.isComplex());
-  //}
-  //{
-  //  mtrx::Cublas<double> cublas;
-  //  EXPECT_FALSE(cublas.isComplex());
-  //}
-  //{
-  //  mtrx::Cublas<cuComplex> cublas;
-  //  EXPECT_TRUE(cublas.isComplex());
-  //}
-  //{
-  //  mtrx::Cublas<cuDoubleComplex> cublas;
-  //  EXPECT_TRUE(cublas.isComplex());
-  //}
+  {
+    mtrx::Cublas<float> cublas;
+    EXPECT_FALSE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<double> cublas;
+    EXPECT_FALSE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<cuComplex> cublas;
+    EXPECT_TRUE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<cuDoubleComplex> cublas;
+    EXPECT_TRUE(cublas.isComplex());
+  }
 }
 } // namespace mtrx
