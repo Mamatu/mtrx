@@ -123,7 +123,34 @@ public:
   void geqrfBatched(int m, int n, cuDoubleComplex **a, int lda,
                     cuDoubleComplex **tau, int *info, int batchSize);
 
-  void geam(float *output, float alpha, Operation transa, float *a, float beta, Operation transb, float *b);
+  void geam(float *output, int ldo, int m, int n, float *alpha,
+            Operation transa, float *a, int lda, float *beta, Operation transb,
+            float *b, int ldb);
+  void geam(float *output, int ldo, int m, int n, float alpha, Operation transa,
+            float *a, int lda, float beta, Operation transb, float *b, int ldb);
+
+  void geam(double *output, int ldo, int m, int n, double *alpha,
+            Operation transa, double *a, int lda, double *beta,
+            Operation transb, double *b, int ldb);
+  void geam(double *output, int ldo, int m, int n, double alpha,
+            Operation transa, double *a, int lda, double beta, Operation transb,
+            double *b, int ldb);
+
+  void geam(cuComplex *output, int ldo, int m, int n, cuComplex *alpha,
+            Operation transa, cuComplex *a, int lda, cuComplex *beta,
+            Operation transb, cuComplex *b, int ldb);
+  void geam(cuComplex *output, int ldo, int m, int n, cuComplex alpha,
+            Operation transa, cuComplex *a, int lda, cuComplex beta,
+            Operation transb, cuComplex *b, int ldb);
+
+  void geam(cuDoubleComplex *output, int ldo, int m, int n,
+            cuDoubleComplex *alpha, Operation transa, cuDoubleComplex *a,
+            int lda, cuDoubleComplex *beta, Operation transb,
+            cuDoubleComplex *b, int ldb);
+  void geam(cuDoubleComplex *output, int ldo, int m, int n,
+            cuDoubleComplex alpha, Operation transa, cuDoubleComplex *a,
+            int lda, cuDoubleComplex beta, Operation transb, cuDoubleComplex *b,
+            int ldb);
 
 private:
   cublasHandle_t m_handle;

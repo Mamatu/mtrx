@@ -94,13 +94,19 @@ public:
   cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda,
                             AccumulationMode mode = AccumulationMode::NORMAL);
 
+  bool isUnit(int m, int n, float *matrix, int lda, float *delta);
   bool isUnit(int m, int n, float *matrix, int lda, float delta);
 
+  bool isUnit(int m, int n, double *matrix, int lda, double *delta);
   bool isUnit(int m, int n, double *matrix, int lda, double delta);
 
-  bool isUnit(int m, int n, cuComplex *matrix, int lda, float delta);
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, cuComplex *delta);
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, cuComplex delta);
 
-  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda, double delta);
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+              cuDoubleComplex *delta);
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+              cuDoubleComplex delta);
 
 private:
   int m_device;

@@ -425,26 +425,52 @@ cuDoubleComplex CudaKernels::reduceShm(int m, int n, cuDoubleComplex *array,
                                            array, lda, mode, m_device, cuCadd);
 }
 
-bool CudaKernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+bool CudaKernels::isUnit(int m, int n, float *matrix, int lda, float *delta) {
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum - 1) < delta;
+  return abs(sum - 1) < *delta;
+}
+
+bool CudaKernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+  return isUnit(m, n, matrix, lda, &delta);
+}
+
+bool CudaKernels::isUnit(int m, int n, double *matrix, int lda, double *delta) {
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum - 1) < *delta;
 }
 
 bool CudaKernels::isUnit(int m, int n, double *matrix, int lda, double delta) {
-  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum - 1) < delta;
+  return isUnit(m, n, matrix, lda, &delta);
 }
 
 bool CudaKernels::isUnit(int m, int n, cuComplex *matrix, int lda,
-                         float delta) {
+                         cuComplex *delta) {
+  if (delta->y != 0) {
+    throw std::runtime_error("Img part must be 0");
+  }
+
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum.x - sum.y - 1) < delta;
+  return abs(sum.x - sum.y - 1) < delta->x;
+}
+
+bool CudaKernels::isUnit(int m, int n, cuComplex *matrix, int lda,
+                         cuComplex delta) {
+  return isUnit(m, n, matrix, lda, &delta);
 }
 
 bool CudaKernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
-                         double delta) {
+                         cuDoubleComplex *delta) {
+  if (delta->y != 0) {
+    throw std::runtime_error("Img part must be 0");
+  }
+
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum.x - sum.y - 1) < delta;
+  return abs(sum.x - sum.y - 1) < delta->x;
+}
+
+bool CudaKernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+                         cuDoubleComplex delta) {
+  return isUnit(m, n, matrix, lda, &delta);
 }
 
 } // namespace mtrx

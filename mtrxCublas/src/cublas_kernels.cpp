@@ -344,31 +344,64 @@ void CublasKernels::geqrfBatched(int m, int n, cuDoubleComplex **a, int lda,
   handleStatus(handle);
 }
 
-void CublasKernels::geam(float *output, float alpha, Operation transa, float *a, float beta,
-                         Operation transb, float *b) {
-  auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
-                            &alpha, a, lda, &beta, b, ldb, output, ldc);
-  return status;
+void CublasKernels::geam(float *output, int ldo, int m, int n, float *alpha,
+                         Operation transa, float *a, int lda, float *beta,
+                         Operation transb, float *b, int ldb) {
+  auto status = cublasSgeam(m_handle, convert(transa), convert(transb), m, n,
+                            alpha, a, lda, beta, b, ldb, output, ldo);
+  handleStatus(status);
 }
 
-void CublasKernels::geam(float *output, float *alpha, float *a, float *beta,
-                         float *b) {
-  auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
-                            alpha, a, lda, beta, b, ldb, output, ldc);
-  return status;
+void CublasKernels::geam(float *output, int ldo, int m, int n, float alpha,
+                         Operation transa, float *a, int lda, float beta,
+                         Operation transb, float *b, int ldb) {
+  geam(output, ldo, m, n, &alpha, transa, a, lda, &beta, transb, b, ldb);
 }
 
-void CublasKernels::geam(double *output, double alpha, double *a, double beta,
-                         double *b) {
-  auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
-                            &alpha, a, lda, &beta, b, ldb, output, ldc);
-  return status;
+void CublasKernels::geam(double *output, int ldo, int m, int n, double *alpha,
+                         Operation transa, double *a, int lda, double *beta,
+                         Operation transb, double *b, int ldb) {
+  auto status = cublasDgeam(m_handle, convert(transa), convert(transb), m, n,
+                            alpha, a, lda, beta, b, ldb, output, ldo);
+  handleStatus(status);
 }
-void CublasKernels::geam(double *output, double *alpha, double *a, double *beta,
-                         double *b) {
-  auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
-                            alpha, a, lda, beta, b, ldb, output, ldc);
-  return status;
+
+void CublasKernels::geam(double *output, int ldo, int m, int n, double alpha,
+                         Operation transa, double *a, int lda, double beta,
+                         Operation transb, double *b, int ldb) {
+  geam(output, ldo, m, n, &alpha, transa, a, lda, &beta, transb, b, ldb);
+}
+
+void CublasKernels::geam(cuComplex *output, int ldo, int m, int n,
+                         cuComplex *alpha, Operation transa, cuComplex *a,
+                         int lda, cuComplex *beta, Operation transb,
+                         cuComplex *b, int ldb) {
+  auto status = cublasCgeam(m_handle, convert(transa), convert(transb), m, n,
+                            alpha, a, lda, beta, b, ldb, output, ldo);
+  handleStatus(status);
+}
+
+void CublasKernels::geam(cuComplex *output, int ldo, int m, int n,
+                         cuComplex alpha, Operation transa, cuComplex *a,
+                         int lda, cuComplex beta, Operation transb,
+                         cuComplex *b, int ldb) {
+  geam(output, ldo, m, n, &alpha, transa, a, lda, &beta, transb, b, ldb);
+}
+
+void CublasKernels::geam(cuDoubleComplex *output, int ldo, int m, int n,
+                         cuDoubleComplex *alpha, Operation transa,
+                         cuDoubleComplex *a, int lda, cuDoubleComplex *beta,
+                         Operation transb, cuDoubleComplex *b, int ldb) {
+  auto status = cublasZgeam(m_handle, convert(transa), convert(transb), m, n,
+                            alpha, a, lda, beta, b, ldb, output, ldo);
+  handleStatus(status);
+}
+
+void CublasKernels::geam(cuDoubleComplex *output, int ldo, int m, int n,
+                         cuDoubleComplex alpha, Operation transa,
+                         cuDoubleComplex *a, int lda, cuDoubleComplex beta,
+                         Operation transb, cuDoubleComplex *b, int ldb) {
+  geam(output, ldo, m, n, &alpha, transa, a, lda, &beta, transb, b, ldb);
 }
 
 } // namespace mtrx

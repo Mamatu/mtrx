@@ -52,9 +52,9 @@ void cublas_setVec(Vec &&vec, int rows, int columns) {
   for (int r = 0; r < rows; ++r) {
     for (int c = 0; c < columns; ++c) {
       if (r == c) {
-        vec.push_back(static_cast<T>(1));
+        vec.push_back(cu_convert<T>(1));
       } else {
-        vec.push_back(static_cast<T>(0));
+        vec.push_back(cu_convert<T>(0));
       }
     }
   }
@@ -77,8 +77,6 @@ protected:
   void _destroy(const T *mem) override;
 
   T *_createIdentityMatrix(int rows, int columns) override;
-
-  bool _isComplex() const override;
 
   int _getCount(const T *mem) const override;
   int _getSizeInBytes(const T *mem) const override;
@@ -122,9 +120,9 @@ protected:
   void _subtract(T *output, T *a, T *b) override;
 
   void _scaleDiagonal(T *matrix, T *factor) override;
+  void _scaleDiagonal(T *matrix, T factor);
 
-  template <typename T1> void __scaleDiagonal(T *matrix, T1 *factor);
-  template <typename T1> void __scaleDiagonal(T *matrix, T1 factor);
+  bool _isComplex() const override;
 
   void _tpttr(FillMode uplo, int n, T *AP, T *A, int lda) override;
   void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) override;
@@ -263,25 +261,6 @@ T *Cublas<T>::_createIdentityMatrix(int rows, int columns) {
   return matrix;
 }
 
-template <typename T> bool Cublas<T>::_isComplex() const {
-  struct True {
-    bool get() const { return true; }
-  };
-  struct False {
-    bool get() const { return false; }
-  };
-  using isCuComplex =
-      std::conditional<std::is_same<T, cuComplex>::value, True, False>;
-  using isCuDoubleComplex =
-      std::conditional<std::is_same<T, cuDoubleComplex>::value, True,
-                       typename isCuComplex::type>;
-  using isFloat = std::conditional<std::is_same<T, float>::value, False,
-                                   typename isCuDoubleComplex::type>;
-  typename std::conditional<std::is_same<T, double>::value, False,
-                            typename isFloat::type>::type obj;
-  return obj.get();
-}
-
 template <typename T> int Cublas<T>::_getCount(const T *mem) const {
   uintptr_t handler = reinterpret_cast<uintptr_t>(mem);
   auto it = m_counts.find(handler);
@@ -357,7 +336,7 @@ void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
   } else {
     call(FillMode::LOWER);
     call(FillMode::UPPER);
-    this->__scaleDiagonal(output, 0.5);
+    this->_scaleDiagonal(output, cu_convert<T>(0.5));
   }
 }
 
@@ -686,37 +665,6 @@ template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
 template <typename T>
 void Cublas<T>::_geam(T *output, T *alpha, Operation transa, T *a, T *beta,
                       Operation transb, T *b) {
-  struct Spec {
-    cublasHandle_t handle;
-    int m, n, lda, ldb, ldc;
-    Operation transa, transb;
-
-    auto geam(float *output, float alpha, float *a, float beta, float *b) {
-      auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
-                                &alpha, a, lda, &beta, b, ldb, output, ldc);
-      return status;
-    }
-
-    auto geam(float *output, float *alpha, float *a, float *beta, float *b) {
-      auto status = cublasSgeam(handle, convert(transa), convert(transb), m, n,
-                                alpha, a, lda, beta, b, ldb, output, ldc);
-      return status;
-    }
-
-    auto geam(double *output, double alpha, double *a, double beta, double *b) {
-      auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
-                                &alpha, a, lda, &beta, b, ldb, output, ldc);
-      return status;
-    }
-
-    auto geam(double *output, double *alpha, double *a, double *beta,
-              double *b) {
-      auto status = cublasDgeam(handle, convert(transa), convert(transb), m, n,
-                                alpha, a, lda, beta, b, ldb, output, ldc);
-      return status;
-    }
-  };
-
   auto m = this->getRows(a);
   auto n = this->getColumns(b);
 
@@ -724,28 +672,40 @@ void Cublas<T>::_geam(T *output, T *alpha, Operation transa, T *a, T *beta,
   auto ldb = this->getRows(b);
   auto ldc = this->getRows(output);
 
-  Spec spec = {m_cublasKernels, m, n, lda, ldb, ldc, transa, transb};
-  auto status = spec.geam(output, alpha, a, beta, b);
-  handleStatus(status);
+  m_cublasKernels.geam(output, ldc, m, n, alpha, transa, a, lda, beta, transb,
+                       b, ldb);
 }
 
 template <typename T> void Cublas<T>::_add(T *output, T *a, T *b) {
-  this->geam(output, static_cast<T>(1), Operation::OP_N, a, static_cast<T>(1),
+  this->geam(output, cu_convert<T>(1), Operation::OP_N, a, cu_convert<T>(1),
              Operation::OP_N, b);
 }
 
 template <typename T> void Cublas<T>::_subtract(T *output, T *a, T *b) {
-  this->geam(output, static_cast<T>(1), Operation::OP_N, a, static_cast<T>(-1),
+  this->geam(output, cu_convert<T>(1), Operation::OP_N, a, cu_convert<T>(-1),
              Operation::OP_N, b);
 }
 
-template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
-  __scaleDiagonal(matrix, factor);
+template <typename T> bool Cublas<T>::_isComplex() const {
+  struct True {
+    bool get() const { return true; }
+  };
+  struct False {
+    bool get() const { return false; }
+  };
+  using isCuComplex =
+      std::conditional<std::is_same<T, cuComplex>::value, True, False>;
+  using isCuDoubleComplex =
+      std::conditional<std::is_same<T, cuDoubleComplex>::value, True,
+                       typename isCuComplex::type>;
+  using isFloat = std::conditional<std::is_same<T, float>::value, False,
+                                   typename isCuDoubleComplex::type>;
+  typename std::conditional<std::is_same<T, double>::value, False,
+                            typename isFloat::type>::type obj;
+  return obj.get();
 }
 
-template <typename T>
-template <typename T1>
-void Cublas<T>::__scaleDiagonal(T *matrix, T1 *factor) {
+template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
   auto rows = this->getRows(matrix);
   auto columns = this->getColumns(matrix);
   if (rows != columns) {
@@ -761,10 +721,8 @@ void Cublas<T>::__scaleDiagonal(T *matrix, T1 *factor) {
   kernels.scaleDiagonal(rows, matrix, rows, factor);
 }
 
-template <typename T>
-template <typename T1>
-void Cublas<T>::__scaleDiagonal(T *matrix, T1 factor) {
-  this->__scaleDiagonal(matrix, &factor);
+template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T factor) {
+  _scaleDiagonal(matrix, &factor);
 }
 
 template <typename T>
@@ -854,7 +812,18 @@ template <typename T> bool Cublas<T>::_isUnit(T *mem, T *delta) {
   auto n = this->getColumns(mem);
   auto lda = m;
 
-  return kernels.isUnit(m, n, mem, lda, *delta);
+  return kernels.isUnit(m, n, mem, lda, delta);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const cuComplex &ccomplex) {
+  os << "(" << ccomplex.x << ", " << ccomplex.y << ")";
+  return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os,
+                                const cuDoubleComplex &ccomplex) {
+  os << "(" << ccomplex.x << ", " << ccomplex.y << ")";
+  return os;
 }
 
 template <typename T> std::string Cublas<T>::_toStr(T *m) {

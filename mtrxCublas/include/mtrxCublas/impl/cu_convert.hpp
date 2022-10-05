@@ -43,15 +43,15 @@ public:
 
 template <typename T, typename T1> T cu_convert(T1 value) {
   using CCuComplex = std::conditional<std::is_same<T, cuComplex>::value,
-                                      _CuComplex<T>, _CuFail<T>>;
+                                      _CuComplex<T1>, _CuFail<T1>>;
   using CCuDoubleComplex =
       std::conditional<std::is_same<T, cuDoubleComplex>::value,
-                       _CuDoubleComplex<T>, typename CCuComplex::type>;
+                       _CuDoubleComplex<T1>, typename CCuComplex::type>;
   using CCuDouble =
-      std::conditional<std::is_same<T, double>::value, _CuDouble<T>,
+      std::conditional<std::is_same<T, double>::value, _CuDouble<T1>,
                        typename CCuDoubleComplex::type>;
 
-  typename std::conditional<std::is_same<T, float>::value, _CuFloat<T>,
+  typename std::conditional<std::is_same<T, float>::value, _CuFloat<T1>,
                             typename CCuDouble::type>::type obj(value);
   return obj.m_value;
 }

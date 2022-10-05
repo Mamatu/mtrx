@@ -85,6 +85,11 @@ template <typename T> bool Blas<T>::isAllocator(const T *mem) const {
   return it != m_mems.end();
 }
 
+template<typename T>
+bool Blas<T>::isComplex() const {
+  return _isComplex();
+}
+
 template <typename T> int Blas<T>::getCount(const T *mem) const {
   checkMem(mem);
   return _getCount(mem);
