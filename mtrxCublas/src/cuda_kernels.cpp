@@ -17,7 +17,7 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <mtrxCublas/impl/kernels.hpp>
+#include <mtrxCublas/impl/cuda_kernels.hpp>
 
 #include <cstdlib>
 #include <mtrxCore/checkers.hpp>
@@ -50,7 +50,7 @@
 
 namespace mtrx {
 
-Kernels::Kernels(CUdevice device, Alloc *alloc)
+CudaKernels::CudaKernels(CUdevice device, Alloc *alloc)
     : m_device(device), m_alloc(alloc) {}
 
 std::shared_ptr<mtrx::IKernelExecutor> GetKernelExecutor(int device) {
@@ -109,39 +109,55 @@ void Kernel_CD_scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
   Kernel_scaleDiagonal(__func__, dim, matrix, lda, factor, device);
 }
 
-void Kernels::scaleDiagonal(int dim, float *matrix, int lda, float factor) {
+void CudaKernels::scaleDiagonal(int dim, float *matrix, int lda, float factor) {
   Kernel_SF_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, double *matrix, int lda, double factor) {
+void CudaKernels::scaleDiagonal(int dim, double *matrix, int lda,
+                                double factor) {
   Kernel_SD_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
-                            cuComplex factor) {
+void CudaKernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                                cuComplex factor) {
   Kernel_CF_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
-                            cuDoubleComplex factor) {
+void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                                cuDoubleComplex factor) {
   Kernel_CD_scaleDiagonal(dim, matrix, lda, &factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, float *matrix, int lda, float *factor) {
+void CudaKernels::scaleDiagonal(int dim, float *matrix, int lda,
+                                float *factor) {
   Kernel_SF_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, double *matrix, int lda, double *factor) {
+void CudaKernels::scaleDiagonal(int dim, double *matrix, int lda,
+                                double *factor) {
   Kernel_SD_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
 
-void Kernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
-                            cuComplex *factor) {
+void CudaKernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                                cuComplex *factor) {
   Kernel_CF_scaleDiagonal(dim, matrix, lda, factor, m_device);
 }
-void Kernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
-                            cuDoubleComplex *factor) {
+
+void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                                cuDoubleComplex *factor) {
   Kernel_CD_scaleDiagonal(dim, matrix, lda, factor, m_device);
+}
+
+void CudaKernels::scaleDiagonal(int dim, cuComplex *matrix, int lda,
+                                float factor) {
+  cuComplex complexFactor = {factor, 0};
+  scaleDiagonal(dim, matrix, lda, complexFactor);
+}
+
+void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
+                                double factor) {
+  cuDoubleComplex complexFactor = {factor, 0};
+  scaleDiagonal(dim, matrix, lda, complexFactor);
 }
 
 template <typename T>
@@ -272,50 +288,52 @@ bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
   return is;
 }
 
-bool Kernels::isUpperTriangular(int rows, int columns, float *matrix, int lda,
-                                float delta) {
+bool CudaKernels::isUpperTriangular(int rows, int columns, float *matrix,
+                                    int lda, float delta) {
   return Kernel_SF_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(int rows, int columns, double *matrix, int lda,
-                                double delta) {
+bool CudaKernels::isUpperTriangular(int rows, int columns, double *matrix,
+                                    int lda, double delta) {
   return Kernel_SD_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(int rows, int columns, cuComplex *matrix,
-                                int lda, cuComplex delta) {
+bool CudaKernels::isUpperTriangular(int rows, int columns, cuComplex *matrix,
+                                    int lda, cuComplex delta) {
   return Kernel_CF_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isUpperTriangular(int rows, int columns, cuDoubleComplex *matrix,
-                                int lda, cuDoubleComplex delta) {
+bool CudaKernels::isUpperTriangular(int rows, int columns,
+                                    cuDoubleComplex *matrix, int lda,
+                                    cuDoubleComplex delta) {
   return Kernel_CD_isUpperTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(int rows, int columns, float *matrix, int lda,
-                                float delta) {
+bool CudaKernels::isLowerTriangular(int rows, int columns, float *matrix,
+                                    int lda, float delta) {
   return Kernel_SF_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(int rows, int columns, double *matrix, int lda,
-                                double delta) {
+bool CudaKernels::isLowerTriangular(int rows, int columns, double *matrix,
+                                    int lda, double delta) {
   return Kernel_SD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(int rows, int columns, cuComplex *matrix,
-                                int lda, cuComplex delta) {
+bool CudaKernels::isLowerTriangular(int rows, int columns, cuComplex *matrix,
+                                    int lda, cuComplex delta) {
   return Kernel_CF_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 
-bool Kernels::isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
-                                int lda, cuDoubleComplex delta) {
+bool CudaKernels::isLowerTriangular(int rows, int columns,
+                                    cuDoubleComplex *matrix, int lda,
+                                    cuDoubleComplex delta) {
   return Kernel_CD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
@@ -377,55 +395,82 @@ T Kernel_reduceShm(
                          T(), std::forward<BinaryOperation>(boper));
 }
 
-int Kernels::reduceShm(int m, int n, int *array, int lda,
-                       AccumulationMode mode) {
+int CudaKernels::reduceShm(int m, int n, int *array, int lda,
+                           AccumulationMode mode) {
   return Kernel_reduceShm<int>(m_alloc, "Kernel_SI_reduceShm", m, n, array, lda,
                                mode, m_device);
 }
 
-float Kernels::reduceShm(int m, int n, float *array, int lda,
-                         AccumulationMode mode) {
+float CudaKernels::reduceShm(int m, int n, float *array, int lda,
+                             AccumulationMode mode) {
   return Kernel_reduceShm<float>(m_alloc, "Kernel_SF_reduceShm", m, n, array,
                                  lda, mode, m_device);
 }
 
-double Kernels::reduceShm(int m, int n, double *array, int lda,
-                          AccumulationMode mode) {
+double CudaKernels::reduceShm(int m, int n, double *array, int lda,
+                              AccumulationMode mode) {
   return Kernel_reduceShm<double>(m_alloc, "Kernel_SD_reduceShm", m, n, array,
                                   lda, mode, m_device);
 }
 
-cuComplex Kernels::reduceShm(int m, int n, cuComplex *array, int lda,
-                             AccumulationMode mode) {
+cuComplex CudaKernels::reduceShm(int m, int n, cuComplex *array, int lda,
+                                 AccumulationMode mode) {
   return Kernel_reduceShm<cuComplex>(m_alloc, "Kernel_CF_reduceShm", m, n,
                                      array, lda, mode, m_device, cuCaddf);
 }
 
-cuDoubleComplex Kernels::reduceShm(int m, int n, cuDoubleComplex *array,
-                                   int lda, AccumulationMode mode) {
+cuDoubleComplex CudaKernels::reduceShm(int m, int n, cuDoubleComplex *array,
+                                       int lda, AccumulationMode mode) {
   return Kernel_reduceShm<cuDoubleComplex>(m_alloc, "Kernel_CD_reduceShm", m, n,
                                            array, lda, mode, m_device, cuCadd);
 }
 
-bool Kernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+bool CudaKernels::isUnit(int m, int n, float *matrix, int lda, float *delta) {
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum - 1) < delta;
+  return abs(sum - 1) < *delta;
 }
 
-bool Kernels::isUnit(int m, int n, double *matrix, int lda, double delta) {
-  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum - 1) < delta;
+bool CudaKernels::isUnit(int m, int n, float *matrix, int lda, float delta) {
+  return isUnit(m, n, matrix, lda, &delta);
 }
 
-bool Kernels::isUnit(int m, int n, cuComplex *matrix, int lda, float delta) {
+bool CudaKernels::isUnit(int m, int n, double *matrix, int lda, double *delta) {
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum.x - sum.y - 1) < delta;
+  return abs(sum - 1) < *delta;
 }
 
-bool Kernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
-                     double delta) {
+bool CudaKernels::isUnit(int m, int n, double *matrix, int lda, double delta) {
+  return isUnit(m, n, matrix, lda, &delta);
+}
+
+bool CudaKernels::isUnit(int m, int n, cuComplex *matrix, int lda,
+                         cuComplex *delta) {
+  if (delta->y != 0) {
+    throw std::runtime_error("Img part must be 0");
+  }
+
   auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
-  return abs(sum.x - sum.y - 1) < delta;
+  return abs(sum.x - sum.y - 1) < delta->x;
+}
+
+bool CudaKernels::isUnit(int m, int n, cuComplex *matrix, int lda,
+                         cuComplex delta) {
+  return isUnit(m, n, matrix, lda, &delta);
+}
+
+bool CudaKernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+                         cuDoubleComplex *delta) {
+  if (delta->y != 0) {
+    throw std::runtime_error("Img part must be 0");
+  }
+
+  auto sum = reduceShm(m, n, matrix, lda, AccumulationMode::POWER_OF_2);
+  return abs(sum.x - sum.y - 1) < delta->x;
+}
+
+bool CudaKernels::isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+                         cuDoubleComplex delta) {
+  return isUnit(m, n, matrix, lda, &delta);
 }
 
 } // namespace mtrx

@@ -85,6 +85,11 @@ template <typename T> bool Blas<T>::isAllocator(const T *mem) const {
   return it != m_mems.end();
 }
 
+template<typename T>
+bool Blas<T>::isComplex() const {
+  return _isComplex();
+}
+
 template <typename T> int Blas<T>::getCount(const T *mem) const {
   checkMem(mem);
   return _getCount(mem);
@@ -217,7 +222,8 @@ template <typename T> void Blas<T>::qrDecomposition(T *q, T *r, T *a) {
   _qrDecomposition(q, r, a);
 }
 
-template <typename T> void Blas<T>::qrDecomposition(const Vec &q, const Vec &r, const Vec &a) {
+template <typename T>
+void Blas<T>::qrDecomposition(const Vec &q, const Vec &r, const Vec &a) {
   checkVec(q);
   checkVec(r);
   checkVec(a);

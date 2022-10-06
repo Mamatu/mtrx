@@ -17,8 +17,8 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_CUBLAS_KERNELS_H
-#define MTRX_CUBLAS_KERNELS_H
+#ifndef MTRX_CUBLAS_CUDA_KERNELS_H
+#define MTRX_CUBLAS_CUDA_KERNELS_H
 
 #include <mtrxCore/types.hpp>
 
@@ -27,16 +27,18 @@
 
 namespace mtrx {
 
-class Kernels final {
+class CudaKernels final {
 public:
-  Kernels(int device, Alloc *alloc);
-  ~Kernels() = default;
+  CudaKernels(int device, Alloc *alloc);
+  ~CudaKernels() = default;
 
   void scaleDiagonal(int dim, float *matrix, int lda, float factor);
   void scaleDiagonal(int dim, double *matrix, int lda, double factor);
   void scaleDiagonal(int dim, cuComplex *matrix, int lda, cuComplex factor);
   void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
                      cuDoubleComplex factor);
+  void scaleDiagonal(int dim, cuComplex *matrix, int lda, float factor);
+  void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda, double factor);
 
   void scaleDiagonal(int dim, float *matrix, int lda, float *factor);
   void scaleDiagonal(int dim, double *matrix, int lda, double *factor);
@@ -92,13 +94,19 @@ public:
   cuDoubleComplex reduceShm(int m, int n, cuDoubleComplex *array, int lda,
                             AccumulationMode mode = AccumulationMode::NORMAL);
 
+  bool isUnit(int m, int n, float *matrix, int lda, float *delta);
   bool isUnit(int m, int n, float *matrix, int lda, float delta);
 
+  bool isUnit(int m, int n, double *matrix, int lda, double *delta);
   bool isUnit(int m, int n, double *matrix, int lda, double delta);
 
-  bool isUnit(int m, int n, cuComplex *matrix, int lda, float delta);
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, cuComplex *delta);
+  bool isUnit(int m, int n, cuComplex *matrix, int lda, cuComplex delta);
 
-  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda, double delta);
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+              cuDoubleComplex *delta);
+  bool isUnit(int m, int n, cuDoubleComplex *matrix, int lda,
+              cuDoubleComplex delta);
 
 private:
   int m_device;

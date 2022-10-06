@@ -17,17 +17,11 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "checkers.hpp"
+#include <mtrxIram/impl/checkers.hpp>
 
 #include <stdexcept>
 
 namespace mtrx {
-
-void checkSortFunction(const mtrx::Iram::Sort &sort) {
-  if (!sort) {
-    throw std::runtime_error("Sort function was not initialized");
-  }
-}
 
 void checkAFLength(int afLength) {
   if (afLength == 0) {
@@ -36,5 +30,4 @@ void checkAFLength(int afLength) {
   }
 }
 
-void checkInitVector(Mem * /*initVector*/, MemoryType /*type*/) {}
 } // namespace mtrx

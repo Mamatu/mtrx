@@ -18,14 +18,36 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "iram_cublas_routines.hpp"
-#include "mtrxCore/types.hpp"
-#include "mtrxCublas/cublas_types.hpp"
+#ifndef MTRX_IRAM_IRAM_ROUTINES_HPP
+#define MTRX_IRAM_IRAM_ROUTINES_HPP
+
+#include <mtrxCore/blas.hpp>
+#include <mtrxCore/types.hpp>
+#include <mtrxCublas/cublas_types.hpp>
+#include <mtrxIram/iram_types.hpp>
+
+#include <memory>
 
 #include <numeric>
 #include <random>
 #include <sstream>
 #include <vector>
+
+namespace mtrx {
+
+template <typename T> using BlasPtr = typename std::shared_ptr<mtrx::Blas<T>>;
+
+template <typename T, typename T1>
+void createRandomUnitVector(const BlasPtr<T> &blasPtr, int length);
+
+template <typename T>
+void createUnitVector(const BlasPtr<T> &blasPtr, int length,
+                      ValueType valueType);
+
+template <typename T>
+void checkCustomInitVector(const BlasPtr<T> &blasPtr, T *mem);
+
+} // namespace mtrx
 
 namespace mtrx {
 namespace {
@@ -40,8 +62,8 @@ void initRandom(std::vector<HVT> &values, size_t length) {
   }
 }
 
-template <typename HVT> void convertToUnit(std::vector<HVT> &values) {
-  HVT factor = static_cast<HVT>(0.);
+template <typename T> void convertToUnit(std::vector<T> &values) {
+  T factor = static_cast<T>(0.);
   for (auto it = values.begin(); it != values.end(); ++it) {
     factor = factor + (*it) * (*it);
   }
@@ -51,38 +73,56 @@ template <typename HVT> void convertToUnit(std::vector<HVT> &values) {
   }
 }
 
-template <typename VT, typename HVT>
-Mem *_createFromVector(const BlasPtr &blasPtr, unsigned int length,
-                       ValueType valueType, const std::vector<HVT> &values) {
-  auto *d_vector = blasPtr->createMatrix(length, 1, valueType);
+template <typename T>
+T *_createFromVector(const BlasPtr<T> &blasPtr, unsigned int length,
+                     const std::vector<T> &values) {
+  auto *d_vector = blasPtr->createMatrix(length, 1);
   blasPtr->copyHostToKernel(d_vector, values.data());
   return d_vector;
 }
 
-template <typename VT, typename HVT>
-Mem *_createRandomUnitVector(const BlasPtr &blasPtr, unsigned int length,
-                             ValueType valueType) {
+class Factor1 {
+public:
+  Factor1(unsigned int length) : m_length(length) {}
+
+  unsigned int getLength() const { return m_length; }
+
+private:
+  unsigned int m_length;
+};
+
+class Factor2 {
+public:
+  Factor2(unsigned int length) : m_length(length * 2) {}
+
+  unsigned int getLength() const { return m_length; }
+
+private:
+  unsigned int m_length;
+};
+
+template <typename T, typename T1>
+T *_createRandomUnitVector(const BlasPtr<T> &blasPtr, unsigned int length) {
   auto _length = length;
   if (mtrx::isComplex(valueType)) {
     _length = _length * 2;
   }
-  std::vector<HVT> h_vector;
-  initRandom<HVT>(h_vector, _length);
-  convertToUnit<HVT>(h_vector);
-  return _createFromVector<VT, HVT>(blasPtr, length, valueType, h_vector);
+  std::vector<T1> h_vector;
+  initRandom<T1>(h_vector, _length);
+  convertToUnit<T1>(h_vector);
+  return _createFromVector<T, T1>(blasPtr, length, h_vector);
 }
 
-template <typename VT, typename HVT>
-Mem *_createUnitVector(const BlasPtr &blasPtr, unsigned int length,
-                       ValueType valueType) {
+template <typename T, typename T1>
+T *_createUnitVector(const BlasPtr<T> &blasPtr, unsigned int length) {
   auto _length = length;
   if (mtrx::isComplex(valueType)) {
     _length = _length * 2;
   }
-  std::vector<HVT> vector(_length, static_cast<HVT>(0));
-  vector[0] = static_cast<HVT>(1);
+  std::vector<T1> vector(_length, static_cast<T1>(0));
+  vector[0] = static_cast<T1>(1);
 
-  auto *d_vector = blasPtr->createMatrix(length, 1, valueType);
+  auto *d_vector = blasPtr->createMatrix(length, 1);
   blasPtr->copyHostToKernel(d_vector, vector.data());
 
   return d_vector;
@@ -90,8 +130,8 @@ Mem *_createUnitVector(const BlasPtr &blasPtr, unsigned int length,
 
 } // namespace
 
-Mem *createRandomUnitVector(const BlasPtr &blasPtr, unsigned int length,
-                            ValueType valueType) {
+template <typename T>
+T *createRandomUnitVector(const BlasPtr<T> &blasPtr, unsigned int length) {
 
   switch (valueType) {
   case ValueType::FLOAT:
@@ -110,8 +150,8 @@ Mem *createRandomUnitVector(const BlasPtr &blasPtr, unsigned int length,
   return nullptr;
 }
 
-Mem *createUnitVector(const BlasPtr &blasPtr, unsigned int length,
-                      ValueType valueType) {
+template <typename T>
+T *createUnitVector(const BlasPtr &blasPtr, unsigned int length) {
   switch (valueType) {
   case ValueType::FLOAT:
     return _createUnitVector<float, float>(blasPtr, length, valueType);
@@ -140,3 +180,5 @@ void checkCustomInitVector(const BlasPtr &blasPtr, Mem *mem) {
 }
 
 } // namespace mtrx
+
+#endif

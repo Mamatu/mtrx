@@ -109,7 +109,7 @@ TEST_F(DeviceCublasTests, createIdentityMatrix) {
 
     cublas.destroy(mem);
   } catch (const std::exception &ex) {
-    //FAIL() << ex.what();
+    // FAIL() << ex.what();
     throw ex;
   }
 }
@@ -281,7 +281,7 @@ TEST_F(DeviceCublasTests,
     cublas.destroy(b);
     cublas.destroy(output);
   } catch (const std::exception &ex) {
-    //FAIL() << ex.what();
+    // FAIL() << ex.what();
     throw ex;
   }
 }
@@ -497,6 +497,25 @@ TEST_F(DeviceCublasTests, copyKernelToKernel) {
     cublas.destroy(c);
   } catch (const std::exception &ex) {
     FAIL() << ex.what();
+  }
+}
+
+TEST_F(DeviceCublasTests, isComplex) {
+  {
+    mtrx::Cublas<float> cublas;
+    EXPECT_FALSE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<double> cublas;
+    EXPECT_FALSE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<cuComplex> cublas;
+    EXPECT_TRUE(cublas.isComplex());
+  }
+  {
+    mtrx::Cublas<cuDoubleComplex> cublas;
+    EXPECT_TRUE(cublas.isComplex());
   }
 }
 } // namespace mtrx

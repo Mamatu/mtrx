@@ -58,7 +58,7 @@ endif()
 
 if(${MTRX_CUBLAS_BUILD_HOST})
   # host tests
-  set(REQUIRED_CPP "src/kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp" "src/calc_dim.cpp" "src/host_alloc.cpp")
+  set(REQUIRED_CPP "src/cuda_kernels.cpp" "src/ikernel_executor.cpp" "src/host/host_kernel_executor.cpp" "src/sys_pathes_parser.cpp" "src/calc_dim.cpp" "src/host_alloc.cpp")
   set(TEST_HOST_TARGET "mtrxHostCublasTests")
   include(GoogleTest)
   add_executable(${TEST_HOST_TARGET} ${HOST_TESTS_SRC} ${HOST_SRC} ${REQUIRED_CPP})
