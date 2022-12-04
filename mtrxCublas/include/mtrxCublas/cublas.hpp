@@ -29,7 +29,7 @@
 #include <mtrxCore/size_of.hpp>
 #include <mtrxCore/types.hpp>
 
-#include <mtrxCublas/impl/cu_convert.hpp>
+#include <mtrxCublas/impl/cu_cast.hpp>
 #include <mtrxCublas/impl/cublas_kernels.hpp>
 #include <mtrxCublas/impl/cuda_alloc.hpp>
 #include <mtrxCublas/impl/cuda_kernels.hpp>
@@ -52,9 +52,9 @@ void cublas_setVec(Vec &&vec, int rows, int columns) {
   for (int r = 0; r < rows; ++r) {
     for (int c = 0; c < columns; ++c) {
       if (r == c) {
-        vec.push_back(cu_convert<T>(1));
+        vec.push_back(cu_cast<T>(1));
       } else {
-        vec.push_back(cu_convert<T>(0));
+        vec.push_back(cu_cast<T>(0));
       }
     }
   }
@@ -128,6 +128,10 @@ protected:
   void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) override;
 
   bool _isUnit(T *mem, T *delta) override;
+
+  T _cast(int v) const override;
+  T _cast(float v) const override;
+  T _cast(double v) const override;
 
   std::string _toStr(T *mem) override;
 
@@ -336,7 +340,7 @@ void Cublas<T>::_syr(FillMode fillMode, T *output, T *alpha, T *x) {
   } else {
     call(FillMode::LOWER);
     call(FillMode::UPPER);
-    this->_scaleDiagonal(output, cu_convert<T>(0.5));
+    this->_scaleDiagonal(output, cu_cast<T>(0.5));
   }
 }
 
@@ -396,8 +400,8 @@ void Cublas<T>::_symm(SideMode sideMode, FillMode fillMode, T *output, T *alpha,
 }
 
 template <typename T> void Cublas<T>::_matrixMul(T *output, T *a, T *b) {
-  _gemm(output, cu_convert<T>(1), Operation::OP_N, a, Operation::OP_N, b,
-        cu_convert<T>(0));
+  _gemm(output, cu_cast<T>(1), Operation::OP_N, a, Operation::OP_N, b,
+        cu_cast<T>(0));
 }
 
 template <typename T> void Cublas<T>::_geqrf(T *a, T *tau) {
@@ -524,7 +528,7 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
   }
 
   auto m2 = m * n;
-  std::vector<T> h_zeros(m2, cu_convert<T>(0));
+  std::vector<T> h_zeros(m2, cu_cast<T>(0));
 
   T *I = this->createIdentityMatrix(m, m);
   T *H = this->createMatrix(m, m);
@@ -564,8 +568,8 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
       T *Aux4 = cublas_getOffset(d_array, idx1);
       auto Aux4_size = offset;
 
-      std::vector<T> h_v(m, cu_convert<T>(0));
-      h_v[i] = cu_convert<T>(1);
+      std::vector<T> h_v(m, cu_cast<T>(0));
+      h_v[i] = cu_cast<T>(1);
       auto status = cudaMemcpy(h_v.data() + i + 1, Aux4, SizeOf<T>(Aux4_size),
                                cudaMemcpyDeviceToHost);
       handleStatus(status);
@@ -592,8 +596,8 @@ void Cublas<T>::_qrDecomposition(const Cublas<T>::Vec &q,
     handleStatus(status);
 #endif
 
-    T alpha = cu_convert<T>(1);
-    T beta = cu_convert<T>(0);
+    T alpha = cu_cast<T>(1);
+    T beta = cu_cast<T>(0);
     this->gemm(r[j], &alpha, Operation::OP_T, q[j], Operation::OP_N, a[j],
                &beta);
   }
@@ -646,7 +650,7 @@ template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
   CudaKernels kernels(0, &alloc);
 
   return kernels.isUpperTriangular(dim.first, dim.second, m, lda,
-                                   cu_convert<T>(0.));
+                                   cu_cast<T>(0.));
 }
 
 template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
@@ -659,7 +663,7 @@ template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
   CudaKernels kernels(0, &alloc);
 
   return kernels.isLowerTriangular(dim.first, dim.second, m, lda,
-                                   cu_convert<T>(0.));
+                                   cu_cast<T>(0.));
 }
 
 template <typename T>
@@ -677,12 +681,12 @@ void Cublas<T>::_geam(T *output, T *alpha, Operation transa, T *a, T *beta,
 }
 
 template <typename T> void Cublas<T>::_add(T *output, T *a, T *b) {
-  this->geam(output, cu_convert<T>(1), Operation::OP_N, a, cu_convert<T>(1),
+  this->geam(output, cu_cast<T>(1), Operation::OP_N, a, cu_cast<T>(1),
              Operation::OP_N, b);
 }
 
 template <typename T> void Cublas<T>::_subtract(T *output, T *a, T *b) {
-  this->geam(output, cu_convert<T>(1), Operation::OP_N, a, cu_convert<T>(-1),
+  this->geam(output, cu_cast<T>(1), Operation::OP_N, a, cu_cast<T>(-1),
              Operation::OP_N, b);
 }
 
@@ -824,6 +828,16 @@ inline std::ostream &operator<<(std::ostream &os,
                                 const cuDoubleComplex &ccomplex) {
   os << "(" << ccomplex.x << ", " << ccomplex.y << ")";
   return os;
+}
+
+template <typename T> T Cublas<T>::_cast(int v) const { return cu_cast<T>(v); }
+
+template <typename T> T Cublas<T>::_cast(float v) const {
+  return cu_cast<T>(v);
+}
+
+template <typename T> T Cublas<T>::_cast(double v) const {
+  return cu_cast<T>(v);
 }
 
 template <typename T> std::string Cublas<T>::_toStr(T *m) {

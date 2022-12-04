@@ -29,8 +29,8 @@
 #include <mtrxCore/types.hpp>
 
 namespace mtrx {
-enum class CalculationDevice { CUDA, NONE };
-enum class MemoryType { CUDA, HOST, NONE };
+enum class CalculationDevice { DEVICE, NONE };
+enum class MemoryType { DEVICE, HOST, NONE };
 enum class InitVectorType {
   CUSTOM_VECTOR,
   UNIT_VECTOR,

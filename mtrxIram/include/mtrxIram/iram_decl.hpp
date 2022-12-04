@@ -25,6 +25,7 @@
 #include <memory>
 #include <vector>
 
+#include "mtrxCore/blas_decl.hpp"
 #include <mtrxCore/blas.hpp>
 #include <mtrxCore/types.hpp>
 
@@ -38,7 +39,9 @@ namespace mtrx {
  */
 template <typename T> class Iram final {
 public:
-  Iram(CalculationDevice calculationDevice);
+  using BlasShared = std::shared_ptr<mtrx::Blas<T>>;
+
+  Iram(const BlasShared &blas);
   ~Iram() = default;
 
   void setArnoldiFactorizationLength(int afLength);
@@ -48,8 +51,8 @@ public:
   using Unwanted = std::vector<int>;
 
   void setVectorToInit(T *vector, MemoryType type);
-  void setUnitVectorToInit(unsigned int length, MemoryType type);
-  void setRandomVectorToInit(unsigned int length, MemoryType type);
+  void setUnitVectorToInit(unsigned int length);
+  void setRandomVectorToInit(unsigned int length);
 
   /**
    * Sort of eigenvalues.
@@ -63,9 +66,13 @@ public:
 
   void start();
 
+protected:
+  static T *createInitVector(const BlasShared &blas, T *customInitVector,
+                             InitVectorType initVectorType, int rows);
+
 private:
   CalculationDevice m_calculationDevice;
-  std::shared_ptr<mtrx::Blas<T>> m_blas = nullptr;
+  BlasShared m_blas = nullptr;
 
   int m_afLength = 0;
 
@@ -77,9 +84,10 @@ private:
 
   Sort m_sort = nullptr;
 
-  void check();
+  void check() const;
   void checkInitVector();
-  void createInitVector();
+  void checkSortFunction();
+  void checkAFLength(int afLength);
 };
 
 } // namespace mtrx
