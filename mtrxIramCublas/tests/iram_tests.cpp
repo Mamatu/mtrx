@@ -10,10 +10,24 @@ public:
   virtual void tearDown() {}
 };
 
-TEST_F(IramCublasTests, Init) {
+TEST_F(IramCublasTests, StartWithoutInitVector) {
   auto cublas = std::make_shared<mtrx::Cublas<float>>();
   mtrx::Iram<float> iram(cublas);
-  iram.start();
+  EXPECT_THROW(iram.start(), std::runtime_error);
+}
+
+TEST_F(IramCublasTests, StartWithRandomInitVector) {
+  auto cublas = std::make_shared<mtrx::Cublas<float>>();
+  mtrx::Iram<float> iram(cublas);
+  iram.setRandomVectorToInit(8);
+  EXPECT_NO_THROW(iram.start());
+}
+
+TEST_F(IramCublasTests, StartWithUnitInitVector) {
+  auto cublas = std::make_shared<mtrx::Cublas<float>>();
+  mtrx::Iram<float> iram(cublas);
+  iram.setUnitVectorToInit(8);
+  EXPECT_NO_THROW(iram.start());
 }
 
 } // namespace mtrx

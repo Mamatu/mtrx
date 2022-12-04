@@ -115,6 +115,9 @@ template <typename T> void Iram<T>::start() {
 }
 
 template <typename T> void Iram<T>::checkInitVector() {
+  mtrx::throw_exception_ifnot(m_initVector != nullptr, [](auto &in) {
+    in << "Init vector is not initialized";
+  });
   mtrx::throw_exception_ifnot(m_blas->isUnit(m_initVector, m_blas->cast(0.00001)), [](auto &in) {
     in << "Custom init vector must be unit";
   });
