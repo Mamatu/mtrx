@@ -115,14 +115,15 @@ template <typename T> void Iram<T>::start() {
 }
 
 template <typename T> void Iram<T>::checkInitVector() {
-  if (m_initVecType.first == InitVectorType::RANDOM_UNIT_VECTOR) {
-    return;
-  }
-  if (m_initVecType.first == InitVectorType::UNIT_VECTOR) {
-    return;
-  }
-  mtrx::throw_exception_ifnot(m_blas->isUnit(m_initVecType), [](auto &in) {
-    in << "Custor init vector must be unit";
+  mtrx::throw_exception_ifnot(m_blas->isUnit(m_initVector, m_blas->cast(0.00001)), [](auto &in) {
+    in << "Custom init vector must be unit";
+  });
+}
+
+template <typename T> void Iram<T>::checkAFLength(int afLength) {
+  mtrx::throw_exception_ifnot(afLength == 0, [](auto &in) {
+    in << "Arnoldi Factorization Length is not initialized properly (cannot be "
+          "0)";
   });
 }
 } // namespace mtrx
