@@ -17,24 +17,17 @@
  * along with mtrx.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MTRX_IRAM_IRAM_IMPL_CHECKERS_HPP
-#define MTRX_IRAM_IRAM_IMPL_CHECKERS_HPP
-
 #include <mtrxIram/iram_decl.hpp>
+
+#include <stdexcept>
 
 namespace mtrx {
 
-template <typename T>
-void checkSortFunction(const typename mtrx::Iram<T>::Sort &sort) {
-  if (!sort) {
-    throw std::runtime_error("Sort function was not initialized");
+void checkAFLength(int afLength) {
+  if (afLength == 0) {
+    throw std::runtime_error("Arnoldi Factorization Length is not initialized "
+                             "properly (cannot be 0)");
   }
 }
 
-template <typename T>
-void checkInitVector(T * /*initVector*/, MemoryType /*type*/) {}
-
-void checkAFLength(int afLength);
 } // namespace mtrx
-
-#endif

@@ -20,6 +20,10 @@
 #ifndef MTRX_IRAM_IRAM_HPP
 #define MTRX_IRAM_IRAM_HPP
 
+/**
+ * For refence see:
+ * https://www.caam.rice.edu/software/ARPACK/UG/node45.html#SECTION00800000000000000000
+ */
 #include <mtrxIram/iram_impl.hpp>
 
 #endif
