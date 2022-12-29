@@ -294,7 +294,11 @@ void Blas<T>::trttp(FillMode uplo, int n, T *A, int lda, T *AP) {
 
 template <typename T> bool Blas<T>::isUnit(T *mem, T delta) {
   checkMem(mem);
-  return _isUnit(mem, delta);
+  return _isUnit(mem, &delta);
+}
+
+template <typename T> bool Blas<T>::eye(T *mem, T delta) {
+  return this->isUnit(mem, delta);
 }
 
 template <typename T> bool Blas<T>::eye(T *mem, T delta) {
