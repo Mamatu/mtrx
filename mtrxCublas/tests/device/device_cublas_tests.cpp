@@ -518,4 +518,39 @@ TEST_F(DeviceCublasTests, isComplex) {
     EXPECT_TRUE(cublas.isComplex());
   }
 }
+
+TEST_F(DeviceCublasTests, isUnit_1) {
+  try {
+    std::array<float, 9> h_a = {0};
+    h_a[0] = 1;
+    mtrx::Cublas<float> cublas;
+
+    float *a = cublas.createMatrix(9, 1);
+
+    cublas.copyHostToKernel(a, h_a.data());
+
+    EXPECT_TRUE(cublas.isUnit(a, 0.00001));
+
+    cublas.destroy(a);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
+  }
+}
+
+TEST_F(DeviceCublasTests, isUnit_2) {
+  try {
+    std::array<float, 9> h_a = {0};
+    mtrx::Cublas<float> cublas;
+
+    float *a = cublas.createMatrix(9, 1);
+
+    cublas.copyHostToKernel(a, h_a.data());
+
+    EXPECT_FALSE(cublas.isUnit(a, 0.00001));
+
+    cublas.destroy(a);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
+  }
+}
 } // namespace mtrx

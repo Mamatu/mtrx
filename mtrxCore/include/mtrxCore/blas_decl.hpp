@@ -114,7 +114,18 @@ public:
   void tpttr(FillMode uplo, int n, T *AP, T *A, int lda);
   void trttp(FillMode uplo, int n, T *A, int lda, T *AP);
 
+  /**
+   * Checks if mem is unit matrix.
+   */
   bool isUnit(T *mem, T delta);
+  /**
+   * Checks if mem is unit matrix.
+   */
+  bool eye(T *mem, T delta);
+
+  T cast(int v) const;
+  T cast(float v) const;
+  T cast(double v) const;
 
   std::string toStr(T *mem);
 
@@ -174,6 +185,10 @@ protected:
   virtual void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) = 0;
 
   virtual bool _isUnit(T *mem, T *delta) = 0;
+
+  virtual T _cast(int v) const = 0;
+  virtual T _cast(float v) const = 0;
+  virtual T _cast(double v) const = 0;
 
   virtual std::string _toStr(T *mem) = 0;
 

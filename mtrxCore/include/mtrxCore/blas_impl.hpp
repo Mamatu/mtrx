@@ -85,10 +85,7 @@ template <typename T> bool Blas<T>::isAllocator(const T *mem) const {
   return it != m_mems.end();
 }
 
-template<typename T>
-bool Blas<T>::isComplex() const {
-  return _isComplex();
-}
+template <typename T> bool Blas<T>::isComplex() const { return _isComplex(); }
 
 template <typename T> int Blas<T>::getCount(const T *mem) const {
   checkMem(mem);
@@ -297,8 +294,18 @@ void Blas<T>::trttp(FillMode uplo, int n, T *A, int lda, T *AP) {
 
 template <typename T> bool Blas<T>::isUnit(T *mem, T delta) {
   checkMem(mem);
-  return _isUnit(mem, delta);
+  return _isUnit(mem, &delta);
 }
+
+template <typename T> bool Blas<T>::eye(T *mem, T delta) {
+  return this->isUnit(mem, delta);
+}
+
+template <typename T> T Blas<T>::cast(int v) const { return _cast(v); }
+
+template <typename T> T Blas<T>::cast(float v) const { return _cast(v); }
+
+template <typename T> T Blas<T>::cast(double v) const { return _cast(v); }
 
 template <typename T> std::string Blas<T>::toStr(T *mem) {
   checkMem(mem);

@@ -20,7 +20,7 @@
 #ifndef MTRX_IRAM_IRAM_IMPL_HPP
 #define MTRX_IRAM_IRAM_IMPL_HPP
 
-#include <mtrxIram/impl/checkers.hpp>
+#include <mtrxIram/impl/random_generator.hpp>
 #include <mtrxIram/iram_decl.hpp>
 
 #include <functional>
@@ -29,6 +29,7 @@
 #include <vector>
 
 #include <mtrxCore/blas.hpp>
+#include <mtrxCore/thrower.hpp>
 #include <mtrxCore/types.hpp>
 
 #include "iram_types.hpp"
@@ -36,73 +37,101 @@
 namespace mtrx {
 
 template <typename T>
-Iram<T>::Iram(CalculationDevice calculationDevice)
-    : m_calculationDevice(calculationDevice) {}
+Iram<T>::Iram(const Iram<T>::BlasShared &blas) : m_blas(blas) {}
 
 template <typename T>
 void Iram<T>::setArnoldiFactorizationLength(int afLength) {
   m_afLength = afLength;
+  checkAFLength(m_afLength);
 }
 
 template <typename T>
 void Iram<T>::setVectorToInit(T *vector, MemoryType type) {
+  mtrx::throw_exception_ifnot(m_blas->isAllocator(vector), [](auto &in) {
+    in << "Custom init vector must be allocated by assigned blas api";
+  });
   m_initVector = vector;
-  m_initVecType = std::make_pair(InitVectorType::CUSTOM_VECTOR, type);
+  m_initVecType =
+      std::make_pair(InitVectorType::CUSTOM_VECTOR, MemoryType::DEVICE);
 }
 
-template <typename T>
-void Iram<T>::setUnitVectorToInit(unsigned int length, MemoryType type) {
-  m_initVecType = std::make_pair(InitVectorType::UNIT_VECTOR, type);
+template <typename T> void Iram<T>::setUnitVectorToInit(unsigned int length) {
+  m_initVecType =
+      std::make_pair(InitVectorType::UNIT_VECTOR, MemoryType::DEVICE);
   m_length = length;
 }
 
-template <typename T>
-void Iram<T>::setRandomVectorToInit(unsigned int length, MemoryType type) {
-  m_initVecType = std::make_pair(InitVectorType::RANDOM_UNIT_VECTOR, type);
+template <typename T> void Iram<T>::setRandomVectorToInit(unsigned int length) {
+  m_initVecType =
+      std::make_pair(InitVectorType::RANDOM_UNIT_VECTOR, MemoryType::DEVICE);
   m_length = length;
 }
 
 template <typename T> void Iram<T>::setEigenValuesSort(const Sort &sort) {
   m_sort = sort;
+  checkSortFunction();
 }
 
 template <typename T> void Iram<T>::setEigenValuesSort(Sort &&sort) {
   m_sort = std::move(sort);
+  checkSortFunction();
 }
 
-template <typename T> void Iram<T>::check() {
-  mtrx::checkAFLength(m_afLength);
-  checkSortFunction(m_sort);
-}
-
-template <typename T> void Iram<T>::checkInitVector() {
-  if (m_initVecType.first == InitVectorType::RANDOM_UNIT_VECTOR) {
-    return;
+template <typename T>
+T *Iram<T>::createInitVector(const Iram<T>::BlasShared &blas,
+                             T *initCustomVector, InitVectorType initVectorType,
+                             int rows) {
+  if (initVectorType == InitVectorType::RANDOM_UNIT_VECTOR) {
+    RandomGenerator<T> rg(blas->cast(0.), blas->cast(1.));
+    std::vector<T> vec(rows, blas->cast(0.));
+    T length = 0;
+    for (size_t idx = 0; idx < vec.size(); ++idx) {
+      auto v = rg();
+      vec[idx] = v;
+      length += v*v;
+    }
+    length = sqrt(length);
+    for (size_t idx = 0; idx < vec.size(); ++idx) {
+      vec[idx] = vec[idx] / length;
+    }
+    auto* matrix = blas->createMatrix(rows, 1);
+    blas->copyHostToKernel(matrix, vec.data());
+    return matrix;
   }
-  if (m_initVecType.first == InitVectorType::UNIT_VECTOR) {
-    return;
+  if (initVectorType == InitVectorType::UNIT_VECTOR) {
+    return blas->createIdentityMatrix(rows, 1);
   }
-  mtrx::checkInitVector(m_initVector, m_initVecType.second);
-}
-
-template <typename T> void Iram<T>::createInitVector() {
-
-  if (m_initVecType.first == InitVectorType::RANDOM_UNIT_VECTOR) {
+  if (initVectorType == InitVectorType::CUSTOM_VECTOR &&
+      initCustomVector == nullptr) {
+    throw_exception([](auto &in) {
+      in << "If initVectorType is CUSTOM_VECTOR then initCustomVector "
+            "cannot be nullptr";
+    });
   }
-  if (m_initVecType.first == InitVectorType::UNIT_VECTOR) {
-    // std::vector<mtrx::get_type<m_valueType>> initVector(
-    //    m_length, static_cast<mtrx::get_type<m_valueType>>(0));
-  }
-  if (m_initVecType.first == InitVectorType::CUSTOM_VECTOR &&
-      m_initVecType.second == MemoryType::HOST) {
-    auto *initVector = m_blas->createMatrix(m_length, 1);
-  }
+  return initCustomVector;
 }
 
 template <typename T> void Iram<T>::start() {
-  check();
-  createInitVector();
+  m_initVector = Iram<T>::createInitVector(m_blas, m_initVector,
+                                           m_initVecType.first, m_length);
   checkInitVector();
+}
+
+template <typename T> void Iram<T>::checkInitVector() {
+  mtrx::throw_exception_ifnot(m_initVector != nullptr, [](auto &in) {
+    in << "Init vector is not initialized";
+  });
+  spdlog::info(m_blas->toStr(m_initVector));
+  mtrx::throw_exception_ifnot(
+      m_blas->isUnit(m_initVector, m_blas->cast(0.00001)),
+      [](auto &in) { in << "Custom init vector must be unit"; });
+}
+
+template <typename T> void Iram<T>::checkAFLength(int afLength) {
+  mtrx::throw_exception_ifnot(afLength == 0, [](auto &in) {
+    in << "Arnoldi Factorization Length is not initialized properly (cannot be "
+          "0)";
+  });
 }
 } // namespace mtrx
 

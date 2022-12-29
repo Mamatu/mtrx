@@ -1,5 +1,5 @@
-#ifndef CUBLAS_CAST_HPP
-#define CUBLAS_CAST_HPP
+#ifndef MTRX_CUBLAS_CAST_HPP
+#define MTRX_CUBLAS_CAST_HPP
 
 #include <cuComplex.h>
 #include <stdexcept>
@@ -41,7 +41,7 @@ public:
 };
 } // namespace
 
-template <typename T, typename T1> T cu_convert(T1 value) {
+template <typename T, typename T1> T cu_cast(T1 value) {
   using CCuComplex = std::conditional<std::is_same<T, cuComplex>::value,
                                       _CuComplex<T1>, _CuFail<T1>>;
   using CCuDoubleComplex =
