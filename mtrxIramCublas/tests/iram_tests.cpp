@@ -1,6 +1,8 @@
+#include <exception>
 #include <gtest/gtest.h>
 #include <mtrxCublas/cublas.hpp>
 #include <mtrxIram/iram.hpp>
+#include <stdexcept>
 
 namespace mtrx {
 
@@ -17,17 +19,29 @@ TEST_F(IramCublasTests, StartWithoutInitVector) {
 }
 
 TEST_F(IramCublasTests, StartWithRandomInitVector) {
-  auto cublas = std::make_shared<mtrx::Cublas<float>>();
-  mtrx::Iram<float> iram(cublas);
-  iram.setRandomVectorToInit(8);
-  EXPECT_NO_THROW(iram.start());
+  EXPECT_NO_THROW(
+      try {
+        auto cublas = std::make_shared<mtrx::Cublas<float>>();
+        mtrx::Iram<float> iram(cublas);
+        iram.setRandomVectorToInit(8);
+        iram.start();
+      } catch (const std::exception &e) {
+        spdlog::error(e.what());
+        throw e;
+      });
 }
 
 TEST_F(IramCublasTests, StartWithUnitInitVector) {
-  auto cublas = std::make_shared<mtrx::Cublas<float>>();
-  mtrx::Iram<float> iram(cublas);
-  iram.setUnitVectorToInit(8);
-  EXPECT_NO_THROW(iram.start());
+  EXPECT_NO_THROW(
+      try {
+        auto cublas = std::make_shared<mtrx::Cublas<float>>();
+        mtrx::Iram<float> iram(cublas);
+        iram.setUnitVectorToInit(8);
+        iram.start();
+      } catch (const std::exception &e) {
+        spdlog::error(e.what());
+        throw e;
+      });
 }
 
 } // namespace mtrx
