@@ -84,16 +84,19 @@ T *Iram<T>::createInitVector(const Iram<T>::BlasShared &blas,
   if (initVectorType == InitVectorType::RANDOM_UNIT_VECTOR) {
     RandomGenerator<T> rg(blas->cast(0.), blas->cast(1.));
     std::vector<T> vec(rows, blas->cast(0.));
-    T sum = 0;
+    T length = 0;
     for (size_t idx = 0; idx < vec.size(); ++idx) {
       auto v = rg();
       vec[idx] = v;
-      sum += v;
+      length += v*v;
     }
+    length = sqrt(length);
     for (size_t idx = 0; idx < vec.size(); ++idx) {
-      vec[idx] = vec[idx] / sum;
+      vec[idx] = vec[idx] / length;
     }
-    return blas->createMatrix(rows, 1);
+    auto* matrix = blas->createMatrix(rows, 1);
+    blas->copyHostToKernel(matrix, vec.data());
+    return matrix;
   }
   if (initVectorType == InitVectorType::UNIT_VECTOR) {
     return blas->createIdentityMatrix(rows, 1);
@@ -109,18 +112,19 @@ T *Iram<T>::createInitVector(const Iram<T>::BlasShared &blas,
 }
 
 template <typename T> void Iram<T>::start() {
-  checkInitVector();
   m_initVector = Iram<T>::createInitVector(m_blas, m_initVector,
                                            m_initVecType.first, m_length);
+  checkInitVector();
 }
 
 template <typename T> void Iram<T>::checkInitVector() {
   mtrx::throw_exception_ifnot(m_initVector != nullptr, [](auto &in) {
     in << "Init vector is not initialized";
   });
-  mtrx::throw_exception_ifnot(m_blas->isUnit(m_initVector, m_blas->cast(0.00001)), [](auto &in) {
-    in << "Custom init vector must be unit";
-  });
+  spdlog::info(m_blas->toStr(m_initVector));
+  mtrx::throw_exception_ifnot(
+      m_blas->isUnit(m_initVector, m_blas->cast(0.00001)),
+      [](auto &in) { in << "Custom init vector must be unit"; });
 }
 
 template <typename T> void Iram<T>::checkAFLength(int afLength) {
