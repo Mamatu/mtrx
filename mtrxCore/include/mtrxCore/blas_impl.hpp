@@ -298,10 +298,10 @@ template <typename T> bool Blas<T>::isUnit(T *mem, T delta) {
 }
 
 template <typename T> bool Blas<T>::eye(T *mem, T delta) {
-  return this->isUnit(mem, delta);
+  return this->isUnit(mem, &delta);
 }
 
-template <typename T> bool Blas<T>::eye(T *mem, T delta) {
+template <typename T> bool Blas<T>::eye(T *mem, T* delta) {
   return this->isUnit(mem, delta);
 }
 

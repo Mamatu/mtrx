@@ -122,6 +122,7 @@ public:
    * Checks if mem is unit matrix.
    */
   bool eye(T *mem, T delta);
+  bool eye(T *mem, T* delta);
 
   T cast(int v) const;
   T cast(float v) const;
