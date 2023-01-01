@@ -161,6 +161,70 @@ void CudaKernels::scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
 }
 
 template <typename T>
+void Kernel_diagonalAdd(const std::string &kernelName, int dim, T *matrix,
+                        int lda, T *value, int device) {
+  auto ke = GetKernelExecutor(device);
+  const auto &dp = ke->getDeviceProperties();
+
+  dim3 threads;
+  dim3 blocks;
+  calculateDim(threads, blocks, dim, 1, dp.blockDim, dp.gridDim,
+               dp.maxThreadsPerBlock);
+
+  ke->setThreadsCount(threads);
+  ke->setBlocksCount(blocks);
+
+  void *params[] = {&dim, &dim, &matrix, &lda, value};
+  ke->setParams(const_cast<const void **>(params));
+
+  std::stringstream cukernelName;
+  cukernelName << "Cuda" << kernelName;
+  spdlog::info("Run kernel '{}'", cukernelName.str());
+  {
+    PROFILER();
+    ke->run(cukernelName.str());
+  }
+}
+
+void Kernel_SF_diagonalAdd(int dim, float *matrix, int lda, float *value,
+                           int device) {
+  Kernel_diagonalAdd(__func__, dim, matrix, lda, value, device);
+}
+
+void Kernel_SD_diagonalAdd(int dim, double *matrix, int lda, double *value,
+                           int device) {
+  Kernel_diagonalAdd(__func__, dim, matrix, lda, value, device);
+}
+
+void Kernel_CF_diagonalAdd(int dim, cuComplex *matrix, int lda,
+                           cuComplex *value, int device) {
+  Kernel_diagonalAdd(__func__, dim, matrix, lda, value, device);
+}
+
+void Kernel_CD_diagonalAdd(int dim, cuDoubleComplex *matrix, int lda,
+                           cuDoubleComplex *value, int device) {
+  Kernel_diagonalAdd(__func__, dim, matrix, lda, value, device);
+}
+
+void CudaKernels::diagonalAdd(int dim, float *matrix, int lda, float *value) {
+  Kernel_SF_diagonalAdd(dim, matrix, lda, value, m_device);
+}
+
+void CudaKernels::diagonalAdd(int dim, double *matrix, int lda, double *value) {
+  Kernel_SD_diagonalAdd(dim, matrix, lda, value, m_device);
+}
+
+void CudaKernels::diagonalAdd(int dim, cuComplex *matrix, int lda,
+                              cuComplex *value) {
+  Kernel_CF_diagonalAdd(dim, matrix, lda, value, m_device);
+}
+
+void CudaKernels::diagonalAdd(int dim, cuDoubleComplex *matrix, int lda,
+                              cuDoubleComplex *value) {
+  Kernel_CD_diagonalAdd(dim, matrix, lda, value, m_device);
+}
+
+template <typename T>
 void Kernel_isULTriangular(Alloc *alloc, bool &is,
                            const std::string &kernelName, int rows, int columns,
                            T *matrix, int lda, T delta, int device) {

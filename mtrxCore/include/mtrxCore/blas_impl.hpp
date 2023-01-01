@@ -20,6 +20,7 @@
 #ifndef MTRX_CORE_BLAS_IMPL_HPP
 #define MTRX_CORE_BLAS_IMPL_HPP
 
+#include "mtrxCore/thrower.hpp"
 #include "mtrxCore/types.hpp"
 #include <algorithm>
 #include <sstream>
@@ -131,6 +132,17 @@ template <typename T> void Blas<T>::copyKernelToHost(T *array, const T *mem) {
   _copyKernelToHost(array, mem, count);
 }
 
+template <typename T> void Blas<T>::copyKernelToKernel(T *memd, const T *mems) {
+  checkMem(memd);
+  checkMem(mems);
+  auto countd = getCount(memd);
+  auto counts = getCount(mems);
+  mtrx::throw_exception_ifnot(counts == countd, [](auto &in) {
+    in << "copyKernelToKernel requires that both mem have the same count";
+  });
+  _copyKernelToKernel(memd, mems, counts);
+}
+
 template <typename T>
 void Blas<T>::copyHostToKernel(T *mem, const T *array, int count) {
   checkMem(mem);
@@ -141,6 +153,65 @@ template <typename T>
 void Blas<T>::copyKernelToHost(T *array, const T *mem, int count) {
   checkMem(mem);
   _copyKernelToHost(array, mem, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToKernel(T *memd, const T *mems, int count) {
+  checkMem(memd);
+  checkMem(mems);
+  _copyKernelToKernel(mems, memd, count);
+}
+
+template <typename T>
+void Blas<T>::copyHostToKernel(T *mem, int incr_mem, const T *array,
+                               int incr_array) {
+  checkMem(mem);
+  auto count = getCount(mem);
+  _copyHostToKernel(mem, incr_mem, array, incr_array, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToHost(T *array, int incr_array, const T *mem,
+                               int incr_mem) {
+  checkMem(mem);
+  auto count = getCount(mem);
+  _copyKernelToHost(array, incr_array, mem, incr_mem, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToKernel(T *memd, int incr_memd, const T *mems,
+                                 int incr_mems) {
+  checkMem(memd);
+  checkMem(mems);
+  auto counts = getCount(mems);
+  auto countd = getCount(memd);
+  mtrx::throw_exception_ifnot(counts == countd, [](auto &in) {
+    in << "copyKernelToKernel requires that both mem have the same count";
+  });
+  _copyKernelToKernel(memd, incr_memd, mems, incr_mems, counts);
+}
+
+template <typename T>
+void Blas<T>::copyHostToKernel(T *mem, int incr_mem, const T *array,
+                               int incr_array, int count) {
+
+  checkMem(mem);
+  _copyHostToKernel(mem, incr_mem, array, incr_array, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToHost(T *array, int incr_array, const T *mem,
+                               int incr_mem, int count) {
+  checkMem(mem);
+  _copyKernelToHost(array, incr_array, mem, incr_mem, count);
+}
+
+template <typename T>
+void Blas<T>::copyKernelToKernel(T *memd, int incr_memd, const T *mems,
+                                 int incr_mems, int count) {
+  checkMem(memd);
+  checkMem(mems);
+  _copyKernelToKernel(memd, incr_memd, mems, incr_mems, count);
 }
 
 template <typename T> uintt Blas<T>::amax(const T *mem) {
@@ -278,6 +349,11 @@ template <typename T> void Blas<T>::scaleDiagonal(T *matrix, T factor) {
   _scaleDiagonal(matrix, &factor);
 }
 
+template <typename T> void Blas<T>::diagonalAdd(T *matrix, T value) {
+  checkMem(matrix);
+  _scaleDiagonal(matrix, &value);
+}
+
 template <typename T>
 void Blas<T>::tpttr(FillMode uplo, int n, T *AP, T *A, int lda) {
   checkMem(AP);
@@ -301,7 +377,7 @@ template <typename T> bool Blas<T>::eye(T *mem, T delta) {
   return this->isUnit(mem, &delta);
 }
 
-template <typename T> bool Blas<T>::eye(T *mem, T* delta) {
+template <typename T> bool Blas<T>::eye(T *mem, T *delta) {
   return this->isUnit(mem, delta);
 }
 

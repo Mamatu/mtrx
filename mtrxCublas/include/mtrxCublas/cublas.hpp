@@ -83,6 +83,14 @@ protected:
 
   void _copyHostToKernel(T *mem, const T *array, int count) override;
   void _copyKernelToHost(T *array, const T *mem, int count) override;
+  void _copyKernelToKernel(T *memd, const T *mems, int count) override;
+
+  void _copyHostToKernel(T *mem, int incr_mem, const T *array, int incr_array,
+                         int count) override;
+  void _copyKernelToHost(T *array, int incr_array, const T *mem, int incr_mem,
+                         int count) override;
+  void _copyKernelToKernel(T *memd, int incr_memd, const T *mems, int incr_mems,
+                           int count) override;
 
   uintt _amax(const T *mem) override;
   uintt _amin(const T *mem) override;
@@ -121,6 +129,7 @@ protected:
 
   void _scaleDiagonal(T *matrix, T *factor) override;
   void _scaleDiagonal(T *matrix, T factor);
+  void _diagonalAdd(T *matrix, T *value) override;
 
   bool _isComplex() const override;
 
@@ -282,15 +291,42 @@ template <typename T> int Cublas<T>::_getSizeInBytes(const T *mem) const {
 }
 
 template <typename T>
-void Cublas<T>::_copyHostToKernel(T *dst, const T *src, int count) {
-  auto status = cublasSetVector(count, SizeOf<T>(), src, 1, dst, 1);
+void Cublas<T>::_copyHostToKernel(T *mem, const T *array, int count) {
+  auto status = cublasSetVector(count, SizeOf<T>(), array, 1, mem, 1);
   handleStatus(status);
 }
 
 template <typename T>
-void Cublas<T>::_copyKernelToHost(T *dst, const T *src, int count) {
-  auto status = cublasGetVector(count, SizeOf<T>(), src, 1, dst, 1);
+void Cublas<T>::_copyKernelToHost(T *array, const T *mem, int count) {
+  auto status = cublasGetVector(count, SizeOf<T>(), mem, 1, array, 1);
   handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToKernel(T *memd, const T *mems, int count) {
+  m_cublasKernels.copyKernelToKernel(count, memd, 1, mems, 1);
+}
+
+template <typename T>
+void Cublas<T>::_copyHostToKernel(T *mem, int incr_mem, const T *array,
+                                  int incr_array, int count) {
+  auto status =
+      cublasSetVector(count, SizeOf<T>(), array, incr_array, mem, incr_mem);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToHost(T *array, int incr_array, const T *mem,
+                                  int incr_mem, int count) {
+  auto status =
+      cublasGetVector(count, SizeOf<T>(), mem, incr_mem, array, incr_array);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToKernel(T *memd, int incr_memd, const T *mems,
+                                    int incr_mems, int count) {
+  m_cublasKernels.copyKernelToKernel(count, memd, incr_memd, mems, incr_mems);
 }
 
 template <typename T> uintt Cublas<T>::_amax(const T *mem) {
@@ -727,6 +763,22 @@ template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
 
 template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T factor) {
   _scaleDiagonal(matrix, &factor);
+}
+
+template <typename T> void Cublas<T>::_diagonalAdd(T *matrix, T *value) {
+  auto rows = this->getRows(matrix);
+  auto columns = this->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  CudaAlloc cudaAlloc;
+  CudaKernels kernels(0, &cudaAlloc);
+
+  kernels.diagonalAdd(rows, matrix, rows, value);
 }
 
 template <typename T>
