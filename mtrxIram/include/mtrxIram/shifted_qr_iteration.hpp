@@ -95,8 +95,8 @@ public:
       : blas(std::forward<Blas>(_blas)), A(_A), V(_V), H(_H) {}
 
   ~ShiftedQRIteration() {
-    blas.destroy(A);
-    blas.destroy(V);
+    blas.destroy(Q);
+    blas.destroy(R);
     blas.destroy(H_uI);
   }
 
