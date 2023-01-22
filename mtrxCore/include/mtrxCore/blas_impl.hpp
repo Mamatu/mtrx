@@ -381,6 +381,14 @@ template <typename T> bool Blas<T>::eye(T *mem, T *delta) {
   return this->isUnit(mem, delta);
 }
 
+template <typename T> void Blas<T>::transpose(T *output, T *a) {
+  gaem(output, cast(1), Operation::OP_T, a, cast(0), Operation::OP_N, a);
+}
+
+template <typename T> void Blas<T>::conjugateTranspose(T *output, T *a) {
+  gaem(output, cast(1), Operation::OP_C, a, cast(0), Operation::OP_N, a);
+}
+
 template <typename T> T Blas<T>::cast(int v) const { return _cast(v); }
 
 template <typename T> T Blas<T>::cast(float v) const { return _cast(v); }

@@ -140,6 +140,9 @@ public:
 
   void getDiagonal(T *vec, T *matrix);
 
+  void transpose(T *output, T *a);
+  void conjugateTranspose(T *output, T *a);
+
   T cast(int v) const;
   T cast(float v) const;
   T cast(double v) const;
