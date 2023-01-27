@@ -316,6 +316,16 @@ template <typename T> bool Blas<T>::isLowerTriangular(T *m) {
   return _isLowerTriangular(m);
 }
 
+template <typename T> bool Blas<T>::isUpperHessenberg(T *m) {
+  checkMem(m);
+  return _isUpperHessenberg(m);
+}
+
+template <typename T> bool Blas<T>::isLowerHessenberg(T *m) {
+  checkMem(m);
+  return _isLowerHessenberg(m);
+}
+
 template <typename T>
 void Blas<T>::geam(T *output, T *alpha, Operation transa, T *a, T *beta,
                    Operation transb, T *b) {

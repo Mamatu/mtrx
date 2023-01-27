@@ -121,6 +121,9 @@ protected:
   bool _isUpperTriangular(T *m) override;
   bool _isLowerTriangular(T *m) override;
 
+  bool _isUpperHessenberg(T *m) override;
+  bool _isLowerHessenberg(T *m) override;
+
   void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
              Operation transb, T *b) override;
 
@@ -151,7 +154,7 @@ private:
   T *alloc(int count);
   void dealloc(T *mem);
 
-  std::pair<int, int> checkForTriangular(T *matrix) {
+  std::pair<int, int> checkIfSquare(T *matrix) {
     auto rows = this->getRows(matrix);
     auto columns = this->getColumns(matrix);
 
@@ -678,7 +681,7 @@ template <typename T> void Cublas<T>::_shiftQRIteration(T *H, T *Q) {
 
 template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
 
-  const auto &dim = checkForTriangular(m);
+  const auto &dim = checkIfSquare(m);
 
   auto lda = dim.first;
 
@@ -691,7 +694,7 @@ template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
 
 template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
 
-  const auto &dim = checkForTriangular(m);
+  const auto &dim = checkIfSquare(m);
 
   auto lda = dim.first;
 
@@ -699,6 +702,32 @@ template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
   CudaKernels kernels(0, &alloc);
 
   return kernels.isLowerTriangular(dim.first, dim.second, m, lda,
+                                   cu_cast<T>(0.));
+}
+
+template <typename T> bool Cublas<T>::_isUpperHessenberg(T *m) {
+
+  const auto &dim = checkIfSquare(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  CudaKernels kernels(0, &alloc);
+
+  return kernels.isUpperHessenberg(dim.first, dim.second, m, lda,
+                                   cu_cast<T>(0.));
+}
+
+template <typename T> bool Cublas<T>::_isLowerHessenberg(T *m) {
+
+  const auto &dim = checkIfSquare(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  CudaKernels kernels(0, &alloc);
+
+  return kernels.isLowerHessenberg(dim.first, dim.second, m, lda,
                                    cu_cast<T>(0.));
 }
 

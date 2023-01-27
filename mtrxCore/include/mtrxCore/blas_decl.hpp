@@ -109,6 +109,9 @@ public:
   bool isUpperTriangular(T *m);
   bool isLowerTriangular(T *m);
 
+  bool isUpperHessenberg(T *m);
+  bool isLowerHessenberg(T *m);
+
   /**
    * @brief matrix-matrix addition/transposition
    * output = alpha * oper(a) + beta * oper(b)
@@ -197,6 +200,9 @@ protected:
 
   virtual bool _isUpperTriangular(T *m) = 0;
   virtual bool _isLowerTriangular(T *m) = 0;
+
+  virtual bool _isUpperHessenberg(T *m) = 0;
+  virtual bool _isLowerHessenberg(T *m) = 0;
 
   virtual void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
                      Operation transb, T *b) = 0;

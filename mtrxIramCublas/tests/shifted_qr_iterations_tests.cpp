@@ -18,7 +18,7 @@ TEST_F(ShiftedQRIterationCublasTests, Test_1) {
   float *A = nullptr;
   float *V = nullptr;
   float *H = nullptr;
-  mtrx::ShiftedQRIteration sqri(cublas, A, V, H);
+  mtrx::ShiftedQRIteration<decltype(cublas), float> sqri(std::move(cublas), A, V, H);
   sqri();
 }
 

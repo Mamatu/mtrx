@@ -76,4 +76,56 @@ __device__ void cuda_isLowerTriangular(int rows, int columns, T *matrix,
   }
 }
 
+template <typename T>
+__device__ void cuda_isUpperHessenberg(int rows, int columns, T *matrix,
+                                       int lda, T delta,
+                                       int *reductionResults) {
+  HOST_INIT();
+
+  int *reduceBuffer = nullptr;
+  GENERIC_INIT_SHARED(int, reduceBuffer);
+
+  const int x = threadIdx.x + blockDim.x * blockIdx.x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+
+  const int shmIdx = threadIdx.x * blockDim.y + threadIdx.y;
+  reduceBuffer[shmIdx] = 0;
+  if (y < rows && x < columns) {
+    const T v = matrix[x * lda + y];
+    int is = (x - 1 >= y && cuda_isAbsHigher(v, delta)) ||
+             (x < y && !cuda_isAbsHigher(v, delta));
+
+    reduceBuffer[threadIdx.x * blockDim.y + threadIdx.y] = is;
+    const int reduceBufferLen = blockDim.x * blockDim.y;
+    cuda_reduce_shm_multi_blocks_sync<int>(reduceBuffer, reduceBufferLen,
+                                           reductionResults);
+  }
+}
+
+template <typename T>
+__device__ void cuda_isLowerHessenberg(int rows, int columns, T *matrix,
+                                       int lda, T delta,
+                                       int *reductionResults) {
+  HOST_INIT();
+
+  int *reduceBuffer = nullptr;
+  GENERIC_INIT_SHARED(int, reduceBuffer);
+
+  const int x = threadIdx.x + blockDim.x * blockIdx.x;
+  const int y = threadIdx.y + blockDim.y * blockIdx.y;
+
+  const int shmIdx = threadIdx.x * blockDim.y + threadIdx.y;
+  reduceBuffer[shmIdx] = 0;
+  if (y < rows && x < columns) {
+    const T v = matrix[x * lda + y];
+    int is = (x > y && !cuda_isAbsHigher(v, delta)) ||
+             (x + 1 <= y && cuda_isAbsHigher(v, delta));
+
+    reduceBuffer[threadIdx.x * blockDim.y + threadIdx.y] = is;
+    const int reduceBufferLen = blockDim.x * blockDim.y;
+    cuda_reduce_shm_multi_blocks_sync<int>(reduceBuffer, reduceBufferLen,
+                                           reductionResults);
+  }
+}
+
 #endif

@@ -225,7 +225,7 @@ void CudaKernels::diagonalAdd(int dim, cuDoubleComplex *matrix, int lda,
 }
 
 template <typename T>
-void Kernel_isULTriangular(Alloc *alloc, bool &is,
+void Kernel_isMatrixType(Alloc *alloc, bool &is,
                            const std::string &kernelName, int rows, int columns,
                            T *matrix, int lda, T delta, int device) {
 
@@ -284,7 +284,7 @@ bool Kernel_SF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  float *matrix, int lda, float delta,
                                  int device) {
   bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
                         device);
   return is;
 }
@@ -293,7 +293,7 @@ bool Kernel_SD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  double *matrix, int lda, double delta,
                                  int device) {
   bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
                         device);
   return is;
 }
@@ -302,7 +302,7 @@ bool Kernel_CF_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuComplex *matrix, int lda, cuComplex delta,
                                  int device) {
   bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
                         device);
   return is;
 }
@@ -311,43 +311,7 @@ bool Kernel_CD_isUpperTriangular(Alloc *alloc, int rows, int columns,
                                  cuDoubleComplex *matrix, int lda,
                                  cuDoubleComplex delta, int device) {
   bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
-                        device);
-  return is;
-}
-
-bool Kernel_SF_isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                 float *matrix, int lda, float delta,
-                                 int device) {
-  bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
-                        device);
-  return is;
-}
-
-bool Kernel_SD_isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                 double *matrix, int lda, double delta,
-                                 int device) {
-  bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
-                        device);
-  return is;
-}
-
-bool Kernel_CF_isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                 cuComplex *matrix, int lda, cuComplex delta,
-                                 int device) {
-  bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
-                        device);
-  return is;
-}
-
-bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
-                                 cuDoubleComplex *matrix, int lda,
-                                 cuDoubleComplex delta, int device) {
-  bool is = false;
-  Kernel_isULTriangular(alloc, is, __func__, rows, columns, matrix, lda, delta,
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
                         device);
   return is;
 }
@@ -377,6 +341,42 @@ bool CudaKernels::isUpperTriangular(int rows, int columns,
                                      m_device);
 }
 
+bool Kernel_SF_isLowerTriangular(Alloc *alloc, int rows, int columns,
+                                 float *matrix, int lda, float delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_SD_isLowerTriangular(Alloc *alloc, int rows, int columns,
+                                 double *matrix, int lda, double delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CF_isLowerTriangular(Alloc *alloc, int rows, int columns,
+                                 cuComplex *matrix, int lda, cuComplex delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CD_isLowerTriangular(Alloc *alloc, int rows, int columns,
+                                 cuDoubleComplex *matrix, int lda,
+                                 cuDoubleComplex delta, int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
 bool CudaKernels::isLowerTriangular(int rows, int columns, float *matrix,
                                     int lda, float delta) {
   return Kernel_SF_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
@@ -399,6 +399,128 @@ bool CudaKernels::isLowerTriangular(int rows, int columns,
                                     cuDoubleComplex *matrix, int lda,
                                     cuDoubleComplex delta) {
   return Kernel_CD_isLowerTriangular(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool Kernel_SF_isUpperHessenberg(Alloc *alloc, int rows, int columns,
+                                 float *matrix, int lda, float delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_SD_isUpperHessenberg(Alloc *alloc, int rows, int columns,
+                                 double *matrix, int lda, double delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CF_isUpperHessenberg(Alloc *alloc, int rows, int columns,
+                                 cuComplex *matrix, int lda, cuComplex delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CD_isUpperHessenberg(Alloc *alloc, int rows, int columns,
+                                 cuDoubleComplex *matrix, int lda,
+                                 cuDoubleComplex delta, int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool CudaKernels::isUpperHessenberg(int rows, int columns, float *matrix,
+                                    int lda, float delta) {
+  return Kernel_SF_isUpperHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isUpperHessenberg(int rows, int columns, double *matrix,
+                                    int lda, double delta) {
+  return Kernel_SD_isUpperHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isUpperHessenberg(int rows, int columns, cuComplex *matrix,
+                                    int lda, cuComplex delta) {
+  return Kernel_CF_isUpperHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isUpperHessenberg(int rows, int columns,
+                                    cuDoubleComplex *matrix, int lda,
+                                    cuDoubleComplex delta) {
+  return Kernel_CD_isUpperHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool Kernel_SF_isLowerHessenberg(Alloc *alloc, int rows, int columns,
+                                 float *matrix, int lda, float delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_SD_isLowerHessenberg(Alloc *alloc, int rows, int columns,
+                                 double *matrix, int lda, double delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CF_isLowerHessenberg(Alloc *alloc, int rows, int columns,
+                                 cuComplex *matrix, int lda, cuComplex delta,
+                                 int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool Kernel_CD_isLowerHessenberg(Alloc *alloc, int rows, int columns,
+                                 cuDoubleComplex *matrix, int lda,
+                                 cuDoubleComplex delta, int device) {
+  bool is = false;
+  Kernel_isMatrixType(alloc, is, __func__, rows, columns, matrix, lda, delta,
+                        device);
+  return is;
+}
+
+bool CudaKernels::isLowerHessenberg(int rows, int columns, float *matrix,
+                                    int lda, float delta) {
+  return Kernel_SF_isLowerHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isLowerHessenberg(int rows, int columns, double *matrix,
+                                    int lda, double delta) {
+  return Kernel_SD_isLowerHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isLowerHessenberg(int rows, int columns, cuComplex *matrix,
+                                    int lda, cuComplex delta) {
+  return Kernel_CF_isLowerHessenberg(m_alloc, rows, columns, matrix, lda, delta,
+                                     m_device);
+}
+
+bool CudaKernels::isLowerHessenberg(int rows, int columns,
+                                    cuDoubleComplex *matrix, int lda,
+                                    cuDoubleComplex delta) {
+  return Kernel_CD_isLowerHessenberg(m_alloc, rows, columns, matrix, lda, delta,
                                      m_device);
 }
 

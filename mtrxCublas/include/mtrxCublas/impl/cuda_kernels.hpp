@@ -70,6 +70,23 @@ public:
   bool isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
                          int lda, cuDoubleComplex delta);
 
+  bool isUpperHessenberg(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isUpperHessenberg(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isUpperHessenberg(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isUpperHessenberg(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
+
+  bool isLowerHessenberg(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isLowerHessenberg(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isLowerHessenberg(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isLowerHessenberg(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
   /**
    * @brief Reduction by using shared memory.
    */

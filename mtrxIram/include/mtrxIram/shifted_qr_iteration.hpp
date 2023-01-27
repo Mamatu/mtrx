@@ -27,28 +27,31 @@ namespace mtrx {
 
 template <typename Blas, typename T>
 void shifted_qr_iteration_check(Blas &&blas, T *A, T *V, T *H) {
-  auto h_dims = blas.getDim(H);
-  throw_exception_ifnot(h_dims[0] == h_dims[1], [](auto &in) {
-    in << "Matrix H must be square matrix. It is " << h_dims;
+  auto h_dims = blas.getDims(H);
+  throw_exception_ifnot(h_dims.first == h_dims.second, [&h_dims](auto &in) {
+    in << "Matrix H must be square matrix. It is " << h_dims.first << "x" << h_dims.second;
   });
 
-  auto v_dims = blas.getDim(V);
-  throw_exception_ifnot(v_dims[0] == v_dims[1], [](auto &in) {
-    in << "Matrix V must be square matrix. It is: " << v_dims;
+  auto v_dims = blas.getDims(V);
+  throw_exception_ifnot(v_dims.first == v_dims.second, [&v_dims](auto &in) {
+    in << "Matrix V must be square matrix. It is: " << v_dims.first << "x" << v_dims.second;
   });
 
-  auto a_dims = blas.getDim(A);
-  throw_exception_ifnot(a_dims[0] == a_dims[1], [](auto &in) {
-    in << "Matrix A must be square matrix. It is: " << a_dims;
+  auto a_dims = blas.getDims(A);
+  throw_exception_ifnot(a_dims.first == a_dims.second, [&a_dims](auto &in) {
+    in << "Matrix A must be square matrix. It is: " << a_dims.first << "x" << a_dims.second;
   });
 
   throw_exception_ifnot(
-      a_dims[0] == h_dims[0] && a_dims[1] == h_dims[1],
+      a_dims.first == h_dims.first && a_dims.second == h_dims.second,
       [](auto &in) { in << "Matrices A and H must have the same dimension"; });
 
   throw_exception_ifnot(
-      v_dims[0] == h_dims[0] && v_dims[1] == h_dims[1],
+      v_dims.first == h_dims.first && v_dims.second == h_dims.second,
       [](auto &in) { in << "Matrices V and H must have the same dimension"; });
+
+  throw_exception_ifnot(blas.isUpperHessenberg(H),
+                        [](auto &in) { in << "H must be upper hessenberg"; });
 }
 
 template <typename Blas, typename T>
@@ -57,7 +60,6 @@ void shifted_qr_iteration(Blas &&blas, T *A, T *V, T *H, T *Q, T *R, T *H_uI,
   if (check) {
     shifted_qr_iteration_check(std::forward<Blas>(blas), A, V, H);
   }
-  auto rows = blas.getRows(H);
   auto columns = blas.getColumns(H);
 
   std::vector<T> diagonals(columns, 0);
@@ -119,7 +121,7 @@ public:
   }
 
 private:
-  Blas &&blas;
+  Blas blas;
   T *A = nullptr;
   T *V = nullptr;
   T *H = nullptr;
