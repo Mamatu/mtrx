@@ -18,9 +18,30 @@
  */
 
 #include "cuda_scale_diagonal.hpp"
+#include "cuda_diagonal_add.hpp"
 #include "cuda_is_ul_triangular.hpp"
 #include "cuda_reduce.hpp"
 #include "mtrxCore/types.hpp"
+
+extern "C" __global__ void CudaKernel_SF_diagonalAdd(int m, int n, float* matrix, int lda, float value)
+{
+  cuda_SF_diagonalAdd(m, n, matrix, lda, value);
+}
+
+extern "C" __global__ void CudaKernel_SD_diagonalAdd(int m, int n, double* matrix, int lda, double value)
+{
+  cuda_SD_diagonalAdd(m, n, matrix, lda, value);
+}
+
+extern "C" __global__ void CudaKernel_CF_diagonalAdd(int m, int n, cuComplex* matrix, int lda, cuComplex value)
+{
+  cuda_CF_diagonalAdd(m, n, matrix, lda, value);
+}
+
+extern "C" __global__ void CudaKernel_CD_diagonalAdd(int m, int n, cuDoubleComplex* matrix, int lda, cuDoubleComplex value)
+{
+  cuda_CD_diagonalAdd(m, n, matrix, lda, value);
+}
 
 extern "C" __global__ void CudaKernel_SF_scaleDiagonal(int m, int n, float* matrix, int lda, float factor)
 {

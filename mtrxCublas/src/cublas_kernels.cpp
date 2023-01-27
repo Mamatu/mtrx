@@ -403,5 +403,31 @@ void CublasKernels::geam(cuDoubleComplex *output, int ldo, int m, int n,
                          Operation transb, cuDoubleComplex *b, int ldb) {
   geam(output, ldo, m, n, &alpha, transa, a, lda, &beta, transb, b, ldb);
 }
+void CublasKernels::copyKernelToKernel(int count, float *memd, int incr_memd,
+                                       const float *mems, int incr_mems) {
+  auto status = cublasScopy(m_handle, count, mems, incr_mems, memd, incr_memd);
+  handleStatus(status);
+}
+
+void CublasKernels::copyKernelToKernel(int count, double *memd, int incr_memd,
+                                       const double *mems, int incr_mems) {
+  auto status = cublasDcopy(m_handle, count, mems, incr_mems, memd, incr_memd);
+  handleStatus(status);
+}
+
+void CublasKernels::copyKernelToKernel(int count, cuComplex *memd,
+                                       int incr_memd, const cuComplex *mems,
+                                       int incr_mems) {
+  auto status = cublasCcopy(m_handle, count, mems, incr_mems, memd, incr_memd);
+  handleStatus(status);
+}
+
+void CublasKernels::copyKernelToKernel(int count, cuDoubleComplex *memd,
+                                       int incr_memd,
+                                       const cuDoubleComplex *mems,
+                                       int incr_mems) {
+  auto status = cublasZcopy(m_handle, count, mems, incr_mems, memd, incr_memd);
+  handleStatus(status);
+}
 
 } // namespace mtrx

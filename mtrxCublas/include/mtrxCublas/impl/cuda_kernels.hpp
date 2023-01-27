@@ -46,6 +46,12 @@ public:
   void scaleDiagonal(int dim, cuDoubleComplex *matrix, int lda,
                      cuDoubleComplex *factor);
 
+  void diagonalAdd(int dim, float *matrix, int lda, float *value);
+  void diagonalAdd(int dim, double *matrix, int lda, double *value);
+  void diagonalAdd(int dim, cuComplex *matrix, int lda, cuComplex *value);
+  void diagonalAdd(int dim, cuDoubleComplex *matrix, int lda,
+                   cuDoubleComplex *value);
+
   bool isUpperTriangular(int rows, int columns, float *matrix, int lda,
                          float delta);
   bool isUpperTriangular(int rows, int columns, double *matrix, int lda,
@@ -64,6 +70,23 @@ public:
   bool isLowerTriangular(int rows, int columns, cuDoubleComplex *matrix,
                          int lda, cuDoubleComplex delta);
 
+  bool isUpperHessenberg(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isUpperHessenberg(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isUpperHessenberg(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isUpperHessenberg(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
+
+  bool isLowerHessenberg(int rows, int columns, float *matrix, int lda,
+                         float delta);
+  bool isLowerHessenberg(int rows, int columns, double *matrix, int lda,
+                         double delta);
+  bool isLowerHessenberg(int rows, int columns, cuComplex *matrix, int lda,
+                         cuComplex delta);
+  bool isLowerHessenberg(int rows, int columns, cuDoubleComplex *matrix,
+                         int lda, cuDoubleComplex delta);
   /**
    * @brief Reduction by using shared memory.
    */

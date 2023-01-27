@@ -59,9 +59,22 @@ public:
 
   void copyHostToKernel(T *mem, const T *array);
   void copyKernelToHost(T *array, const T *mem);
+  void copyKernelToKernel(T *memd, const T *mems);
 
   void copyHostToKernel(T *mem, const T *array, int count);
   void copyKernelToHost(T *array, const T *mem, int count);
+  void copyKernelToKernel(T *memd, const T *mems, int count);
+
+  void copyHostToKernel(T *mem, int incr_mem, const T *array, int incr_array);
+  void copyKernelToHost(T *array, int incr_array, const T *mem, int incr_mem);
+  void copyKernelToKernel(T *memd, int incr_memd, const T *mems, int incr_mems);
+
+  void copyHostToKernel(T *mem, int incr_mem, const T *array, int incr_array,
+                        int count);
+  void copyKernelToHost(T *array, int incr_array, const T *mem, int incr_mem,
+                        int count);
+  void copyKernelToKernel(T *memd, int incr_memd, const T *mems, int incr_mems,
+                          int count);
 
   uintt amax(const T *m);
   uintt amin(const T *m);
@@ -96,6 +109,9 @@ public:
   bool isUpperTriangular(T *m);
   bool isLowerTriangular(T *m);
 
+  bool isUpperHessenberg(T *m);
+  bool isLowerHessenberg(T *m);
+
   /**
    * @brief matrix-matrix addition/transposition
    * output = alpha * oper(a) + beta * oper(b)
@@ -110,6 +126,7 @@ public:
   void subtract(T *output, T *a, T *b);
 
   void scaleDiagonal(T *matrix, T factor);
+  void diagonalAdd(T *matrix, T value);
 
   void tpttr(FillMode uplo, int n, T *AP, T *A, int lda);
   void trttp(FillMode uplo, int n, T *A, int lda, T *AP);
@@ -122,7 +139,12 @@ public:
    * Checks if mem is unit matrix.
    */
   bool eye(T *mem, T delta);
-  bool eye(T *mem, T* delta);
+  bool eye(T *mem, T *delta);
+
+  void getDiagonal(T *vec, T *matrix);
+
+  void transpose(T *output, T *a);
+  void conjugateTranspose(T *output, T *a);
 
   T cast(int v) const;
   T cast(float v) const;
@@ -145,6 +167,14 @@ protected:
 
   virtual void _copyHostToKernel(T *mem, const T *array, int count) = 0;
   virtual void _copyKernelToHost(T *array, const T *mem, int count) = 0;
+  virtual void _copyKernelToKernel(T *memd, const T *mems, int count) = 0;
+
+  virtual void _copyHostToKernel(T *mem, int incr_mem, const T *array,
+                                 int incr_array, int count) = 0;
+  virtual void _copyKernelToHost(T *array, int incr_array, const T *mem,
+                                 int incr_mem, int count) = 0;
+  virtual void _copyKernelToKernel(T *memd, int incr_memd, const T *mems,
+                                   int incr_mems, int count) = 0;
 
   virtual uintt _amax(const T *mem) = 0;
   virtual uintt _amin(const T *mem) = 0;
@@ -171,6 +201,9 @@ protected:
   virtual bool _isUpperTriangular(T *m) = 0;
   virtual bool _isLowerTriangular(T *m) = 0;
 
+  virtual bool _isUpperHessenberg(T *m) = 0;
+  virtual bool _isLowerHessenberg(T *m) = 0;
+
   virtual void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
                      Operation transb, T *b) = 0;
 
@@ -181,6 +214,7 @@ protected:
   virtual void _subtract(T *output, T *a, T *b) = 0;
 
   virtual void _scaleDiagonal(T *matrix, T *factor) = 0;
+  virtual void _diagonalAdd(T *matrix, T *value) = 0;
 
   virtual void _tpttr(FillMode uplo, int n, T *AP, T *A, int lda) = 0;
   virtual void _trttp(FillMode uplo, int n, T *A, int lda, T *AP) = 0;

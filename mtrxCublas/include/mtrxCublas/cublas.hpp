@@ -83,6 +83,14 @@ protected:
 
   void _copyHostToKernel(T *mem, const T *array, int count) override;
   void _copyKernelToHost(T *array, const T *mem, int count) override;
+  void _copyKernelToKernel(T *memd, const T *mems, int count) override;
+
+  void _copyHostToKernel(T *mem, int incr_mem, const T *array, int incr_array,
+                         int count) override;
+  void _copyKernelToHost(T *array, int incr_array, const T *mem, int incr_mem,
+                         int count) override;
+  void _copyKernelToKernel(T *memd, int incr_memd, const T *mems, int incr_mems,
+                           int count) override;
 
   uintt _amax(const T *mem) override;
   uintt _amin(const T *mem) override;
@@ -113,6 +121,9 @@ protected:
   bool _isUpperTriangular(T *m) override;
   bool _isLowerTriangular(T *m) override;
 
+  bool _isUpperHessenberg(T *m) override;
+  bool _isLowerHessenberg(T *m) override;
+
   void _geam(T *output, T *alpha, Operation transa, T *a, T *beta,
              Operation transb, T *b) override;
 
@@ -121,6 +132,7 @@ protected:
 
   void _scaleDiagonal(T *matrix, T *factor) override;
   void _scaleDiagonal(T *matrix, T factor);
+  void _diagonalAdd(T *matrix, T *value) override;
 
   bool _isComplex() const override;
 
@@ -142,7 +154,7 @@ private:
   T *alloc(int count);
   void dealloc(T *mem);
 
-  std::pair<int, int> checkForTriangular(T *matrix) {
+  std::pair<int, int> checkIfSquare(T *matrix) {
     auto rows = this->getRows(matrix);
     auto columns = this->getColumns(matrix);
 
@@ -282,15 +294,42 @@ template <typename T> int Cublas<T>::_getSizeInBytes(const T *mem) const {
 }
 
 template <typename T>
-void Cublas<T>::_copyHostToKernel(T *dst, const T *src, int count) {
-  auto status = cublasSetVector(count, SizeOf<T>(), src, 1, dst, 1);
+void Cublas<T>::_copyHostToKernel(T *mem, const T *array, int count) {
+  auto status = cublasSetVector(count, SizeOf<T>(), array, 1, mem, 1);
   handleStatus(status);
 }
 
 template <typename T>
-void Cublas<T>::_copyKernelToHost(T *dst, const T *src, int count) {
-  auto status = cublasGetVector(count, SizeOf<T>(), src, 1, dst, 1);
+void Cublas<T>::_copyKernelToHost(T *array, const T *mem, int count) {
+  auto status = cublasGetVector(count, SizeOf<T>(), mem, 1, array, 1);
   handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToKernel(T *memd, const T *mems, int count) {
+  m_cublasKernels.copyKernelToKernel(count, memd, 1, mems, 1);
+}
+
+template <typename T>
+void Cublas<T>::_copyHostToKernel(T *mem, int incr_mem, const T *array,
+                                  int incr_array, int count) {
+  auto status =
+      cublasSetVector(count, SizeOf<T>(), array, incr_array, mem, incr_mem);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToHost(T *array, int incr_array, const T *mem,
+                                  int incr_mem, int count) {
+  auto status =
+      cublasGetVector(count, SizeOf<T>(), mem, incr_mem, array, incr_array);
+  handleStatus(status);
+}
+
+template <typename T>
+void Cublas<T>::_copyKernelToKernel(T *memd, int incr_memd, const T *mems,
+                                    int incr_mems, int count) {
+  m_cublasKernels.copyKernelToKernel(count, memd, incr_memd, mems, incr_mems);
 }
 
 template <typename T> uintt Cublas<T>::_amax(const T *mem) {
@@ -642,7 +681,7 @@ template <typename T> void Cublas<T>::_shiftQRIteration(T *H, T *Q) {
 
 template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
 
-  const auto &dim = checkForTriangular(m);
+  const auto &dim = checkIfSquare(m);
 
   auto lda = dim.first;
 
@@ -655,7 +694,7 @@ template <typename T> bool Cublas<T>::_isUpperTriangular(T *m) {
 
 template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
 
-  const auto &dim = checkForTriangular(m);
+  const auto &dim = checkIfSquare(m);
 
   auto lda = dim.first;
 
@@ -663,6 +702,32 @@ template <typename T> bool Cublas<T>::_isLowerTriangular(T *m) {
   CudaKernels kernels(0, &alloc);
 
   return kernels.isLowerTriangular(dim.first, dim.second, m, lda,
+                                   cu_cast<T>(0.));
+}
+
+template <typename T> bool Cublas<T>::_isUpperHessenberg(T *m) {
+
+  const auto &dim = checkIfSquare(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  CudaKernels kernels(0, &alloc);
+
+  return kernels.isUpperHessenberg(dim.first, dim.second, m, lda,
+                                   cu_cast<T>(0.));
+}
+
+template <typename T> bool Cublas<T>::_isLowerHessenberg(T *m) {
+
+  const auto &dim = checkIfSquare(m);
+
+  auto lda = dim.first;
+
+  CudaAlloc alloc;
+  CudaKernels kernels(0, &alloc);
+
+  return kernels.isLowerHessenberg(dim.first, dim.second, m, lda,
                                    cu_cast<T>(0.));
 }
 
@@ -727,6 +792,22 @@ template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T *factor) {
 
 template <typename T> void Cublas<T>::_scaleDiagonal(T *matrix, T factor) {
   _scaleDiagonal(matrix, &factor);
+}
+
+template <typename T> void Cublas<T>::_diagonalAdd(T *matrix, T *value) {
+  auto rows = this->getRows(matrix);
+  auto columns = this->getColumns(matrix);
+  if (rows != columns) {
+    std::stringstream sstream;
+    sstream << __func__ << ": Matrix is not square matrix " << rows << " x "
+            << columns;
+    throw std::runtime_error(sstream.str());
+  }
+
+  CudaAlloc cudaAlloc;
+  CudaKernels kernels(0, &cudaAlloc);
+
+  kernels.diagonalAdd(rows, matrix, rows, value);
 }
 
 template <typename T>

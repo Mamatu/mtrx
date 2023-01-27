@@ -1,0 +1,4 @@
+#!/bin/bash
+PATH_TO_BINARY=$1
+sudo env "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" nvprof $PATH_TO_BINARY
+

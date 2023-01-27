@@ -84,6 +84,37 @@ TEST_F(DeviceCublasTests, create_copyHostToKernel_copyKernelToHost_destroy) {
   }
 }
 
+TEST_F(DeviceCublasTests,
+       create_copyHostToKernel_copyKernelToKernel_copyKernelToHost_destroy) {
+  try {
+    mtrx::Cublas<float> cublas;
+    constexpr auto count = 20;
+    auto *mem = cublas.create(count);
+    auto *mem1 = cublas.create(count);
+    std::array<float, count> array;
+    std::array<float, count> array1;
+    std::vector<float> vec1;
+    vec1.resize(count);
+    for (int idx = 0; idx < count; ++idx) {
+      array[idx] = idx;
+      array1[idx] = 0;
+      vec1[idx] = -1;
+    }
+    cublas.copyHostToKernel(mem, array.data());
+    cublas.copyKernelToHost(array1.data(), mem);
+    cublas.copyKernelToKernel(mem1, mem);
+    cublas.copyKernelToHost(vec1.data(), mem1);
+
+    for (int idx = 0; idx < count; ++idx) {
+      EXPECT_EQ(idx, array1[idx]) << idx;
+      EXPECT_EQ(idx, vec1[idx]) << idx;
+    }
+    cublas.destroy(mem);
+  } catch (const std::exception &ex) {
+    FAIL() << ex.what();
+  }
+}
+
 TEST_F(DeviceCublasTests, createIdentityMatrix) {
   try {
     mtrx::Cublas<float> cublas;

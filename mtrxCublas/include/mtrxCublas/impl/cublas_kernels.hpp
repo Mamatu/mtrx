@@ -152,6 +152,15 @@ public:
             int lda, cuDoubleComplex beta, Operation transb, cuDoubleComplex *b,
             int ldb);
 
+  void copyKernelToKernel(int count, float *memd, int incr_memd,
+                          const float *mems, int incr_mems);
+  void copyKernelToKernel(int count, double *memd, int incr_memd,
+                          const double *mems, int incr_mems);
+  void copyKernelToKernel(int count, cuComplex *memd, int incr_memd,
+                          const cuComplex *mems, int incr_mems);
+  void copyKernelToKernel(int count, cuDoubleComplex *memd, int incr_memd,
+                          const cuDoubleComplex *mems, int incr_mems);
+
 private:
   cublasHandle_t m_handle;
 };

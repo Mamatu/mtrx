@@ -88,13 +88,13 @@ T *Iram<T>::createInitVector(const Iram<T>::BlasShared &blas,
     for (size_t idx = 0; idx < vec.size(); ++idx) {
       auto v = rg();
       vec[idx] = v;
-      length += v*v;
+      length += v * v;
     }
     length = sqrt(length);
     for (size_t idx = 0; idx < vec.size(); ++idx) {
       vec[idx] = vec[idx] / length;
     }
-    auto* matrix = blas->createMatrix(rows, 1);
+    auto *matrix = blas->createMatrix(rows, 1);
     blas->copyHostToKernel(matrix, vec.data());
     return matrix;
   }
